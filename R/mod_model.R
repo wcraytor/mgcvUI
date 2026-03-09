@@ -1,4 +1,4 @@
-#' Model Fit Button — UI (sidebar)
+#' Model Fit Button -- UI (sidebar)
 #'
 #' @param id Shiny module namespace ID.
 #' @return A [shiny::tagList].
@@ -18,7 +18,7 @@ mod_model_fit_ui <- function(id) {
 }
 
 
-#' Model Results — UI (main panel)
+#' Model Results -- UI (main panel)
 #'
 #' Tabbed output panel for model results, plots, and diagnostics.
 #'
@@ -114,7 +114,7 @@ mod_model_results_ui <- function(id) {
 }
 
 
-#' Model Module — Server (shared by fit button and results)
+#' Model Module -- Server (shared by fit button and results)
 #'
 #' @param id Shiny module namespace ID.
 #' @param data_r A reactive returning the data frame.
@@ -277,7 +277,7 @@ mod_model_server <- function(id, data_r, var_config_r,
       intercept <- stats::coef(model)[["(Intercept)"]]
       parts <- paste0(lhs, " = ", round(intercept, 4))
 
-      # Smooth terms — use f_i notation
+      # Smooth terms -- use f_i notation
       smooth_defs <- list()
       for (idx in seq_along(model$smooth)) {
         sm <- model$smooth[[idx]]
@@ -705,7 +705,7 @@ mod_model_server <- function(id, data_r, var_config_r,
       pred_data <- pred_data[, num_cols, drop = FALSE]
 
       if (ncol(pred_data) < 2L) {
-        plot.new()
+        graphics::plot.new()
         graphics::text(0.5, 0.5,
                        "Need at least 2 numeric predictors for correlation.",
                        cex = 1.2)
@@ -771,7 +771,7 @@ mod_model_server <- function(id, data_r, var_config_r,
 
       if (length(parts) == 0) return(NULL)
 
-      # Merge parametric & smooth (different columns — fill NA)
+      # Merge parametric & smooth (different columns -- fill NA)
       all_cols <- unique(unlist(lapply(parts, names)))
       aov_df <- do.call(rbind, lapply(parts, function(p) {
         missing <- setdiff(all_cols, names(p))

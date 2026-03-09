@@ -59,7 +59,7 @@ settings_db_connect_ <- function() {
 
 #' Save Settings for a File
 #'
-#' @param filename Character — the original file name (basename).
+#' @param filename Character -- the original file name (basename).
 #' @param config List with response, variables (named list of per-var
 #'   settings), family, method, select, gamma.
 #' @noRd
@@ -107,7 +107,7 @@ settings_db_write_ <- function(filename, config) {
 
 #' Load Settings for a File
 #'
-#' @param filename Character — the original file name (basename).
+#' @param filename Character -- the original file name (basename).
 #' @return A list with the saved config, or NULL if not found.
 #' @noRd
 settings_db_read_ <- function(filename) {

@@ -7,7 +7,7 @@
 build_gam_formula(response, smooth_specs)
 }
 \arguments{
-\item{response}{Character scalar — the response variable name.}
+\item{response}{Character scalar -- the response variable name.}
 
 \item{smooth_specs}{A list of smooth-term specification lists. Each
 element should have:

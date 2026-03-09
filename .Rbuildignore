@@ -1,7 +1,11 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^title\.sh$
+^cloc\.sh$
 ^LICENSE\.md$
 ^\.claude$
 ^LICENSE$
 ^README\.md$
+^Output$
+^demo_mls$
+^\.Rhistory$

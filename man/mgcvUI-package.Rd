@@ -10,8 +10,8 @@ A Shiny application for building, diagnosing, and reporting Generalized Additive
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/mgcvUI/mgcvUI}
-  \item Report bugs at \url{https://github.com/mgcvUI/mgcvUI/issues}
+  \item \url{https://github.com/wcraytor/mgcvUI}
+  \item Report bugs at \url{https://github.com/wcraytor/mgcvUI/issues}
 }
 
 }

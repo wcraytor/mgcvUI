@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_variables.R
 \name{mod_variables_server}
 \alias{mod_variables_server}
-\title{Variable Selection Module — Server}
+\title{Variable Selection Module -- Server}
 \usage{
 mod_variables_server(
   id,
@@ -26,5 +26,5 @@ A reactive list with components: \code{response}, \code{predictors},
 \code{smooth_specs}, \code{family}, \code{method}, \code{select}, \code{gamma}.
 }
 \description{
-Variable Selection Module — Server
+Variable Selection Module -- Server
 }

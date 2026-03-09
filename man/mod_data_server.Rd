@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_data.R
 \name{mod_data_server}
 \alias{mod_data_server}
-\title{Data Import Module — Server}
+\title{Data Import Module -- Server}
 \usage{
 mod_data_server(id)
 }
@@ -14,5 +14,5 @@ A list with \code{data} (reactive data frame) and \code{filename}
 (reactive original file basename).
 }
 \description{
-Data Import Module — Server
+Data Import Module -- Server
 }

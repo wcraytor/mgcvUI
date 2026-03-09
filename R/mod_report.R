@@ -1,4 +1,4 @@
-#' Report Export Module — UI
+#' Report Export Module -- UI
 #'
 #' Compact download controls for sidebar embedding.
 #'
@@ -43,7 +43,7 @@ mod_report_ui <- function(id) {
 }
 
 
-#' Report Export Module — Server
+#' Report Export Module -- Server
 #'
 #' @param id Shiny module namespace ID.
 #' @param gam_result_r A reactive returning an `mgcvUI_result`.

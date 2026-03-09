@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_model.R
 \name{mod_model_server}
 \alias{mod_model_server}
-\title{Model Module — Server (shared by fit button and results)}
+\title{Model Module -- Server (shared by fit button and results)}
 \usage{
 mod_model_server(id, data_r, var_config_r, earth_knots_r = reactive(NULL))
 }
@@ -19,5 +19,5 @@ mod_model_server(id, data_r, var_config_r, earth_knots_r = reactive(NULL))
 A reactive containing the \code{mgcvUI_result}, or \code{NULL}.
 }
 \description{
-Model Module — Server (shared by fit button and results)
+Model Module -- Server (shared by fit button and results)
 }

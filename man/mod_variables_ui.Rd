@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_variables.R
 \name{mod_variables_ui}
 \alias{mod_variables_ui}
-\title{Variable Selection Module — UI}
+\title{Variable Selection Module -- UI}
 \usage{
 mod_variables_ui(id)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_report.R
 \name{mod_report_server}
 \alias{mod_report_server}
-\title{Report Export Module — Server}
+\title{Report Export Module -- Server}
 \usage{
 mod_report_server(id, gam_result_r, data_r)
 }
@@ -14,5 +14,5 @@ mod_report_server(id, gam_result_r, data_r)
 \item{data_r}{A reactive returning the data frame.}
 }
 \description{
-Report Export Module — Server
+Report Export Module -- Server
 }

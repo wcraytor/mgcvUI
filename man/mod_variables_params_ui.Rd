@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_variables.R
 \name{mod_variables_params_ui}
 \alias{mod_variables_params_ui}
-\title{Mgcv Call Parameters — UI}
+\title{Mgcv Call Parameters -- UI}
 \usage{
 mod_variables_params_ui(id)
 }

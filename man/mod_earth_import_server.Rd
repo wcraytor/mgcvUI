@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_earth_import.R
 \name{mod_earth_import_server}
 \alias{mod_earth_import_server}
-\title{Earth Import Module — Server}
+\title{Earth Import Module -- Server}
 \usage{
 mod_earth_import_server(id)
 }
@@ -14,5 +14,5 @@ A reactive containing an \code{mgcvUI_earth_knots} object, or
 \code{NULL}.
 }
 \description{
-Earth Import Module — Server
+Earth Import Module -- Server
 }

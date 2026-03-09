@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_report.R
 \name{mod_report_ui}
 \alias{mod_report_ui}
-\title{Report Export Module — UI}
+\title{Report Export Module -- UI}
 \usage{
 mod_report_ui(id)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_data.R
 \name{mod_data_ui}
 \alias{mod_data_ui}
-\title{Data Import Module — UI}
+\title{Data Import Module -- UI}
 \usage{
 mod_data_ui(id)
 }

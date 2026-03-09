@@ -3,7 +3,7 @@
 #' Constructs a [stats::formula] suitable for [mgcv::gam()] from a list
 #' of smooth-term specifications.
 #'
-#' @param response Character scalar — the response variable name.
+#' @param response Character scalar -- the response variable name.
 #' @param smooth_specs A list of smooth-term specification lists. Each
 #'   element should have:
 #'   \describe{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_earth_import.R
 \name{mod_earth_import_ui}
 \alias{mod_earth_import_ui}
-\title{Earth Import Module — UI}
+\title{Earth Import Module -- UI}
 \usage{
 mod_earth_import_ui(id)
 }

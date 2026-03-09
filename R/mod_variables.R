@@ -1,4 +1,4 @@
-#' Variable Selection Module — UI
+#' Variable Selection Module -- UI
 #'
 #' Compact variable table with Inc, Type, and Linear checkboxes,
 #' plus an Allowed Interactions matrix. Designed for sidebar embedding.
@@ -47,7 +47,7 @@ mod_variables_ui <- function(id) {
 }
 
 
-#' Mgcv Call Parameters — UI
+#' Mgcv Call Parameters -- UI
 #'
 #' Model fitting parameters for the GAM call. Uses the same module
 #' namespace as [mod_variables_ui()] so inputs are shared.
@@ -86,7 +86,7 @@ mod_variables_params_ui <- function(id) {
 }
 
 
-#' Variable Selection Module — Server
+#' Variable Selection Module -- Server
 #'
 #' @param id Shiny module namespace ID.
 #' @param data_r A reactive returning the imported data frame.

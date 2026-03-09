@@ -10,8 +10,8 @@ Description: A Shiny application for building, diagnosing, and reporting
     imports knot structure from 'earth' MARS models (e.g. via 'earthUI') to
     bridge exploratory and confirmatory modelling stages.
 License: AGPL (>= 3)
-URL: https://github.com/mgcvUI/mgcvUI
-BugReports: https://github.com/mgcvUI/mgcvUI/issues
+URL: https://github.com/wcraytor/mgcvUI
+BugReports: https://github.com/wcraytor/mgcvUI/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -28,6 +28,8 @@ Imports:
     gratia,
     plotly,
     rlang,
+    htmltools,
+    graphics,
     stats,
     tools,
     utils

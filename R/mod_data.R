@@ -1,4 +1,4 @@
-#' Data Import Module — UI
+#' Data Import Module -- UI
 #'
 #' Compact file upload widget for embedding in a sidebar.
 #'
@@ -27,7 +27,7 @@ mod_data_ui <- function(id) {
 }
 
 
-#' Data Import Module — Server
+#' Data Import Module -- Server
 #'
 #' @param id Shiny module namespace ID.
 #' @return A list with `data` (reactive data frame) and `filename`
@@ -98,7 +98,7 @@ mod_data_server <- function(id) {
     output$data_info <- renderText({
       df <- imported()
       if (is.null(df)) return("No data loaded.")
-      paste(nrow(df), "rows,", ncol(df), "columns —", orig_filename())
+      paste(nrow(df), "rows,", ncol(df), "columns --", orig_filename())
     })
 
     list(

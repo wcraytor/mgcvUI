@@ -1,4 +1,4 @@
-#' Earth Import Module — UI
+#' Earth Import Module -- UI
 #'
 #' Compact widget for importing an earthUI result (.rds file).
 #'
@@ -29,7 +29,7 @@ mod_earth_import_ui <- function(id) {
 }
 
 
-#' Earth Import Module — Server
+#' Earth Import Module -- Server
 #'
 #' @param id Shiny module namespace ID.
 #' @return A reactive containing an `mgcvUI_earth_knots` object, or

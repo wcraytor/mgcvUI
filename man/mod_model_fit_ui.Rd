@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_model.R
 \name{mod_model_fit_ui}
 \alias{mod_model_fit_ui}
-\title{Model Fit Button — UI (sidebar)}
+\title{Model Fit Button -- UI (sidebar)}
 \usage{
 mod_model_fit_ui(id)
 }
@@ -13,7 +13,7 @@ mod_model_fit_ui(id)
 A \link[shiny:reexports]{shiny::tagList}.
 }
 \description{
-Model Fit Button — UI (sidebar)
+Model Fit Button -- UI (sidebar)
 }
 \examples{
 if (interactive()) {

@@ -8,9 +8,9 @@
 #'   `earthUI_result` object, or the object itself.
 #' @return An `mgcvUI_earth_knots` object (a list) with components:
 #'   \describe{
-#'     \item{knots}{Named list of numeric vectors — knot positions per
+#'     \item{knots}{Named list of numeric vectors -- knot positions per
 #'       predictor variable.}
-#'     \item{signs}{Named list of integer vectors — hinge direction at
+#'     \item{signs}{Named list of integer vectors -- hinge direction at
 #'       each knot (`1` = forward / increasing, `-1` = reverse /
 #'       decreasing).}
 #'     \item{interactions}{Named list of detected interaction pairs

@@ -2,7 +2,7 @@
 % Please edit documentation in R/mod_model.R
 \name{mod_model_results_ui}
 \alias{mod_model_results_ui}
-\title{Model Results — UI (main panel)}
+\title{Model Results -- UI (main panel)}
 \usage{
 mod_model_results_ui(id)
 }
