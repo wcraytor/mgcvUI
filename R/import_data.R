@@ -6,6 +6,10 @@
 #' @param filepath Character path to a `.csv`, `.xlsx`, or `.xls` file.
 #' @param sheet Integer or character sheet identifier for Excel files.
 #'   Ignored for CSV.
+#' @param sep Character. Field separator for CSV files. Default `","`.
+#'   Use `";"` for European-style CSVs.
+#' @param dec Character. Decimal separator for CSV files. Default `"."`.
+#'   Use `","` for European-style CSVs.
 #' @return A data frame.
 #' @export
 #' @examples
@@ -14,16 +18,17 @@
 #' df <- import_data(tmp)
 #' head(df)
 #' unlink(tmp)
-import_data <- function(filepath, sheet = 1L) {
+import_data <- function(filepath, sheet = 1L, sep = ",", dec = ".") {
   ext <- tolower(tools::file_ext(filepath))
   df <- switch(ext,
-    csv = readr::read_csv(filepath, show_col_types = FALSE),
+    csv = utils::read.csv(filepath, stringsAsFactors = FALSE,
+                          check.names = FALSE, sep = sep, dec = dec),
     xlsx = readxl::read_excel(filepath, sheet = sheet),
     xls  = readxl::read_excel(filepath, sheet = sheet),
     stop("Unsupported file type: ", ext,
          ". Use .csv, .xlsx, or .xls", call. = FALSE)
   )
-  df <- as.data.frame(df)
+  df <- as.data.frame(df, stringsAsFactors = FALSE, check.names = FALSE)
   names(df) <- clean_names_(names(df))
   df
 }

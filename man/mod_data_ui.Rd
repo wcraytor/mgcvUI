@@ -13,7 +13,8 @@ mod_data_ui(id)
 A \link[shiny:reexports]{shiny::tagList}.
 }
 \description{
-Compact file upload widget for embedding in a sidebar.
+Compact file upload widget for embedding in a sidebar, with a per-file
+locale country selector for CSV separator and decimal conventions.
 }
 \examples{
 if (interactive()) {

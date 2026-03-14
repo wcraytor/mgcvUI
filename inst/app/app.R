@@ -95,7 +95,8 @@ ui <- fluidPage(
     .mgcv-cell-na     { width: 75px; text-align: right; padding-right: 4px;
                         font-size: 0.75em; white-space: nowrap;
                         font-family: 'Roboto Condensed', monospace; }
-    .mgcv-cell-linear { width: 35px; text-align: center; }
+    .mgcv-cell-factor { width: 45px; text-align: center; }
+    .mgcv-cell-linear { width: 45px; text-align: center; }
     .mgcv-cell-special { width: 110px; }
     .mgcv-var-row select {
       width: 100%; padding: 1px 2px; font-size: 0.8em;
@@ -156,22 +157,22 @@ ui <- fluidPage(
     }
     .mgcv-section[open] > summary h4::before { transform: rotate(90deg); }
 
-    /* --- Theme toggle button --- */
-    #mgcv-theme-toggle {
-      position: fixed; top: 12px; right: 20px; z-index: 10000;
-      width: 38px; height: 38px; border-radius: 50%;
-      border: 2px solid var(--bs-border-color);
-      background: var(--bs-body-bg); color: var(--bs-body-color);
-      font-size: 18px; cursor: pointer; display: flex;
-      align-items: center; justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15); transition: all 0.3s;
-    }
-    #mgcv-theme-toggle:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.25); }
+    /* --- Top navbar --- */
+    .mgcv-navbar { background: #2e3440; padding: 4px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mgcv-navbar .mgcv-brand { color: #eceff4; font-size: 1.3em; font-weight: bold; margin-right: 8px; white-space: nowrap; }
+    .mgcv-navbar .mgcv-brand small { font-size: 0.55em; color: #81a1c1; font-weight: normal; }
+    .mgcv-navbar .mgcv-brand img { height: 26px; margin-right: 6px; vertical-align: middle; }
+    .mgcv-navbar .dropdown { position: relative; }
+    .mgcv-navbar .mgcv-menu-btn { background: none; border: none; color: #d8dee9; font-size: 0.9em; padding: 6px 12px; cursor: pointer; border-radius: 4px; }
+    .mgcv-navbar .mgcv-menu-btn:hover { background: rgba(255,255,255,0.1); color: #eceff4; }
+    .mgcv-navbar .mgcv-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: var(--bs-body-bg, #fff); border: 1px solid var(--bs-border-color, #ccc); border-radius: 6px; padding: 12px 16px; min-width: 280px; z-index: 10001; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    .mgcv-navbar .dropdown.open .mgcv-dropdown-menu { display: block; }
+    [data-bs-theme='dark'] .mgcv-navbar .mgcv-dropdown-menu { background: #3b4252; border-color: #434c5e; }
+    .mgcv-navbar .mgcv-spacer { flex: 1; }
+    #mgcv-theme-toggle { background: none; border: none; color: #d8dee9; font-size: 1.2em; cursor: pointer; padding: 6px; }
+    #mgcv-theme-toggle:hover { color: #eceff4; }
 
     /* --- Dark mode --- */
-    [data-bs-theme='dark'] #mgcv-theme-toggle {
-      background: #3b4252; border-color: #434c5e;
-    }
     [data-bs-theme='dark'] .mgcv-var-header { background: #3b4252; }
     [data-bs-theme='dark'] .mgcv-var-row { border-color: #434c5e; }
     [data-bs-theme='dark'] .mgcv-var-row select {
@@ -189,10 +190,45 @@ ui <- fluidPage(
     }
   "))),
 
-  # Dark/light toggle button
-  tags$button(id = "mgcv-theme-toggle", HTML("&#9790;")),
+  # --- Top Menu Bar ---
+  tags$nav(class = "mgcv-navbar",
+    tags$span(class = "mgcv-brand",
+      tags$img(src = "logo.png"),
+      "mgcvUI",
+      tags$small(" - GAM Builder")
+    ),
+    tags$div(class = "dropdown", id = "mgcv-settings-dropdown",
+      tags$button(class = "mgcv-menu-btn",
+                  onclick = "mgcvToggleDropdown('mgcv-settings-dropdown')",
+                  HTML("&#9881; Settings")),
+      tags$div(class = "mgcv-dropdown-menu",
+        selectInput("locale_country", "Country",
+                    choices = mgcvUI:::locale_country_choices_(),
+                    selected = "us", width = "100%"),
+        selectInput("locale_paper", "Paper",
+                    choices = c("Letter" = "letter", "A4" = "a4"),
+                    selected = "letter", width = "100%"),
+        actionLink("locale_save_default", "Save as my default",
+                   style = "font-size: 0.85em; color: #5e81ac; display: block; margin-top: 4px;")
+      )
+    ),
+    tags$div(class = "mgcv-spacer"),
+    tags$button(id = "mgcv-theme-toggle", onclick = "mgcvToggleTheme()",
+                HTML("&#9790;"))
+  ),
   tags$script(HTML("
     var mgcvCurrentMode = 'light';
+
+    function mgcvToggleDropdown(id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.toggle('open');
+    }
+    document.addEventListener('click', function(e) {
+      var dropdowns = document.querySelectorAll('.mgcv-navbar .dropdown');
+      dropdowns.forEach(function(dd) {
+        if (!dd.contains(e.target)) dd.classList.remove('open');
+      });
+    });
 
     function mgcvToggleTheme() {
       mgcvCurrentMode = (mgcvCurrentMode === 'dark') ? 'light' : 'dark';
@@ -202,7 +238,24 @@ ui <- fluidPage(
       try { localStorage.setItem('mgcvUI_theme', mgcvCurrentMode); } catch(e) {}
     }
 
-    document.getElementById('mgcv-theme-toggle').onclick = mgcvToggleTheme;
+    // Show checkmark after successful fit
+    Shiny.addCustomMessageHandler('mgcv_show_check', function(msg) {
+      var el = document.getElementById(msg.id);
+      if (el) el.style.display = 'inline';
+    });
+    // Show checkmark after successful download
+    Shiny.addCustomMessageHandler('download_check', function(msg) {
+      var btn = document.getElementById(msg.id);
+      if (btn) {
+        var chk = document.createElement('span');
+        chk.innerHTML = ' \\u2705';
+        chk.style.fontSize = '1.2em';
+        if (!btn.querySelector('.mgcv-dl-check')) {
+          chk.className = 'mgcv-dl-check';
+          btn.appendChild(chk);
+        }
+      }
+    });
 
     $(document).on('shiny:connected', function() {
       var saved = null;
@@ -217,18 +270,6 @@ ui <- fluidPage(
       }
     });
   ")),
-
-  # Title with logo
-  tags$div(
-    style = "padding: 10px 15px;",
-    tags$h2(
-      tags$img(src = "logo.png", height = "32px",
-               style = "margin-right: 8px; vertical-align: middle;"),
-      "mgcvUI",
-      tags$small(" - GAM Builder",
-                 style = "font-size: 0.6em; color: var(--bs-secondary-color);")
-    )
-  ),
 
   sidebarLayout(
     sidebarPanel(
@@ -355,7 +396,8 @@ ui <- fluidPage(
           tags$details(class = "mgcv-section",
             tags$summary(uiOutput("report_heading", inline = TRUE)),
             selectInput("export_format", "Format",
-                        choices = c("Word" = "docx",
+                        choices = c("HTML" = "html",
+                                    "Word" = "docx",
                                     "PDF" = "pdf")),
             actionButton("export_report_btn", "Download Report",
                          class = "btn-success",
@@ -416,6 +458,59 @@ server <- function(input, output, session) {
     )
   })
 
+  # --- Settings locale ---
+  # Load user's locale defaults from SQLite on startup
+  locale_defaults <- mgcvUI:::settings_db_read_locale_()
+  if (!is.null(locale_defaults) && length(locale_defaults) > 0L) {
+    ld <- locale_defaults
+    if (!is.null(ld$locale_country))
+      updateSelectInput(session, "locale_country", selected = ld$locale_country)
+    if (!is.null(ld$locale_paper))
+      updateSelectInput(session, "locale_paper", selected = ld$locale_paper)
+    message("mgcvUI: restored locale defaults from SQLite")
+  }
+
+  # Save locale as user default
+  observeEvent(input$locale_save_default, {
+    locale_settings <- list(
+      locale_country = input$locale_country,
+      locale_paper   = input$locale_paper,
+      locale_import  = input[["data-locale_import"]]
+    )
+    mgcvUI:::settings_db_write_locale_(locale_settings)
+    showNotification("Locale saved as default for all new files.",
+                     type = "message", duration = 4)
+  })
+
+  # When Settings country changes, sync import locale and update env
+  observeEvent(input$locale_country, {
+    country <- input$locale_country %||% "us"
+    presets <- mgcvUI:::locale_country_presets_()
+    preset <- presets[[country]] %||% presets[["us"]]
+    updateSelectInput(session, "locale_paper", selected = preset$paper)
+    # Sync the per-file import locale dropdown in the data module
+    updateSelectInput(session, "data-locale_import", selected = country)
+    mgcvUI:::set_locale_(country)
+  })
+
+  # When import locale or paper changes, update locale env
+  observe({
+    import_country <- input[["data-locale_import"]] %||%
+                      input$locale_country %||% "us"
+    settings_country <- input$locale_country %||% "us"
+    paper <- input$locale_paper %||% "letter"
+    presets <- mgcvUI:::locale_country_presets_()
+    import_preset <- presets[[import_country]] %||% presets[["us"]]
+    settings_preset <- presets[[settings_country]] %||% presets[["us"]]
+    mgcvUI:::set_locale_(settings_country,
+                         csv_sep = import_preset$csv_sep,
+                         csv_dec = import_preset$csv_dec,
+                         big_mark = settings_preset$big_mark,
+                         dec_mark = settings_preset$dec_mark,
+                         date_fmt = import_preset$date_fmt,
+                         paper = paper)
+  })
+
   # Data import - returns list(data, filename)
   data_mod <- mod_data_server("data")
 
@@ -474,16 +569,52 @@ server <- function(input, output, session) {
                                        filename_r    = data_mod$filename,
                                        earth_knots_r = earth_knots_r)
 
+  # Derived data reactive: recompute sale_age when effective_date changes
+  app_data_r <- reactive({
+    df <- data_mod$data()
+    req(df)
+    cfg <- var_config_r()
+    eff_date <- input$effective_date
+
+    specials <- cfg$specials
+    if (is.null(specials) || is.null(eff_date)) return(df)
+
+    contract_col <- names(which(specials == "contract_date"))
+    sale_age_col <- names(which(specials == "sale_age"))
+
+    if (length(contract_col) == 1L && length(sale_age_col) == 1L &&
+        contract_col %in% names(df) && sale_age_col %in% names(df)) {
+      # Parse contract dates
+      contract_dates <- df[[contract_col]]
+      if (!inherits(contract_dates, "Date")) {
+        fmts <- mgcvUI:::locale_date_formats_()
+        for (fmt in fmts) {
+          parsed <- as.Date(contract_dates, format = fmt)
+          if (sum(!is.na(parsed)) > sum(!is.na(contract_dates)) * 0.5) {
+            contract_dates <- parsed
+            break
+          }
+        }
+      }
+      if (inherits(contract_dates, "Date")) {
+        df[[sale_age_col]] <- as.numeric(
+          difftime(as.Date(eff_date), contract_dates, units = "days")
+        )
+      }
+    }
+    df
+  })
+
   # Model fitting + results display
   gam_result_r <- mod_model_server("model",
-                                   data_r        = data_mod$data,
+                                   data_r        = app_data_r,
                                    var_config_r  = var_config_r,
                                    earth_knots_r = earth_knots_r)
 
   # Report export (existing module — kept for function export features)
   mod_report_server("report",
                     gam_result_r = gam_result_r,
-                    data_r       = data_mod$data)
+                    data_r       = app_data_r)
 
   # --- Model fitted flag for conditionalPanel ---
   output$model_fitted <- reactive(!is.null(gam_result_r()))
@@ -646,17 +777,36 @@ server <- function(input, output, session) {
       }
 
       # Sort by residual_sf descending for appraisal/market
-      if (input$purpose %in% c("appraisal", "market") &&
-          "residual_sf" %in% names(export_df)) {
-        ord <- order(export_df[["residual_sf"]], decreasing = TRUE,
-                     na.last = TRUE)
-        export_df <- export_df[ord, , drop = FALSE]
+      if (input$purpose %in% c("appraisal", "market")) {
+        has_subject <- identical(input$purpose, "appraisal")
+        sort_col <- if ("residual_sf" %in% names(export_df)) "residual_sf" else "residual"
+        if (sort_col %in% names(export_df)) {
+          if (has_subject && nrow(export_df) >= 2L) {
+            comps <- export_df[2:nrow(export_df), , drop = FALSE]
+            comps <- comps[order(comps[[sort_col]], decreasing = TRUE,
+                                 na.last = TRUE), , drop = FALSE]
+            export_df <- rbind(export_df[1L, , drop = FALSE], comps)
+          } else {
+            export_df <- export_df[order(export_df[[sort_col]],
+                                         decreasing = TRUE,
+                                         na.last = TRUE), , drop = FALSE]
+          }
+        }
+      }
+
+      # Move ranking columns to the left
+      rank_cols <- c("residual_sf", "cqa_sf", "residual", "cqa")
+      rank_cols <- rank_cols[rank_cols %in% names(export_df)]
+      if (length(rank_cols) > 0L) {
+        other_cols <- setdiff(names(export_df), rank_cols)
+        export_df <- export_df[, c(rank_cols, other_cols), drop = FALSE]
       }
 
       base <- tools::file_path_sans_ext(data_mod$filename() %||% "mgcvui")
       out_path <- file.path(folder, paste0(base, "_output_",
                             format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"))
       writexl::write_xlsx(export_df, out_path)
+      session$sendCustomMessage("download_check", list(id = "export_data"))
       showNotification(paste0("Output saved to: ", out_path),
                        type = "message", duration = 8)
     }, error = function(e) {
@@ -800,6 +950,30 @@ server <- function(input, output, session) {
       export_df[["subject_cqa"]] <- NA_real_
       export_df[["subject_cqa"]][1L] <- user_cqa
 
+      if (use_sf && !is.null(la_col)) {
+        export_df[["residual_sf"]][1L] <- round(subject_resid, 1)
+      }
+
+      # Handle weight-0 rows: use subject_value so RCA columns can be computed
+      wt_col_name <- var_config_r()$weights_col
+      zero_wt <- integer(0)
+      if (!is.null(wt_col_name) && wt_col_name %in% names(export_df)) {
+        wvals <- export_df[[wt_col_name]]
+        zero_wt <- which(wvals == 0)
+      }
+      if (length(zero_wt) > 0L) {
+        sv <- predicted[zero_wt] + subject_resid_total
+        export_df[["subject_value"]][zero_wt] <- round(sv, 1)
+        actual[zero_wt] <- sv
+        residuals_val <- actual - predicted
+        export_df[["residual"]][zero_wt] <- round(residuals_val[zero_wt], 1)
+        if (!is.null(la_col) && la_col %in% names(export_df)) {
+          la <- export_df[[la_col]]
+          export_df[["residual_sf"]][zero_wt] <-
+            round(residuals_val[zero_wt] / la[zero_wt], 1)
+        }
+      }
+
       # --- Per-term contributions ---
       contribs <- compute_gam_contributions_(model, export_df)
       intercept <- stats::coef(model)[["(Intercept)"]]
@@ -866,10 +1040,20 @@ server <- function(input, output, session) {
         stringsAsFactors = FALSE
       )
 
+      # Move ranking columns to the left
+      rank_cols <- c("residual_sf", "cqa_sf", "residual", "cqa")
+      rank_cols <- rank_cols[rank_cols %in% names(export_df)]
+      if (length(rank_cols) > 0L) {
+        other_cols <- setdiff(names(export_df), rank_cols)
+        export_df <- export_df[, c(rank_cols, other_cols), drop = FALSE]
+      }
+
       base <- tools::file_path_sans_ext(data_mod$filename() %||% "mgcvui")
       out_path <- file.path(folder, paste0(base, "_adjusted_",
                             format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"))
       writexl::write_xlsx(export_df, out_path)
+      session$sendCustomMessage("download_check",
+                                list(id = "rca_output_btn"))
       showNotification(paste0("RCA output saved to: ", out_path),
                        type = "message", duration = 8)
     }, error = function(e) {
@@ -953,7 +1137,7 @@ server <- function(input, output, session) {
     if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
 
     fmt <- input$export_format
-    ext <- if (fmt == "docx") ".docx" else ".pdf"
+    ext <- paste0(".", fmt)
     base <- tools::file_path_sans_ext(data_mod$filename() %||% "mgcvui")
     out_path <- file.path(folder, paste0(base, "_report_",
                           format(Sys.time(), "%Y%m%d_%H%M%S"), ext))
@@ -1064,7 +1248,7 @@ server <- function(input, output, session) {
         print(doc, target = out_path)
 
       } else {
-        # PDF via rmarkdown
+        # HTML or PDF via rmarkdown
         rmd_template <- system.file("rmd", "gam_report.Rmd",
                                      package = "mgcvUI")
         if (nzchar(rmd_template)) {
@@ -1076,9 +1260,16 @@ server <- function(input, output, session) {
           rds_path <- file.path(tmpdir, "gam_result.rds")
           saveRDS(res, rds_path)
 
+          out_fmt <- if (fmt == "html") {
+            rmarkdown::html_document()
+          } else {
+            rmarkdown::pdf_document()
+          }
+
           tmp_out <- file.path(tmpdir, paste0("gam_report", ext))
           rmarkdown::render(
             rmd_copy,
+            output_format = out_fmt,
             output_file = tmp_out,
             params = list(result_path = rds_path,
                           title = "mgcvUI GAM Report"),
@@ -1091,6 +1282,8 @@ server <- function(input, output, session) {
         }
       }
 
+      session$sendCustomMessage("download_check",
+                                list(id = "export_report_btn"))
       showNotification(paste0("Report saved to: ", out_path),
                        type = "message", duration = 8)
     }, error = function(e) {

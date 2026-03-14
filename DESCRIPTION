@@ -18,7 +18,6 @@ RoxygenNote: 7.3.3
 Imports:
     shiny (>= 1.7.0),
     mgcv (>= 1.8-40),
-    readr,
     readxl,
     DT,
     ggplot2,

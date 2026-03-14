@@ -15,33 +15,12 @@ mod_variables_ui <- function(id) {
   tagList(
     selectInput(ns("response"), "Target (response)",
                 choices = NULL, width = "100%"),
-    selectInput(ns("weights_col"), "Weights column (optional)",
-                choices = c("(none)" = ""), width = "100%"),
-    tags$p("Check Inc to include a predictor. Linear forces linear entry. Special designates column role.",
+    tags$p("Type = data type. Inc = include. Special = column role. Factor = treat as factor. Linear = force linear.",
            style = "font-size: 0.8em; color: #888; margin-bottom: 4px;"),
     div(style = paste("max-height: 400px; overflow-y: auto;",
                       "border: 1px solid #ddd; border-radius: 4px;",
                       "padding: 4px;"),
       uiOutput(ns("var_table"))
-    ),
-    br(),
-    tags$details(
-      tags$summary(
-        style = "cursor: pointer; font-weight: bold; font-size: 0.9em;",
-        "Allowed Interactions"
-      ),
-      div(style = "padding-top: 6px;",
-        fluidRow(
-          column(6, actionButton(ns("allow_all_int"), "Allow All",
-                                 class = "btn-sm btn-outline-success",
-                                 style = "width:100%;")),
-          column(6, actionButton(ns("clear_all_int"), "Clear All",
-                                 class = "btn-sm btn-outline-danger",
-                                 style = "width:100%;"))
-        ),
-        br(),
-        uiOutput(ns("allowed_matrix_ui"))
-      )
     )
   )
 }
@@ -81,7 +60,26 @@ mod_variables_params_ui <- function(id) {
     selectInput(ns("tensor_type"), "Tensor type for interactions",
                 choices = c("ti (tensor interaction)" = "ti",
                             "te (tensor product)" = "te"),
-                selected = "ti", width = "100%")
+                selected = "ti", width = "100%"),
+    br(),
+    tags$details(
+      tags$summary(
+        style = "cursor: pointer; font-weight: bold; font-size: 0.9em;",
+        "Allowed Interactions"
+      ),
+      div(style = "padding-top: 6px;",
+        fluidRow(
+          column(6, actionButton(ns("allow_all_int"), "Allow All",
+                                 class = "btn-sm btn-outline-success",
+                                 style = "width:100%;")),
+          column(6, actionButton(ns("clear_all_int"), "Clear All",
+                                 class = "btn-sm btn-outline-danger",
+                                 style = "width:100%;"))
+        ),
+        br(),
+        uiOutput(ns("allowed_matrix_ui"))
+      )
+    )
   )
 }
 
@@ -131,24 +129,20 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         updateSelectInput(session, "response", choices = num_vars)
       }
 
-      # Weights column: any numeric column, plus "none"
-      wt_choices <- c("(none)" = "", num_vars)
-      wt_selected <- if (!is.null(saved) && !is.null(saved$weights_col) &&
-                          saved$weights_col %in% num_vars) {
-        saved$weights_col
-      } else {
-        ""
-      }
-      updateSelectInput(session, "weights_col", choices = wt_choices,
-                        selected = wt_selected)
     })
 
     # Render the variable table
     output$var_table <- renderUI({
       df <- data_r()
       req(df)
+      resp <- input$response
       cols <- names(df)
+      # Exclude the target variable from the predictor table
+      if (!is.null(resp) && nzchar(resp)) {
+        cols <- setdiff(cols, resp)
+      }
       detected <- detect_column_types(df)
+      detected <- detected[cols]
 
       fname <- filename_r()
       saved <- if (!is.null(fname)) settings_db_read_(fname) else NULL
@@ -156,18 +150,22 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
 
       type_choices <- c("numeric", "integer", "character", "factor",
                         "logical", "Date", "POSIXct")
-      special_choices <- c("no", "contract_date", "latitude", "longitude",
-                           "living_area", "display_only")
+      special_choices <- c("no", "actual_age", "concessions", "contract_date",
+                           "display_only", "dom", "effective_age",
+                           "latitude", "listing_date", "living_area",
+                           "longitude", "sale_age", "site_dimensions",
+                           "weights")
 
       rows <- lapply(seq_along(cols), function(i) {
         var <- cols[i]
         det_type <- unname(detected[i])
 
-        # Defaults: unchecked, auto-detected type, not linear, no special
+        # Defaults: unchecked, auto-detected type, not linear, no special, not factor
         inc_val     <- FALSE
         type_val    <- det_type
         lin_val     <- FALSE
         special_val <- "no"
+        fac_val     <- FALSE
 
         # Restore from saved settings
         if (!is.null(saved) && !is.null(saved$variables[[var]])) {
@@ -180,6 +178,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
           if (!is.null(sv$special) && sv$special %in% special_choices) {
             special_val <- sv$special
           }
+          if (!is.null(sv$factor)) fac_val <- isTRUE(sv$factor)
         }
 
         # Earth import overrides (always applied when earth knots present)
@@ -191,7 +190,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
             lin_val <- TRUE
           }
           if (var %in% ek$categoricals) {
-            type_val <- "factor"
+            fac_val <- TRUE
           }
         }
 
@@ -212,6 +211,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         }, character(1)), collapse = "")
 
         inc_chk <- if (inc_val) " checked" else ""
+        fac_chk <- if (fac_val) " checked" else ""
         lin_chk <- if (lin_val) " checked" else ""
 
         # NA count display
@@ -230,7 +230,12 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         tags$div(
           class = "mgcv-var-row", `data-var` = var,
           tags$div(class = "mgcv-cell mgcv-cell-name", title = var, var),
-          tags$div(class = "mgcv-cell mgcv-cell-na", HTML(na_html)),
+          tags$div(
+            class = "mgcv-cell mgcv-cell-type",
+            HTML(paste0("<select class='mgcv-type'",
+                        " data-var='", var, "'>",
+                        type_opts, "</select>"))
+          ),
           tags$div(
             class = "mgcv-cell mgcv-cell-inc",
             HTML(paste0("<input type='checkbox'",
@@ -239,10 +244,17 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                         inc_chk, ">"))
           ),
           tags$div(
-            class = "mgcv-cell mgcv-cell-type",
-            HTML(paste0("<select class='mgcv-type'",
+            class = "mgcv-cell mgcv-cell-special",
+            HTML(paste0("<select class='mgcv-special'",
                         " data-var='", var, "'>",
-                        type_opts, "</select>"))
+                        special_opts, "</select>"))
+          ),
+          tags$div(
+            class = "mgcv-cell mgcv-cell-factor",
+            HTML(paste0("<input type='checkbox'",
+                        " class='mgcv-fac'",
+                        " data-var='", var, "'",
+                        fac_chk, ">"))
           ),
           tags$div(
             class = "mgcv-cell mgcv-cell-linear",
@@ -251,23 +263,19 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                         " data-var='", var, "'",
                         lin_chk, ">"))
           ),
-          tags$div(
-            class = "mgcv-cell mgcv-cell-special",
-            HTML(paste0("<select class='mgcv-special'",
-                        " data-var='", var, "'>",
-                        special_opts, "</select>"))
-          )
+          tags$div(class = "mgcv-cell mgcv-cell-na", HTML(na_html))
         )
       })
 
       header <- tags$div(
         class = "mgcv-var-row mgcv-var-header",
         tags$div(class = "mgcv-cell mgcv-cell-name", "Variable"),
-        tags$div(class = "mgcv-cell mgcv-cell-na", "NAs"),
-        tags$div(class = "mgcv-cell mgcv-cell-inc", "Inc"),
         tags$div(class = "mgcv-cell mgcv-cell-type", "Type"),
-        tags$div(class = "mgcv-cell mgcv-cell-linear", "Lin"),
-        tags$div(class = "mgcv-cell mgcv-cell-special", "Special")
+        tags$div(class = "mgcv-cell mgcv-cell-inc", "Inc"),
+        tags$div(class = "mgcv-cell mgcv-cell-special", "Special"),
+        tags$div(class = "mgcv-cell mgcv-cell-factor", "Factor"),
+        tags$div(class = "mgcv-cell mgcv-cell-linear", "Linear"),
+        tags$div(class = "mgcv-cell mgcv-cell-na", "NAs")
       )
 
       js <- tags$script(HTML(sprintf("
@@ -282,7 +290,8 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                   inc:     row.querySelector('.mgcv-inc').checked,
                   type:    row.querySelector('.mgcv-type').value,
                   linear:  row.querySelector('.mgcv-linear').checked,
-                  special: row.querySelector('.mgcv-special').value
+                  special: row.querySelector('.mgcv-special').value,
+                  factor:  row.querySelector('.mgcv-fac').checked
                 };
               }
             );
@@ -290,7 +299,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
           }
           $(document).off('change.mgcvVars')
             .on('change.mgcvVars',
-                '.mgcv-inc, .mgcv-type, .mgcv-linear, .mgcv-special',
+                '.mgcv-inc, .mgcv-type, .mgcv-linear, .mgcv-special, .mgcv-fac',
                 gatherState);
           setTimeout(gatherState, 200);
         })();
@@ -316,14 +325,14 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       resp <- input$response
       if (length(st) == 0L) return(NULL)
 
-      # Included smooth (non-linear numeric) variables
+      # Included smooth (non-linear, non-factor numeric) variables
       included <- character(0)
       for (var in names(st)) {
         s <- st[[var]]
         if (isTRUE(s$inc) && !identical(var, resp)) {
           typ <- s$type %||% "numeric"
           if (typ %in% c("numeric", "integer", "Date", "POSIXct") &&
-              !isTRUE(s$linear)) {
+              !isTRUE(s$linear) && !isTRUE(s$factor)) {
             included <- c(included, var)
           }
         }
@@ -489,7 +498,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       config$method      <- input$method
       config$select      <- input$select
       config$gamma       <- input$gamma
-      config$weights_col <- input$weights_col %||% ""
+      config$weights_col <- ""
       settings_db_write_(fname, config)
     }
 
@@ -507,7 +516,6 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       input$method
       input$select
       input$gamma
-      input$weights_col
       fname <- isolate(filename_r())
       st <- isolate(var_state())
       if (!is.null(fname) && length(st) > 0L) {
@@ -550,7 +558,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         typ <- s$type %||% "numeric"
         is_numeric <- typ %in% c("numeric", "integer", "Date", "POSIXct")
 
-        if (!is_numeric || isTRUE(s$linear)) {
+        if (isTRUE(s$factor) || !is_numeric || isTRUE(s$linear)) {
           list(vars = var, type = "linear", bs = NULL, k = NULL)
         } else {
           # Use earth knots basis if available
@@ -581,8 +589,9 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         }
       }
 
-      wt_col <- input$weights_col
-      if (is.null(wt_col) || !nzchar(wt_col)) wt_col <- NULL
+      # Derive weights column from specials
+      wt_col <- names(which(specials == "weights"))
+      if (length(wt_col) == 0L) wt_col <- NULL else wt_col <- wt_col[1L]
 
       list(
         response     = resp,

@@ -4,13 +4,19 @@
 \alias{import_data}
 \title{Import Data from CSV or Excel}
 \usage{
-import_data(filepath, sheet = 1L)
+import_data(filepath, sheet = 1L, sep = ",", dec = ".")
 }
 \arguments{
 \item{filepath}{Character path to a \code{.csv}, \code{.xlsx}, or \code{.xls} file.}
 
 \item{sheet}{Integer or character sheet identifier for Excel files.
 Ignored for CSV.}
+
+\item{sep}{Character. Field separator for CSV files. Default \code{","}.
+Use \code{";"} for European-style CSVs.}
+
+\item{dec}{Character. Decimal separator for CSV files. Default \code{"."}.
+Use \code{","} for European-style CSVs.}
 }
 \value{
 A data frame.

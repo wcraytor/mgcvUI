@@ -1,6 +1,7 @@
 #' Data Import Module -- UI
 #'
-#' Compact file upload widget for embedding in a sidebar.
+#' Compact file upload widget for embedding in a sidebar, with a per-file
+#' locale country selector for CSV separator and decimal conventions.
 #'
 #' @param id Shiny module namespace ID.
 #' @return A [shiny::tagList].
@@ -16,7 +17,18 @@
 mod_data_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    fileInput(ns("file"), "Choose CSV or Excel file",
+    tags$div(style = "display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;",
+      tags$label(class = "control-label", "Choose CSV or Excel file"),
+      tags$div(style = "display:flex; align-items:center; gap:6px;",
+        tags$label(class = "control-label", style = "margin-bottom:0;", "Locale"),
+        tags$div(style = "width:150px; margin-bottom:0;",
+          selectInput(ns("locale_import"), NULL,
+                      choices = locale_country_choices_(),
+                      selected = "us", width = "100%")
+        )
+      )
+    ),
+    fileInput(ns("file"), NULL,
               accept = c(".csv", ".xlsx", ".xls")),
     conditionalPanel(
       condition = sprintf("output['%s']", ns("is_excel")),
@@ -42,6 +54,16 @@ mod_data_server <- function(id) {
     cache_dir <- file.path(tools::R_user_dir("mgcvUI", "data"), "cache")
     if (!dir.exists(cache_dir)) dir.create(cache_dir, recursive = TRUE)
 
+    # --- Restore saved import locale on startup ---
+    locale_defaults <- settings_db_read_locale_()
+    if (!is.null(locale_defaults) && length(locale_defaults) > 0L) {
+      ld <- locale_defaults
+      if (!is.null(ld$locale_import))
+        updateSelectInput(session, "locale_import", selected = ld$locale_import)
+      else if (!is.null(ld$locale_country))
+        updateSelectInput(session, "locale_import", selected = ld$locale_country)
+    }
+
     output$is_excel <- reactive({
       req(input$file)
       ext <- tolower(tools::file_ext(input$file$name))
@@ -51,7 +73,13 @@ mod_data_server <- function(id) {
 
     # Load and cache helper
     load_and_cache_ <- function(path, name, sheet = 1L) {
-      df <- import_data(path, sheet = sheet)
+      # Derive sep/dec from the per-file import locale
+      import_country <- input$locale_import %||% "us"
+      presets <- locale_country_presets_()
+      preset <- presets[[import_country]] %||% presets[["us"]]
+      sep <- preset$csv_sep
+      dec <- preset$csv_dec
+      df <- import_data(path, sheet = sheet, sep = sep, dec = dec)
       imported(df)
       orig_filename(name)
       # Cache a copy for next session

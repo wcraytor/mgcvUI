@@ -13,6 +13,9 @@ mod_model_fit_ui <- function(id) {
     actionButton(ns("fit"), "Fit Model",
                  class = "btn-success btn-lg",
                  style = "width: 100%;"),
+    tags$span(id = ns("fit_check"),
+              style = "display:none; color: #a3be8c; font-size: 1.4em; margin-left: 8px;",
+              HTML("&#x2705;")),
     textOutput(ns("fit_status"))
   )
 }
@@ -208,6 +211,11 @@ mod_model_server <- function(id, data_r, var_config_r,
           )
         })
         result(res)
+
+        # Show checkmark
+        shinyjs_id <- ns("fit_check")
+        session$sendCustomMessage("mgcv_show_check",
+                                  list(id = shinyjs_id))
 
         smooth_vars <- vapply(res$smooth_specs, function(s) {
           if (s$type != "linear") s$vars[1] else NA_character_

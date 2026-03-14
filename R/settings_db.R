@@ -159,6 +159,43 @@ settings_db_evict_ <- function(con, max_files = 100L) {
 }
 
 
+#' Save locale defaults (not per-file, global user preference)
+#' @param locale_settings Named list with locale_country, locale_paper, etc.
+#' @noRd
+settings_db_write_locale_ <- function(locale_settings) {
+  con <- settings_db_connect_()
+  if (is.null(con)) return(invisible(NULL))
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+
+  vars_json <- jsonlite_encode_(locale_settings)
+
+  DBI::dbExecute(con, "
+    INSERT INTO settings_v2 (filename, variables, updated_at)
+    VALUES ('__locale_defaults__', ?, datetime('now'))
+    ON CONFLICT(filename) DO UPDATE SET
+      variables  = excluded.variables,
+      updated_at = excluded.updated_at
+  ", params = list(vars_json))
+  invisible(NULL)
+}
+
+
+#' Load locale defaults
+#' @return Named list with locale settings, or NULL if not found.
+#' @noRd
+settings_db_read_locale_ <- function() {
+  con <- settings_db_connect_()
+  if (is.null(con)) return(NULL)
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+
+  row <- DBI::dbGetQuery(con,
+    "SELECT variables FROM settings_v2 WHERE filename = '__locale_defaults__' LIMIT 1"
+  )
+  if (nrow(row) == 0L) return(NULL)
+  jsonlite_decode_(row$variables)
+}
+
+
 #' Minimal JSON encode
 #' @param x An R object.
 #' @return Character JSON string.
