@@ -15,6 +15,16 @@ mod_variables_ui <- function(id) {
   tagList(
     selectInput(ns("response"), "Target (response)",
                 choices = NULL, width = "100%"),
+    selectInput(ns("response_transform"), NULL,
+                choices = c("None (raw)" = "none",
+                            "Log (natural)" = "log",
+                            "Log10" = "log10"),
+                selected = "none", width = "100%"),
+    tags$p(id = ns("transform_hint"),
+           "Log transform makes time adjustments proportional (%) instead of absolute ($).",
+           style = "font-size: 0.75em; color: #888; margin-top: -8px; margin-bottom: 6px; display: none;"),
+    tags$label("Predictor Settings", class = "control-label",
+               style = "font-weight: bold; margin-bottom: 2px;"),
     tags$p("Type = data type. Inc = include. Special = column role. Factor = treat as factor. Linear = force linear.",
            style = "font-size: 0.8em; color: #888; margin-bottom: 4px;"),
     div(style = paste("max-height: 400px; overflow-y: auto;",
@@ -36,31 +46,115 @@ mod_variables_ui <- function(id) {
 #' @export
 mod_variables_params_ui <- function(id) {
   ns <- NS(id)
+
+  # Helper: wrap an input with a "?" popover icon (matches earthUI style)
+  ph <- function(input_el, help_text) {
+    tags$div(
+      style = "position: relative;",
+      input_el,
+      tags$span(
+        class = "mgcv-param-help",
+        `data-bs-toggle` = "popover",
+        `data-bs-trigger` = "hover focus",
+        `data-bs-content` = help_text,
+        `data-bs-placement` = "left",
+        "?"
+      )
+    )
+  }
+
   tagList(
-    selectInput(ns("family"), "Family",
-                choices = c("gaussian", "Gamma", "poisson",
-                            "binomial", "inverse.gaussian"),
-                selected = "gaussian", width = "100%"),
-    selectInput(ns("method"), "Method",
-                choices = c("REML", "GCV.Cp", "ML", "GACV.Cp"),
-                selected = "REML", width = "100%"),
-    numericInput(ns("gamma"), "Gamma (smoothing penalty)",
-                 value = 1, min = 0.1, max = 10, step = 0.1,
-                 width = "100%"),
-    checkboxInput(ns("cv"), "Cross-validate (10-fold CV R\u00b2)",
-                  value = TRUE),
-    checkboxInput(ns("select"), "Variable selection penalty",
-                  value = FALSE),
-    selectInput(ns("default_basis"), "Default basis",
-                choices = c("tp", "cr", "ps", "bs"),
-                selected = "tp", width = "100%"),
-    numericInput(ns("default_k"), "Default k (0 = auto)",
-                 value = 0, min = 0, max = 100, step = 1,
-                 width = "100%"),
-    selectInput(ns("tensor_type"), "Tensor type for interactions",
-                choices = c("ti (tensor interaction)" = "ti",
-                            "te (tensor product)" = "te"),
-                selected = "ti", width = "100%"),
+    ph(
+      selectInput(ns("preset"), "Parameter Preset",
+                  choices = c("Standalone (discovery)" = "standalone",
+                              "Earth Pipeline (refinement)" = "earth"),
+                  selected = "standalone", width = "100%"),
+      "Standalone: general-purpose defaults (tp basis, k=auto, gamma=1.2). Earth Pipeline: uses cr basis seeded with earth knot positions augmented by data quantiles (k=auto, gamma=1.4). Earth knots anchor the spline at MARS-discovered change points while the GAM retains full flexibility."
+    ),
+    tags$p(id = ns("preset_desc"),
+           style = "font-size: 0.8em; color: #888; margin-top: -8px; margin-bottom: 8px;"),
+    ph(
+      selectInput(ns("family"), "Family",
+                  choices = c("gaussian", "Gamma", "poisson",
+                              "binomial", "inverse.gaussian"),
+                  selected = "gaussian", width = "100%"),
+      "The distribution family for the response variable. gaussian = normal errors (continuous response, e.g. sale price). Gamma = positive continuous data with variance proportional to mean squared. poisson = count data. binomial = binary/proportion outcomes."
+    ),
+    ph(
+      selectInput(ns("method"), "Method",
+                  choices = c("REML", "GCV.Cp", "ML", "P-REML", "P-ML",
+                              "GACV.Cp"),
+                  selected = "REML", width = "100%"),
+      "Smoothing parameter estimation method. REML (Restricted Maximum Likelihood) is the recommended default \u2014 most stable and resistant to overfitting. GCV.Cp (Generalized Cross Validation) tends to undersmooth. ML (Maximum Likelihood) is useful for comparing models with different fixed effects. P-REML/P-ML add a penalty to prevent zero smoothing parameters."
+    ),
+    ph(
+      numericInput(ns("gamma"), "Gamma (smoothing penalty)",
+                   value = 1.2, min = 0.1, max = 10, step = 0.1,
+                   width = "100%"),
+      "Multiplier on the effective degrees of freedom in the GCV/UBRE/REML score. Values > 1 increase the smoothing penalty, producing smoother (less wiggly) fits. 1.0 = no extra penalty. 1.2\u20131.4 = mild regularization (recommended). Higher values guard against overfitting at the cost of potential underfitting."
+    ),
+    ph(
+      checkboxInput(ns("cv"), "Cross-validate (10-fold CV R\u00b2)",
+                    value = TRUE),
+      "When checked, performs 10-fold cross-validation after fitting and reports the out-of-sample R-squared. Useful for assessing how well the model generalizes to unseen data. Adds fitting time but does not change the final model."
+    ),
+    ph(
+      checkboxInput(ns("select"), "Select (shrink-to-zero penalty)",
+                    value = TRUE),
+      "Adds an extra shrinkage penalty that can zero out smooth terms entirely, effectively performing variable selection. Recommended when you are unsure which predictors matter. If a smooth is estimated at ~0 edf, it contributes nothing to the model."
+    ),
+    ph(
+      selectInput(ns("default_basis"), "Default basis",
+                  choices = c("tp", "cr", "ps", "bs"),
+                  selected = "tp", width = "100%"),
+      "The spline basis used for smooth terms. tp (thin plate regression spline) = the default, isotropic, good all-round choice. cr (cubic regression spline) = knot-based, efficient, good with earth-derived knots. ps (P-spline) = B-spline basis with difference penalty. bs (B-spline) = standard B-spline basis."
+    ),
+    ph(
+      numericInput(ns("default_k"), "Default k (0 = auto)",
+                   value = 0, min = 0, max = 100, step = 1,
+                   width = "100%"),
+      "Maximum basis dimension (number of basis functions) for each smooth term. Controls the upper bound on wiggliness \u2014 the actual complexity is determined by the smoothing penalty. 0 = auto (mgcv default of 10). Increase k if gam.check() reports k is too low. Decrease for simpler models or small datasets."
+    ),
+    ph(
+      selectInput(ns("tensor_type"), "Tensor type for interactions",
+                  choices = c("ti (tensor interaction)" = "ti",
+                              "te (tensor product)" = "te"),
+                  selected = "ti", width = "100%"),
+      "How smooth interactions between two continuous variables are constructed. ti (tensor interaction) = models only the pure interaction effect, excluding main effects (preferred when main effects are already in the model). te (tensor product) = models the full joint smooth including main effects \u2014 use when you want one term to capture the entire bivariate relationship."
+    ),
+    tags$details(
+      tags$summary(
+        style = "cursor: pointer; font-weight: bold; font-size: 0.9em;",
+        "Advanced Parameters"
+      ),
+      div(style = "padding-top: 6px;",
+        ph(
+          selectInput(ns("optimizer"), "Optimizer",
+                      choices = c("outer/newton" = "outer_newton",
+                                  "outer/bfgs"   = "outer_bfgs",
+                                  "efs"          = "efs"),
+                      selected = "outer_newton", width = "100%"),
+          "Numerical optimizer for smoothing parameter estimation. outer/newton = default, fast and reliable for most models. outer/bfgs = quasi-Newton, can help when newton struggles to converge. efs = Extended Fellner-Schall, very stable for complex models or when other optimizers fail."
+        ),
+        ph(
+          numericInput(ns("scale"), "Scale (0 = estimate)",
+                       value = 0, min = -1, max = 1000, step = 0.1,
+                       width = "100%"),
+          "The scale (dispersion) parameter. 0 = estimate from data (default for gaussian/Gamma). For gaussian family this is the residual variance. Set to 1 for Poisson or binomial (known scale). A fixed positive value overrides estimation."
+        ),
+        ph(
+          checkboxInput(ns("discrete"), "Discrete covariate method (fast)",
+                        value = FALSE),
+          "Uses the discretized covariate method (bam-style) for faster fitting on large datasets. Groups covariate values into bins to reduce computation. Recommended for datasets with >10,000 rows. May slightly reduce accuracy for small datasets."
+        ),
+        ph(
+          numericInput(ns("nthreads"), "Threads",
+                       value = 1L, min = 1L, max = 32L, step = 1L,
+                       width = "100%"),
+          "Number of parallel threads for model fitting. Only effective when 'Discrete covariate method' is enabled. More threads can speed up fitting on large datasets. Set to 1 for single-threaded (default)."
+        )
+      )
+    ),
     br(),
     tags$details(
       tags$summary(
@@ -68,6 +162,8 @@ mod_variables_params_ui <- function(id) {
         "Allowed Interactions"
       ),
       div(style = "padding-top: 6px;",
+        tags$label("Tensor Interactions (continuous \u00d7 continuous)",
+                   style = "font-weight: bold; font-size: 0.85em;"),
         fluidRow(
           column(6, actionButton(ns("allow_all_int"), "Allow All",
                                  class = "btn-sm btn-outline-success",
@@ -77,7 +173,13 @@ mod_variables_params_ui <- function(id) {
                                  style = "width:100%;"))
         ),
         br(),
-        uiOutput(ns("allowed_matrix_ui"))
+        uiOutput(ns("allowed_matrix_ui")),
+        hr(),
+        tags$label("Factor-by-Smooth Interactions (factor \u00d7 continuous)",
+                   style = "font-weight: bold; font-size: 0.85em;"),
+        tags$p("Fits a separate smooth for each factor level: s(x, by=factor)",
+               style = "font-size: 0.75em; color: #888; margin-bottom: 4px;"),
+        uiOutput(ns("factor_by_smooth_ui"))
       )
     )
   )
@@ -95,11 +197,51 @@ mod_variables_params_ui <- function(id) {
 #'   `smooth_specs`, `family`, `method`, `select`, `gamma`.
 #' @export
 mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
-                                 earth_knots_r = reactive(NULL)) {
+                                 earth_knots_r = reactive(NULL),
+                                 purpose_r = reactive("general")) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     var_state <- reactiveVal(list())
+
+    # --- Parameter presets ---
+    apply_preset_ <- function(preset) {
+      if (preset == "earth") {
+        updateSelectInput(session, "default_basis", selected = "cr")
+        updateNumericInput(session, "default_k", value = 0)
+        updateNumericInput(session, "gamma", value = 1.4)
+        updateCheckboxInput(session, "select", value = TRUE)
+        session$sendCustomMessage("mgcv_preset_desc",
+          "Earth refinement: cr basis, k=auto(10), gamma=1.4, select=TRUE. Earth knots are preserved and augmented with data quantiles.")
+      } else {
+        updateSelectInput(session, "default_basis", selected = "tp")
+        updateNumericInput(session, "default_k", value = 0)
+        updateNumericInput(session, "gamma", value = 1.2)
+        updateCheckboxInput(session, "select", value = TRUE)
+        session$sendCustomMessage("mgcv_preset_desc",
+          "Discovery mode: tp basis, k=auto(10), gamma=1.2, select=TRUE")
+      }
+    }
+
+    # Show/hide transform hint
+    observeEvent(input$response_transform, {
+      show <- !identical(input$response_transform, "none")
+      session$sendCustomMessage("mgcv_toggle_el",
+        list(id = ns("transform_hint"), show = show))
+    })
+
+    # Switch preset when user changes it
+    observeEvent(input$preset, {
+      apply_preset_(input$preset)
+    })
+
+    # Auto-switch to earth preset when earth knots arrive
+    observeEvent(earth_knots_r(), {
+      ek <- earth_knots_r()
+      if (!is.null(ek)) {
+        updateSelectInput(session, "preset", selected = "earth")
+      }
+    })
 
     # Update response choices when data changes
     observeEvent(data_r(), {
@@ -113,6 +255,10 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
             saved$response %in% num_vars) {
         updateSelectInput(session, "response", choices = num_vars,
                           selected = saved$response)
+        if (!is.null(saved$response_transform)) {
+          updateSelectInput(session, "response_transform",
+                            selected = saved$response_transform)
+        }
         if (!is.null(saved$family)) {
           updateSelectInput(session, "family", selected = saved$family)
         }
@@ -124,6 +270,30 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         }
         if (!is.null(saved$gamma)) {
           updateNumericInput(session, "gamma", value = saved$gamma)
+        }
+        if (!is.null(saved$cv)) {
+          updateCheckboxInput(session, "cv", value = saved$cv)
+        }
+        if (!is.null(saved$default_basis)) {
+          updateSelectInput(session, "default_basis", selected = saved$default_basis)
+        }
+        if (!is.null(saved$default_k)) {
+          updateNumericInput(session, "default_k", value = saved$default_k)
+        }
+        if (!is.null(saved$tensor_type)) {
+          updateSelectInput(session, "tensor_type", selected = saved$tensor_type)
+        }
+        if (!is.null(saved$optimizer)) {
+          updateSelectInput(session, "optimizer", selected = saved$optimizer)
+        }
+        if (!is.null(saved$scale)) {
+          updateNumericInput(session, "scale", value = saved$scale)
+        }
+        if (!is.null(saved$discrete)) {
+          updateCheckboxInput(session, "discrete", value = saved$discrete)
+        }
+        if (!is.null(saved$nthreads)) {
+          updateNumericInput(session, "nthreads", value = saved$nthreads)
         }
       } else {
         updateSelectInput(session, "response", choices = num_vars)
@@ -150,11 +320,16 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
 
       type_choices <- c("numeric", "integer", "character", "factor",
                         "logical", "Date", "POSIXct")
-      special_choices <- c("no", "actual_age", "concessions", "contract_date",
-                           "display_only", "dom", "effective_age",
-                           "latitude", "listing_date", "living_area",
-                           "longitude", "sale_age", "site_dimensions",
-                           "weights")
+      appraiser <- purpose_r() %in% c("appraisal", "market")
+      special_choices <- if (appraiser) {
+        c("no", "actual_age", "area", "concessions",
+          "contract_date", "display_only", "dom",
+          "effective_age", "latitude", "listing_date",
+          "living_area", "longitude", "lot_size",
+          "sale_age", "site_dimensions", "weights")
+      } else {
+        c("no", "weights")
+      }
 
       rows <- lapply(seq_along(cols), function(i) {
         var <- cols[i]
@@ -243,7 +418,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                         " data-var='", var, "'",
                         inc_chk, ">"))
           ),
-          tags$div(
+          if (appraiser) tags$div(
             class = "mgcv-cell mgcv-cell-special",
             HTML(paste0("<select class='mgcv-special'",
                         " data-var='", var, "'>",
@@ -272,7 +447,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         tags$div(class = "mgcv-cell mgcv-cell-name", "Variable"),
         tags$div(class = "mgcv-cell mgcv-cell-type", "Type"),
         tags$div(class = "mgcv-cell mgcv-cell-inc", "Inc"),
-        tags$div(class = "mgcv-cell mgcv-cell-special", "Special"),
+        if (appraiser) tags$div(class = "mgcv-cell mgcv-cell-special", "Special"),
         tags$div(class = "mgcv-cell mgcv-cell-factor", "Factor"),
         tags$div(class = "mgcv-cell mgcv-cell-linear", "Linear"),
         tags$div(class = "mgcv-cell mgcv-cell-na", "NAs")
@@ -286,11 +461,12 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
             document.querySelectorAll('.mgcv-var-row[data-var]').forEach(
               function(row) {
                 var v = row.getAttribute('data-var');
+                var specialEl = row.querySelector('.mgcv-special');
                 state[v] = {
                   inc:     row.querySelector('.mgcv-inc').checked,
                   type:    row.querySelector('.mgcv-type').value,
                   linear:  row.querySelector('.mgcv-linear').checked,
-                  special: row.querySelector('.mgcv-special').value,
+                  special: specialEl ? specialEl.value : 'no',
                   factor:  row.querySelector('.mgcv-fac').checked
                 };
               }
@@ -392,32 +568,24 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
               style = "text-align: center; padding: 2px; color: #aaa;"
             )
           } else {
-            # Check if earth detected this interaction or allowed it
+            # Check if earth actually detected this interaction
             pair <- sort(c(included[i], included[j]))
             key <- paste(pair, collapse = ":")
-            earth_detected <- !is.null(ek) &&
+            from_earth <- !is.null(ek) &&
               !is.null(ek$interactions) &&
               key %in% names(ek$interactions)
-            # Also check earthUI allowed_matrix
-            earth_allowed <- FALSE
-            if (!is.null(ek) && !is.null(ek$allowed_matrix)) {
-              am <- ek$allowed_matrix
-              cn <- colnames(am)
-              if (all(pair %in% cn)) {
-                earth_allowed <- isTRUE(
-                  am[pair[1L], pair[2L]] == 1 ||
-                  am[pair[2L], pair[1L]] == 1
-                )
-              }
-            }
-            chk <- if (earth_detected || earth_allowed) " checked" else ""
+            chk <- if (from_earth) " checked" else ""
+            disabled <- if (from_earth) " disabled" else ""
+            earth_cls <- if (from_earth) " mgcv-int-earth" else ""
 
             cells[[j + 1L]] <- tags$td(
               style = "text-align: center; padding: 2px;",
-              HTML(paste0("<input type='checkbox' class='mgcv-int-cb'",
+              class = if (from_earth) "mgcv-int-earth-cell" else "",
+              HTML(paste0("<input type='checkbox' class='mgcv-int-cb",
+                          earth_cls, "'",
                           " data-var1='", included[i], "'",
                           " data-var2='", included[j], "'",
-                          chk, ">"))
+                          chk, disabled, ">"))
             )
           }
         }
@@ -442,7 +610,11 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
           Shiny.addCustomMessageHandler('mgcv_toggle_all_int',
             function(checked) {
               document.querySelectorAll('.mgcv-int-cb').forEach(
-                function(cb) { cb.checked = checked; });
+                function(cb) {
+                  if (!cb.classList.contains('mgcv-int-earth')) {
+                    cb.checked = checked;
+                  }
+                });
               gatherInteractions();
             });
           $(document).off('change.mgcvInts')
@@ -460,6 +632,52 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
               cbs.forEach(function(cb) { cb.checked = anyUnchecked; });
               gatherInteractions();
             });
+
+          // --- Block from main effect: right-click variable label ---
+          var mgcvBlk1 = {};
+          try {
+            var saved = JSON.parse(localStorage.getItem('mgcvUI_blk1'));
+            if (saved) mgcvBlk1 = saved;
+          } catch(e) {}
+
+          function updateMgcvBlk1Labels() {
+            document.querySelectorAll('.mgcv-int-var-toggle').forEach(function(el) {
+              var v = el.getAttribute('data-var');
+              var ind = el.querySelector('.blk1-indicator');
+              if (mgcvBlk1[v]) {
+                if (!ind) {
+                  var sp = document.createElement('span');
+                  sp.className = 'blk1-indicator';
+                  sp.style.cssText = 'color:#000;font-weight:bold;font-size:0.85em;';
+                  sp.textContent = ' 1';
+                  el.appendChild(sp);
+                }
+              } else if (ind) {
+                ind.remove();
+              }
+            });
+          }
+
+          function syncMgcvBlk1() {
+            var blocked = [];
+            for (var v in mgcvBlk1) { if (mgcvBlk1[v]) blocked.push(v); }
+            Shiny.setInputValue(ns + 'block_main_effect',
+              blocked.length > 0 ? blocked : null, {priority:'event'});
+            try { localStorage.setItem('mgcvUI_blk1', JSON.stringify(mgcvBlk1)); } catch(e) {}
+          }
+
+          updateMgcvBlk1Labels();
+          setTimeout(syncMgcvBlk1, 350);
+
+          $(document).off('contextmenu.mgcvBlk1')
+            .on('contextmenu.mgcvBlk1', '.mgcv-int-var-toggle', function(e) {
+              e.preventDefault();
+              var varName = $(this).attr('data-var');
+              mgcvBlk1[varName] = !mgcvBlk1[varName];
+              updateMgcvBlk1Labels();
+              syncMgcvBlk1();
+            });
+
           setTimeout(gatherInteractions, 300);
         })();
       ", ns(""))))
@@ -488,17 +706,110 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       session$sendCustomMessage("mgcv_toggle_all_int", FALSE)
     })
 
+    # --- Factor-by-Smooth Interactions ---
+    output$factor_by_smooth_ui <- renderUI({
+      st <- var_state()
+      resp <- input$response
+      if (length(st) == 0L) return(NULL)
+
+      # Identify included factor vars and smooth vars
+      factor_vars <- character(0)
+      smooth_vars <- character(0)
+      for (var in names(st)) {
+        s <- st[[var]]
+        if (!isTRUE(s$inc) || identical(var, resp)) next
+        typ <- s$type %||% "numeric"
+        is_numeric <- typ %in% c("numeric", "integer", "Date", "POSIXct")
+        if (isTRUE(s$factor) || !is_numeric) {
+          factor_vars <- c(factor_vars, var)
+        } else if (!isTRUE(s$linear)) {
+          smooth_vars <- c(smooth_vars, var)
+        }
+      }
+
+      if (length(factor_vars) == 0L || length(smooth_vars) == 0L) {
+        return(tags$p(
+          "Need 1+ factor and 1+ smooth predictor for by-interactions.",
+          style = "color: #888; font-size: 0.85em;"))
+      }
+
+      # Build checkbox grid: rows = smooth vars, columns = factor vars
+      header_cells <- list(tags$th("", style = "min-width: 80px;"))
+      for (fv in factor_vars) {
+        header_cells[[length(header_cells) + 1L]] <- tags$th(
+          fv, style = "font-size: 0.75em; text-align: center; padding: 2px 6px;")
+      }
+
+      body_rows <- list()
+      for (sv in smooth_vars) {
+        cells <- list(tags$td(sv,
+          style = "font-size: 0.8em; padding: 2px 6px; font-weight: 500;"))
+        for (fv in factor_vars) {
+          cells[[length(cells) + 1L]] <- tags$td(
+            style = "text-align: center; padding: 2px;",
+            HTML(paste0("<input type='checkbox' class='mgcv-by-cb'",
+                        " data-smooth='", sv, "'",
+                        " data-factor='", fv, "'>"))
+          )
+        }
+        body_rows[[length(body_rows) + 1L]] <- do.call(tags$tr, cells)
+      }
+
+      js <- tags$script(HTML(sprintf("
+        (function() {
+          var ns = '%s';
+          function gatherByInteractions() {
+            var state = {};
+            document.querySelectorAll('.mgcv-by-cb').forEach(function(cb) {
+              var sv = cb.getAttribute('data-smooth');
+              var fv = cb.getAttribute('data-factor');
+              var key = sv + ':by:' + fv;
+              state[key] = cb.checked;
+            });
+            Shiny.setInputValue(ns + 'by_interactions',
+                                state, {priority:'event'});
+          }
+          $(document).off('change.mgcvBy')
+            .on('change.mgcvBy', '.mgcv-by-cb', gatherByInteractions);
+          setTimeout(gatherByInteractions, 300);
+        })();
+      ", ns(""))))
+
+      tagList(
+        tags$div(
+          style = paste("overflow-x: auto; max-height: 250px;",
+                        "overflow-y: auto; border: 1px solid #ddd;",
+                        "border-radius: 4px; padding: 4px;"),
+          tags$table(
+            style = "border-collapse: collapse;",
+            tags$thead(do.call(tags$tr, header_cells)),
+            tags$tbody(body_rows)
+          )
+        ),
+        js
+      )
+    })
+
     # Save settings (merge with existing to preserve app-level fields)
     save_settings_ <- function(fname, st) {
       existing <- settings_db_read_(fname)
       config <- if (!is.null(existing)) existing else list()
-      config$response    <- input$response
-      config$variables   <- st
-      config$family      <- input$family
-      config$method      <- input$method
-      config$select      <- input$select
-      config$gamma       <- input$gamma
-      config$weights_col <- ""
+      config$response      <- input$response
+      config$response_transform <- input$response_transform
+      config$variables     <- st
+      config$family        <- input$family
+      config$method        <- input$method
+      config$select        <- input$select
+      config$gamma         <- input$gamma
+      config$cv            <- input$cv
+      config$default_basis <- input$default_basis
+      config$default_k     <- input$default_k
+      config$tensor_type   <- input$tensor_type
+      config$optimizer     <- input$optimizer
+      config$scale         <- input$scale
+      config$discrete      <- input$discrete
+      config$nthreads      <- input$nthreads
+      config$weights_col   <- ""
       settings_db_write_(fname, config)
     }
 
@@ -512,10 +823,19 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
 
     observe({
       input$response
+      input$response_transform
       input$family
       input$method
       input$select
       input$gamma
+      input$cv
+      input$default_basis
+      input$default_k
+      input$tensor_type
+      input$optimizer
+      input$scale
+      input$discrete
+      input$nthreads
       fname <- isolate(filename_r())
       st <- isolate(var_state())
       if (!is.null(fname) && length(st) > 0L) {
@@ -553,7 +873,14 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         }
       }
 
+      # Variables blocked from main effect (interaction only)
+      blocked <- input$block_main_effect
+      if (is.null(blocked)) blocked <- character(0)
+
       specs <- lapply(included, function(var) {
+        # Skip main effect for blocked variables
+        if (var %in% blocked) return(NULL)
+
         s <- st[[var]]
         typ <- s$type %||% "numeric"
         is_numeric <- typ %in% c("numeric", "integer", "Date", "POSIXct")
@@ -572,6 +899,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
           list(vars = var, type = "s", bs = bs, k = k)
         }
       })
+      specs <- specs[!vapply(specs, is.null, logical(1))]
 
       # Add interaction specs from allowed matrix
       int_matrix <- input$interaction_matrix
@@ -589,21 +917,54 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         }
       }
 
+      # Add factor-by-smooth interaction specs
+      by_matrix <- input$by_interactions
+      if (!is.null(by_matrix) && length(by_matrix) > 0L) {
+        for (key in names(by_matrix)) {
+          if (isTRUE(by_matrix[[key]])) {
+            parts <- strsplit(key, ":by:")[[1L]]
+            smooth_var <- parts[1L]
+            factor_var <- parts[2L]
+            if (smooth_var %in% included && factor_var %in% included) {
+              # Find the existing smooth spec for this var to inherit bs/k
+              existing_spec <- NULL
+              for (sp in specs) {
+                if (identical(sp$vars, smooth_var) && sp$type == "s") {
+                  existing_spec <- sp
+                  break
+                }
+              }
+              bs <- if (!is.null(existing_spec)) existing_spec$bs else default_bs
+              k <- if (!is.null(existing_spec)) existing_spec$k else default_k
+              specs <- c(specs, list(
+                list(vars = smooth_var, type = "s", bs = bs, k = k,
+                     by = factor_var)
+              ))
+            }
+          }
+        }
+      }
+
       # Derive weights column from specials
       wt_col <- names(which(specials == "weights"))
       if (length(wt_col) == 0L) wt_col <- NULL else wt_col <- wt_col[1L]
 
       list(
-        response     = resp,
-        predictors   = included,
-        smooth_specs = specs,
-        family       = input$family,
-        method       = input$method,
-        select       = input$select,
-        gamma        = input$gamma,
-        cv           = input$cv,
-        specials     = specials,
-        weights_col  = wt_col
+        response           = resp,
+        response_transform = input$response_transform %||% "none",
+        predictors         = included,
+        smooth_specs       = specs,
+        family             = input$family,
+        method             = input$method,
+        select             = input$select,
+        gamma              = input$gamma,
+        cv                 = input$cv,
+        specials           = specials,
+        weights_col        = wt_col,
+        optimizer          = input$optimizer,
+        scale              = input$scale,
+        discrete           = input$discrete,
+        nthreads           = input$nthreads
       )
     })
   })

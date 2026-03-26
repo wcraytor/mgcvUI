@@ -11,10 +11,14 @@ fit_gam(
   family = gaussian(),
   method = "REML",
   earth_knots = NULL,
-  select = FALSE,
-  gamma = 1,
+  select = TRUE,
+  gamma = 1.2,
   cv_folds = 10L,
-  weights = NULL
+  weights = NULL,
+  optimizer = NULL,
+  scale = 0,
+  discrete = FALSE,
+  nthreads = 1L
 )
 }
 \arguments{
@@ -47,6 +51,18 @@ to skip CV. Default \code{10}.}
 
 \item{weights}{Optional numeric vector of prior weights (one per
 observation). Passed to \code{\link[mgcv:gam]{mgcv::gam()}}.}
+
+\item{optimizer}{Character optimizer key: \code{"outer_newton"} (default),
+\code{"outer_bfgs"}, or \code{"efs"}.}
+
+\item{scale}{Numeric scale parameter. \code{0} (default) means estimate;
+a positive value fixes it.}
+
+\item{discrete}{Logical. If \code{TRUE}, uses discretized covariate
+method for faster fitting on large datasets. Default \code{FALSE}.}
+
+\item{nthreads}{Integer number of threads for parallel computation.
+Default \code{1}.}
 }
 \value{
 An \code{mgcvUI_result} object (a list) with components:

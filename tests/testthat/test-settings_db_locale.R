@@ -1,5 +1,7 @@
 # test-settings_db_locale.R — Tests for locale persistence in settings DB
 
+local_test_settings_db()
+
 test_that("settings_db_write_locale_ and read_locale_ round-trip", {
   skip_if_not_installed("DBI")
   skip_if_not_installed("RSQLite")
@@ -96,8 +98,10 @@ test_that("settings_db_connect_ creates table", {
 })
 
 test_that("settings_db_path_ returns a sqlite path", {
-  path <- mgcvUI:::settings_db_path_()
-  expect_true(grepl("settings\\.sqlite$", path))
+  withr::with_options(list(mgcvUI.settings_db_path = NULL), {
+    path <- mgcvUI:::settings_db_path_()
+    expect_true(grepl("settings\\.sqlite$", path))
+  })
 })
 
 test_that("jsonlite_encode_ handles NULL", {

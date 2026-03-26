@@ -48,7 +48,10 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
   # Find the smooth index for this variable
   smooth_idx <- NULL
   for (i in seq_along(model$smooth)) {
-    if (variable %in% model$smooth[[i]]$vn) {
+    sm <- model$smooth[[i]]
+    # Check $term (variable names) first, fall back to $vn for older mgcv
+    sm_vars <- if (!is.null(sm$term)) sm$term else sm$vn
+    if (variable %in% sm_vars && sm$dim == 1L && is.null(sm$by.level)) {
       smooth_idx <- i
       break
     }
@@ -57,7 +60,7 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
     stop("No smooth term found for variable: ", variable, call. = FALSE)
   }
 
-  sm_sel <- paste0("s(", variable, ")")
+  sm_sel <- model$smooth[[smooth_idx]]$label
   sm_data <- gratia::smooth_estimates(model, select = sm_sel)
 
   # Comma-formatted number labels
@@ -129,28 +132,36 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
 #' @return A plotly htmlwidget.
 #' @export
 plot_smooth_interactive <- function(
-    gam_result, variable, earth_knots = NULL) {
+    gam_result, variable, earth_knots = NULL, dark_mode = FALSE) {
   model <- gam_result$model
   resp <- gam_result$response
+  xform <- gam_result$response_transform %||% "none"
 
   # Check smooth exists
-  has_smooth <- FALSE
+  smooth_idx <- NULL
   for (i in seq_along(model$smooth)) {
-    if (variable %in% model$smooth[[i]]$vn) {
-      has_smooth <- TRUE
+    sm <- model$smooth[[i]]
+    sm_vars <- if (!is.null(sm$term)) sm$term else sm$vn
+    if (variable %in% sm_vars && sm$dim == 1L && is.null(sm$by.level)) {
+      smooth_idx <- i
       break
     }
   }
-  if (!has_smooth) {
+  if (is.null(smooth_idx)) {
     stop("No smooth term found for variable: ", variable, call. = FALSE)
   }
 
-  sm_sel <- paste0("s(", variable, ")")
+  sm_sel <- model$smooth[[smooth_idx]]$label
   sm_data <- gratia::smooth_estimates(model, select = sm_sel)
 
   x <- sm_data[[variable]]
   y <- sm_data$.estimate
-  se <- sm_data$.se
+  se_val <- sm_data$.se
+
+  # Diagnostic logging for unexpected X ranges
+  message("  plot_smooth_interactive '", variable, "': x range = [",
+          round(min(x), 2), ", ", round(max(x), 2), "], y range = [",
+          round(min(y), 4), ", ", round(max(y), 4), "]")
 
   # Compute slope (dy/dx)
   dx <- diff(x)
@@ -175,46 +186,86 @@ plot_smooth_interactive <- function(
     formatC(round(x), format = "f", big.mark = ",", digits = 0)
   }
 
-  # Confidence band
-  ymin <- y - 1.96 * se
-  ymax <- y + 1.96 * se
+  # Back-transform contributions to dollar values when log transform is used.
+  # The smooth contribution c is on log scale; the dollar effect relative to
+  # the mean predicted price is: mean_price * (10^c - 1) for log10.
+  if (xform == "log10") {
+    mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+    mean_price <- 10^mean_resp
+    y_display <- mean_price * (10^y - 1)
+    ymin_display <- mean_price * (10^(y - 1.96 * se_val) - 1)
+    ymax_display <- mean_price * (10^(y + 1.96 * se_val) - 1)
+    y_title <- paste0("$ Contribution to ", resp)
+    y_tickfmt <- "$,.0f"
+    y_ticksuffix <- ""
+  } else if (xform == "log") {
+    mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+    mean_price <- exp(mean_resp)
+    y_display <- mean_price * (exp(y) - 1)
+    ymin_display <- mean_price * (exp(y - 1.96 * se_val) - 1)
+    ymax_display <- mean_price * (exp(y + 1.96 * se_val) - 1)
+    y_title <- paste0("$ Contribution to ", resp)
+    y_tickfmt <- "$,.0f"
+    y_ticksuffix <- ""
+  } else {
+    y_display <- y
+    ymin_display <- y - 1.96 * se_val
+    ymax_display <- y + 1.96 * se_val
+    y_title <- paste0("Contribution to ", resp)
+    y_tickfmt <- ",.0f"
+    y_ticksuffix <- ""
+  }
 
   # Build hover text
   hover_text <- paste0(
     variable, ": ", round(x, 4), "\n",
-    "Contribution: $", comma_fmt(y), "\n",
-    "95% CI: [$", comma_fmt(ymin), " , $", comma_fmt(ymax), "]\n",
+    "Contribution: $", comma_fmt(y_display), "\n",
+    "95% CI: [$", comma_fmt(ymin_display), " , $",
+    comma_fmt(ymax_display), "]\n",
     "Rate: $", comma_fmt(slope_display), " ", unit_label
   )
 
   fig <- plotly::plot_ly() |>
     plotly::add_ribbons(
-      x = x, ymin = ymin, ymax = ymax,
+      x = x, ymin = ymin_display, ymax = ymax_display,
       fillcolor = "rgba(70,130,180,0.2)",
       line = list(color = "transparent"),
       showlegend = FALSE,
       hoverinfo = "skip"
     ) |>
     plotly::add_lines(
-      x = x, y = y,
+      x = x, y = y_display,
       line = list(color = "steelblue", width = 2.5),
       text = hover_text,
       hoverinfo = "text",
       showlegend = FALSE
     )
 
-  # Add partial residuals
-  pres <- gratia::partial_residuals(model)
-  smooth_label <- paste0("s(", variable, ")")
-  if (smooth_label %in% names(pres)) {
-    fig <- fig |>
-      plotly::add_markers(
-        x = model$model[[variable]],
-        y = pres[[smooth_label]],
-        marker = list(color = "grey", opacity = 0.3, size = 4),
-        showlegend = FALSE,
-        hoverinfo = "skip"
-      )
+  # Add partial residuals (only when no transform — back-transformed
+  # residuals produce extreme outliers that dominate the axis)
+  if (xform == "none") {
+    pres <- gratia::partial_residuals(model)
+    smooth_label <- paste0("s(", variable, ")")
+    if (smooth_label %in% names(pres)) {
+      scatter_x <- model$model[[variable]]
+      scatter_y <- pres[[smooth_label]]
+      message("  DEBUG scatter '", variable, "': x class=",
+              paste(class(scatter_x), collapse="/"),
+              " range=[", min(scatter_x, na.rm=TRUE), ",",
+              max(scatter_x, na.rm=TRUE), "]",
+              " y range=[", round(min(scatter_y, na.rm=TRUE)),
+              ",", round(max(scatter_y, na.rm=TRUE)), "]")
+      fig <- fig |>
+        plotly::add_markers(
+          x = scatter_x,
+          y = scatter_y,
+          marker = list(color = "grey", opacity = 0.3, size = 4),
+          showlegend = FALSE,
+          hoverinfo = "text",
+          text = paste0(variable, "=", round(scatter_x, 1),
+                        " resid=", round(scatter_y, 0))
+        )
+    }
   }
 
   # Add earth knot lines
@@ -223,7 +274,7 @@ plot_smooth_interactive <- function(
       fig <- fig |>
         plotly::add_segments(
           x = kv, xend = kv,
-          y = min(ymin), yend = max(ymax),
+          y = min(ymin_display), yend = max(ymax_display),
           line = list(color = "red", dash = "dash", width = 1),
           opacity = 0.6, showlegend = FALSE,
           hoverinfo = "skip"
@@ -231,16 +282,26 @@ plot_smooth_interactive <- function(
     }
   }
 
+  font_color <- if (dark_mode) "#d8dee9" else "#2e3440"
+  grid_color <- if (dark_mode) "rgba(67,76,94,0.6)" else "rgba(0,0,0,0.1)"
+
   fig |>
     plotly::layout(
-      title = list(text = variable, font = list(size = 16)),
-      xaxis = list(title = variable),
+      title = list(text = variable,
+                   font = list(size = 16, color = font_color)),
+      xaxis = list(title = variable,
+                   color = font_color, gridcolor = grid_color),
       yaxis = list(
-        title = paste0("Contribution to ", resp),
-        tickformat = ",.0f"
+        title = y_title,
+        tickformat = y_tickfmt,
+        ticksuffix = y_ticksuffix,
+        color = font_color, gridcolor = grid_color
       ),
+      font = list(color = font_color),
       hovermode = "x unified",
-      margin = list(t = 50, b = 50)
+      margin = list(t = 50, b = 50),
+      plot_bgcolor = "rgba(0,0,0,0)",
+      paper_bgcolor = "rgba(0,0,0,0)"
     )
 }
 
@@ -275,9 +336,15 @@ plot_diagnostics <- function(gam_result) {
 #' plot_actual_vs_predicted(res)
 plot_actual_vs_predicted <- function(gam_result) {
   model <- gam_result$model
+  xform <- gam_result$response_transform %||% "none"
+
+  actual_raw <- model$model[[gam_result$response]]
+  predicted_raw <- fitted(model)
+
+  # Back-transform to original scale for display
   df <- data.frame(
-    actual    = model$model[[gam_result$response]],
-    predicted = fitted(model)
+    actual    = back_transform_(actual_raw, xform),
+    predicted = back_transform_(predicted_raw, xform)
   )
 
   ggplot2::ggplot(df, ggplot2::aes(x = .data$predicted,
@@ -286,6 +353,6 @@ plot_actual_vs_predicted <- function(gam_result) {
     ggplot2::geom_abline(intercept = 0, slope = 1,
                          linetype = "dashed", color = "grey40") +
     ggplot2::labs(x = "Predicted", y = "Actual",
-                  title = "Actual vs Predicted") +
+                  title = "Actual vs Predicted (original scale)") +
     ggplot2::theme_minimal(base_size = 12)
 }

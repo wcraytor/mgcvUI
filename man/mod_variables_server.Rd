@@ -8,7 +8,8 @@ mod_variables_server(
   id,
   data_r,
   filename_r = reactive(NULL),
-  earth_knots_r = reactive(NULL)
+  earth_knots_r = reactive(NULL),
+  purpose_r = reactive("general")
 )
 }
 \arguments{

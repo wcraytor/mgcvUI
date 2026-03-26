@@ -13,9 +13,6 @@ mod_model_fit_ui <- function(id) {
     actionButton(ns("fit"), "Fit Model",
                  class = "btn-success btn-lg",
                  style = "width: 100%;"),
-    tags$span(id = ns("fit_check"),
-              style = "display:none; color: #a3be8c; font-size: 1.4em; margin-left: 8px;",
-              HTML("&#x2705;")),
     textOutput(ns("fit_status"))
   )
 }
@@ -108,6 +105,16 @@ mod_model_results_ui <- function(id) {
         DT::DTOutput(ns("sign_table")),
         textOutput(ns("sign_note"))
       ),
+      tabPanel("Concurvity",
+        br(),
+        tags$p("Values above ~0.8 in the 'worst' row indicate near-concurvity (smooth analog of multicollinearity). Consider dropping or collapsing correlated terms.",
+               style = "font-size: 0.85em; color: var(--bs-secondary-color); margin-bottom: 8px;"),
+        h5("Overall Concurvity"),
+        DT::DTOutput(ns("concurvity_full")),
+        hr(),
+        h5("Pairwise Concurvity (worst case)"),
+        DT::DTOutput(ns("concurvity_pairwise"))
+      ),
       tabPanel("Basis Check",
         br(),
         verbatimTextOutput(ns("gam_check"))
@@ -126,17 +133,19 @@ mod_model_results_ui <- function(id) {
 #' @return A reactive containing the `mgcvUI_result`, or `NULL`.
 #' @export
 mod_model_server <- function(id, data_r, var_config_r,
-                             earth_knots_r = reactive(NULL)) {
+                             earth_knots_r = reactive(NULL),
+                             dark_mode_r = reactive(FALSE)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     result <- reactiveVal(NULL)
+    rv <- reactiveValues(bg_proc = NULL, fitting = FALSE, xform = "none")
 
     output$has_model <- reactive(!is.null(result()))
     outputOptions(output, "has_model", suspendWhenHidden = FALSE)
 
     observeEvent(input$fit, {
-      df <- data_r()
-      cfg <- var_config_r()
+      df <- isolate(data_r())
+      cfg <- isolate(var_config_r())
       req(df, cfg$response, cfg$smooth_specs)
 
       if (length(cfg$smooth_specs) == 0L) {
@@ -161,7 +170,6 @@ mod_model_server <- function(id, data_r, var_config_r,
       }
 
       if (pct < 50) {
-        # Identify which variables cause the most row loss
         na_counts <- vapply(all_vars, function(v) sum(is.na(df[[v]])),
                             integer(1))
         na_counts <- sort(na_counts[na_counts > 0], decreasing = TRUE)
@@ -175,63 +183,148 @@ mod_model_server <- function(id, data_r, var_config_r,
           type = "warning", duration = 20)
       }
 
-      tryCatch({
-        withProgress(message = "Fitting GAM...", {
-          # Log specs to console for debugging
-          message("mgcvUI: fitting with ", length(cfg$smooth_specs),
-                  " terms, response='", cfg$response, "'",
-                  ", family='", cfg$family, "'",
-                  ", method='", cfg$method, "'")
-          for (si in seq_along(cfg$smooth_specs)) {
-            sp <- cfg$smooth_specs[[si]]
-            message("  spec[", si, "]: vars=",
-                    paste(sp$vars, collapse = ","),
-                    " type=", sp$type,
-                    " bs=", sp$bs %||% "NULL",
-                    " k=", sp$k %||% "NULL")
-          }
+      session$sendCustomMessage("fitting_start", list())
 
-          # Extract weights vector if specified
-          wt <- NULL
-          if (!is.null(cfg$weights_col) && cfg$weights_col %in% names(df)) {
-            wt <- df[[cfg$weights_col]]
-          }
+      resp_col <- cfg$response
+      xform <- cfg$response_transform %||% "none"
+      fit_df <- df
+      fit_specs <- cfg$smooth_specs
+      fit_family <- cfg$family
+      fit_method <- cfg$method
+      fit_select <- cfg$select
+      fit_gamma <- cfg$gamma
+      fit_cv <- if (isTRUE(cfg$cv)) 10L else 0L
+      fit_earth <- isolate(earth_knots_r())
+      fit_optimizer <- cfg$optimizer
+      fit_scale <- cfg$scale %||% 0
+      fit_discrete <- cfg$discrete %||% FALSE
+      fit_nthreads <- cfg$nthreads %||% 1L
 
-          res <- fit_gam(
-            data         = df,
-            response     = cfg$response,
-            smooth_specs = cfg$smooth_specs,
-            family       = cfg$family,
-            method       = cfg$method,
-            earth_knots  = earth_knots_r(),
-            select       = cfg$select,
-            gamma        = cfg$gamma,
-            cv_folds     = if (isTRUE(cfg$cv)) 10L else 0L,
-            weights      = wt
-          )
-        })
-        result(res)
+      wt <- NULL
+      if (!is.null(cfg$weights_col) && cfg$weights_col %in% names(fit_df)) {
+        wt <- fit_df[[cfg$weights_col]]
+      }
 
-        # Show checkmark
-        shinyjs_id <- ns("fit_check")
-        session$sendCustomMessage("mgcv_show_check",
-                                  list(id = shinyjs_id))
+      # Apply response transform
+      if (xform == "log") {
+        vals <- fit_df[[resp_col]]
+        if (any(vals <= 0, na.rm = TRUE)) {
+          fit_df <- fit_df[vals > 0 | is.na(vals), , drop = FALSE]
+        }
+        fit_df[[resp_col]] <- log(fit_df[[resp_col]])
+      } else if (xform == "log10") {
+        vals <- fit_df[[resp_col]]
+        if (any(vals <= 0, na.rm = TRUE)) {
+          fit_df <- fit_df[vals > 0 | is.na(vals), , drop = FALSE]
+        }
+        fit_df[[resp_col]] <- log10(fit_df[[resp_col]])
+      }
 
-        smooth_vars <- vapply(res$smooth_specs, function(s) {
-          if (s$type != "linear") s$vars[1] else NA_character_
-        }, character(1))
-        smooth_vars <- smooth_vars[!is.na(smooth_vars)]
+      message("mgcvUI: fitting with ", length(fit_specs),
+              " terms, response='", resp_col, "'",
+              ", transform='", xform, "'")
 
-        showNotification(
-          paste("Model fitted in", round(res$elapsed, 2), "seconds"),
-          type = "message"
+      rv$xform <- xform
+
+      # Build args list for background process
+      fit_args <- list(
+        data = fit_df, response = resp_col,
+        smooth_specs = fit_specs, family = fit_family,
+        method = fit_method, earth_knots = fit_earth,
+        select = fit_select, gamma = fit_gamma,
+        cv_folds = fit_cv, weights = wt,
+        optimizer = fit_optimizer, scale = fit_scale,
+        discrete = fit_discrete, nthreads = fit_nthreads
+      )
+
+      if (requireNamespace("callr", quietly = TRUE)) {
+        # Async path: spawn background R process
+        rv$bg_proc <- callr::r_bg(
+          function(args) {
+            res <- do.call(mgcvUI::fit_gam, args)
+            cat(sprintf("Completed in %.1f seconds\n", res$elapsed))
+            res
+          },
+          args = list(args = fit_args),
+          stdout = "|", stderr = "|",
+          supervise = TRUE,
+          wd = tempdir()
         )
-      }, error = function(e) {
-        message("mgcvUI fitting error: ", e$message)
-        message("  traceback: ", paste(deparse(e$call), collapse = " "))
-        showNotification(paste("Fitting error:", e$message),
-                         type = "error", duration = 10)
-      })
+        rv$fitting <- TRUE
+      } else {
+        # Sync fallback
+        session$onFlushed(function() {
+          tryCatch({
+            res <- do.call(fit_gam, fit_args)
+            res$response_transform <- rv$xform
+            result(res)
+            session$sendCustomMessage("mgcv_show_check",
+                                      list(id = ns("fit")))
+            session$sendCustomMessage("fitting_done",
+              list(text = paste0("Done in ", round(res$elapsed, 1), "s")))
+          }, error = function(e) {
+            session$sendCustomMessage("fitting_done",
+              list(text = paste0("Error: ", e$message)))
+          })
+        }, once = TRUE)
+      }
+    })
+
+    # --- Abort handler ---
+    observeEvent(input$abort_fit, {
+      proc <- rv$bg_proc
+      if (!is.null(proc) && proc$is_alive()) {
+        proc$kill()
+        message("mgcvUI: model fit aborted by user")
+      }
+      rv$bg_proc <- NULL
+      rv$fitting <- FALSE
+      session$sendCustomMessage("fitting_done", list(text = "Aborted"))
+    })
+
+    # --- Polling observer for background process ---
+    observe({
+      req(rv$fitting)
+      invalidateLater(300)
+      proc <- rv$bg_proc
+      if (is.null(proc)) return()
+
+      # Read stdout lines and send to trace log
+      out_lines <- tryCatch(proc$read_output_lines(), error = function(e) character(0))
+      for (ln in out_lines) {
+        if (nzchar(ln)) {
+          session$sendCustomMessage("trace_line", list(text = ln))
+          message("  ", ln)
+        }
+      }
+
+      # Read stderr lines too
+      err_lines <- tryCatch(proc$read_error_lines(), error = function(e) character(0))
+      for (ln in err_lines) {
+        if (nzchar(ln)) {
+          session$sendCustomMessage("trace_line", list(text = ln))
+          message("  ", ln)
+        }
+      }
+
+      # Check if process finished
+      if (!proc$is_alive()) {
+        rv$fitting <- FALSE
+        tryCatch({
+          res <- proc$get_result()
+          res$response_transform <- rv$xform
+          result(res)
+          session$sendCustomMessage("mgcv_show_check",
+                                    list(id = ns("fit")))
+          session$sendCustomMessage("fitting_done",
+            list(text = paste0("Done in ", round(res$elapsed, 1), "s")))
+        }, error = function(e) {
+          message("mgcvUI fitting error: ", e$message)
+          session$sendCustomMessage("fitting_done",
+            list(text = paste0("Error: ", e$message)))
+        })
+        rv$bg_proc <- NULL
+      }
     })
 
     output$fit_status <- renderText({
@@ -244,11 +337,13 @@ mod_model_server <- function(id, data_r, var_config_r,
         } else {
           ""
         }
+        xform <- res$response_transform %||% "none"
+        scale_note <- if (xform != "none") paste0(" (", xform, " scale)") else ""
         paste0("R\u00b2=", round(summ$r_squared, 4),
                cv_part,
                "  Dev=", round(summ$dev_explained * 100, 1), "%",
                "  AIC=", round(summ$aic, 1),
-               "  n=", summ$n_obs)
+               "  n=", summ$n_obs, scale_note)
       }, error = function(e) {
         message("mgcvUI format_gam_summary error: ", e$message)
         paste("Summary error:", e$message)
@@ -268,9 +363,14 @@ mod_model_server <- function(id, data_r, var_config_r,
       # No underscore escaping needed inside \text{} in MathJax
       tex_esc <- function(x) x
 
-      # LHS with link function
+      # LHS with response transform and link function
       resp_tex <- tex_esc(response)
-      if (link_name == "identity") {
+      xform <- res$response_transform %||% "none"
+      if (xform == "log10") {
+        lhs <- paste0("\\log_{10}\\bigl(\\widehat{\\text{", resp_tex, "}}\\bigr)")
+      } else if (xform == "log") {
+        lhs <- paste0("\\ln\\bigl(\\widehat{\\text{", resp_tex, "}}\\bigr)")
+      } else if (link_name == "identity") {
         lhs <- paste0("\\widehat{\\text{", resp_tex, "}}")
       } else if (link_name == "log") {
         lhs <- paste0("\\log\\bigl(\\widehat{\\text{", resp_tex, "}}\\bigr)")
@@ -509,10 +609,11 @@ mod_model_server <- function(id, data_r, var_config_r,
     smooth_vars_r <- reactive({
       res <- result()
       req(res)
+      # Only univariate s() terms -- tensor terms need different visualization
       sv <- vapply(res$smooth_specs, function(s) {
-        if (s$type != "linear") s$vars[1] else NA_character_
+        if (s$type == "s" && length(s$vars) == 1L) s$vars[1] else NA_character_
       }, character(1))
-      sv[!is.na(sv)]
+      unique(sv[!is.na(sv)])
     })
 
     output$smooth_plots_container <- renderUI({
@@ -520,7 +621,12 @@ mod_model_server <- function(id, data_r, var_config_r,
       if (length(sv) == 0L) return(tags$p("No smooth terms."))
       plot_outputs <- lapply(sv, function(var) {
         id <- ns(paste0("plotly_", var))
-        plotly::plotlyOutput(id, height = "400px")
+        tags$div(
+          style = paste("border: 2px solid var(--bs-border-color);",
+                        "border-radius: 6px; padding: 8px;",
+                        "margin-bottom: 24px;"),
+          plotly::plotlyOutput(id, height = "400px")
+        )
       })
       do.call(tagList, plot_outputs)
     })
@@ -529,19 +635,26 @@ mod_model_server <- function(id, data_r, var_config_r,
       res <- result()
       req(res)
       sv <- smooth_vars_r()
+      ek <- isolate(earth_knots_r())
 
       lapply(sv, function(var) {
         local({
           v <- var
+          my_res <- res
+          my_ek <- ek
           output[[paste0("plotly_", v)]] <- plotly::renderPlotly({
+            is_dark <- dark_mode_r()
             tryCatch(
-              plot_smooth_interactive(result(), v,
-                                      earth_knots = earth_knots_r()),
+              plot_smooth_interactive(my_res, v, earth_knots = my_ek,
+                                     dark_mode = is_dark),
               error = function(e) {
-                plotly::plot_ly() |>
-                  plotly::add_annotations(
-                    text = paste("Error:", e$message),
-                    x = 0.5, y = 0.5, showarrow = FALSE
+                message("mgcvUI: plot error for '", v, "': ", e$message)
+                plotly::plot_ly(type = "scatter", mode = "lines",
+                                x = 0, y = 0) |>
+                  plotly::layout(
+                    title = paste("Error:", e$message),
+                    xaxis = list(title = v),
+                    yaxis = list(title = "")
                   )
               }
             )
@@ -591,6 +704,63 @@ mod_model_server <- function(id, data_r, var_config_r,
     output$gam_check <- renderPrint({
       req(result())
       mgcv::gam.check(result()$model)
+    })
+
+    # --- Concurvity tab ---
+    output$concurvity_full <- DT::renderDT({
+      res <- result()
+      req(res)
+      model <- res$model
+      if (length(model$smooth) == 0L) return(NULL)
+      conc <- tryCatch(
+        mgcv::concurvity(model, full = TRUE),
+        error = function(e) NULL
+      )
+      if (is.null(conc)) return(NULL)
+      conc_df <- as.data.frame(round(conc, 4))
+      conc_df$Measure <- rownames(conc_df)
+      conc_df <- conc_df[, c("Measure", setdiff(names(conc_df), "Measure")),
+                         drop = FALSE]
+      DT::datatable(conc_df, rownames = FALSE,
+                    options = list(dom = "t", scrollX = TRUE)) |>
+        DT::formatStyle(
+          columns = setdiff(names(conc_df), "Measure"),
+          backgroundColor = DT::styleInterval(
+            c(0.5, 0.8), c("white", "#fff3cd", "#f8d7da")
+          )
+        )
+    })
+
+    output$concurvity_pairwise <- DT::renderDT({
+      res <- result()
+      req(res)
+      model <- res$model
+      if (length(model$smooth) < 2L) {
+        return(DT::datatable(
+          data.frame(Note = "Need 2+ smooth terms for pairwise concurvity."),
+          rownames = FALSE, options = list(dom = "t")
+        ))
+      }
+      conc <- tryCatch(
+        mgcv::concurvity(model, full = FALSE),
+        error = function(e) NULL
+      )
+      if (is.null(conc)) return(NULL)
+      # concurvity(full=FALSE) returns a list of 3 matrices: worst, observed, estimate
+      worst <- conc$worst
+      if (is.null(worst)) return(NULL)
+      worst_df <- as.data.frame(round(worst, 4))
+      worst_df$Term <- rownames(worst_df)
+      worst_df <- worst_df[, c("Term", setdiff(names(worst_df), "Term")),
+                           drop = FALSE]
+      DT::datatable(worst_df, rownames = FALSE,
+                    options = list(dom = "t", scrollX = TRUE)) |>
+        DT::formatStyle(
+          columns = setdiff(names(worst_df), "Term"),
+          backgroundColor = DT::styleInterval(
+            c(0.5, 0.8), c("white", "#fff3cd", "#f8d7da")
+          )
+        )
     })
 
     # --- Variable Importance tab ---
@@ -810,19 +980,30 @@ mod_model_server <- function(id, data_r, var_config_r,
       res <- result()
       req(res)
 
-      cat(sprintf("== Timing: %.2f seconds ==\n\n", res$elapsed))
+      tryCatch({
+        cat(sprintf("== Timing: %.2f seconds ==\n\n", res$elapsed))
 
-      cat("== Formula ==\n\n")
-      print(res$formula)
+        cat("== Formula ==\n\n")
+        print(res$formula)
 
-      cat("\n\n== Model ==\n\n")
-      print(res$model)
+        cat("\n\n== Model ==\n\n")
+        print(res$model)
 
-      cat("\n\n== Summary ==\n\n")
-      print(summary(res$model))
+        cat("\n\n== Summary ==\n\n")
+        print(summary(res$model))
 
-      cat("\n\n== Family ==\n\n")
-      print(res$model$family)
+        cat("\n\n== Family ==\n\n")
+        print(res$model$family)
+
+        cat("\n\n== Concurvity (overall) ==\n\n")
+        if (length(res$model$smooth) > 0L) {
+          print(mgcv::concurvity(res$model, full = TRUE))
+        } else {
+          cat("No smooth terms.\n")
+        }
+      }, error = function(e) {
+        cat("Error rendering output: ", e$message, "\n")
+      })
     })
 
     output$data_preview <- DT::renderDT({

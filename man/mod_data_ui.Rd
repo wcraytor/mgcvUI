@@ -13,8 +13,9 @@ mod_data_ui(id)
 A \link[shiny:reexports]{shiny::tagList}.
 }
 \description{
-Compact file upload widget for embedding in a sidebar, with a per-file
+Compact file browser widget for embedding in a sidebar, with a per-file
 locale country selector for CSV separator and decimal conventions.
+Reads files directly from disk via shinyFiles (no upload size limits).
 }
 \examples{
 if (interactive()) {

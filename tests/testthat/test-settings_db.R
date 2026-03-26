@@ -1,3 +1,5 @@
+local_test_settings_db()
+
 test_that("settings_db round-trips data", {
   skip_if_not_installed("DBI")
   skip_if_not_installed("RSQLite")

@@ -1,0 +1,263 @@
+---
+title: "mgcvUI User Guide"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{mgcvUI User Guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+mgcvUI is an interactive Shiny application for building Generalized
+Additive Models (GAMs) via the `mgcv` package. It is designed for real
+estate appraisers who need transparent, defensible nonlinear models, but
+is useful for anyone doing regression modeling with smooth terms.
+
+mgcvUI can run **standalone** (import a CSV/Excel file, configure smooths,
+fit a GAM, generate a report) or as part of a **two-stage pipeline** with
+earthUI, where MARS models discover breakpoints and mgcvUI refines them
+into smooth, statistically rigorous curves.
+
+## Application Layout
+
+The sidebar contains numbered workflow steps:
+
+1. **Import Data** -- Browse for a CSV or Excel file (read directly from
+   disk, no upload size limits).
+2. **Import from earthUI** (optional) -- Browse for an earthUI result
+   `.rds` file to seed knot positions from a MARS model.
+3. **Variable Configuration** -- Select the response variable, configure
+   predictors (include/exclude, type, special roles, factor/linear flags).
+4. **Predictor Settings** -- The variable table showing all columns with
+   checkboxes for Inc, Factor, Linear, and dropdowns for Type and Special.
+5. **Mgcv Call Parameters** -- Family, method, gamma, select, basis, k,
+   and advanced parameters (optimizer, scale, discrete, threads).
+6. **Fit Mgcv GAM Model** -- Click to fit.
+7. **Download** -- Export estimated prices, residuals, and reports.
+
+The main panel shows results in tabs: Data, Equation, Summary, Variable
+Importance, Contribution (smooth plots), Correlation, Diagnostics,
+RCA Adjustments, Anova, Mgcv Output, Sign Check, Concurvity, and Basis Check.
+
+## Parameter Presets
+
+mgcvUI provides two parameter presets, selectable at the top of the
+Mgcv Call Parameters section:
+
+### Standalone (Discovery)
+
+Use when fitting a GAM without earth knot input. mgcv must discover the
+nonlinearities itself.
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| Default basis | `tp` (thin plate) | Adaptive; finds shape without pre-specified knots |
+| Default k | 0 (auto = 10) | Needs flexibility to discover nonlinearity |
+| Gamma | 1.2 | Mild parsimony bias |
+| Select | TRUE | Lets mgcv drop unhelpful terms |
+| Method | REML | Best for correlated predictors, small n |
+
+### Earth Pipeline (Refinement)
+
+Auto-selected when an earthUI result is imported. Earth already found the
+breakpoints; mgcv's job is regularized estimation, not discovery.
+
+| Setting | Value | Reason |
+|---------|-------|--------|
+| Default basis | `cr` (cubic regression) | Faster, interpretable, uses earth knot positions directly |
+| Default k | 5 | Earth already found breakpoints; low k prevents refitting |
+| Gamma | 1.4 | Stronger parsimony bias (Wood & Fasiolo recommendation) |
+| Select | TRUE | Second-stage shrinkage guard |
+| Method | REML | Best for correlated predictors, small n |
+
+All values remain individually editable after a preset is applied.
+
+## Mgcv Call Parameters Reference
+
+### Core Parameters
+
+| Parameter | UI Control | Default | Description |
+|-----------|-----------|---------|-------------|
+| **Family** | Dropdown | gaussian | Distribution family. Use `gaussian` for continuous sale prices, `Gamma` for strictly positive values |
+| **Method** | Dropdown | REML | Smoothing parameter estimation method. REML is strongly preferred over GCV.Cp for correlated predictors and modest sample sizes |
+| **Gamma** | Numeric | 1.2 / 1.4 | Inflates the effective degrees of freedom penalty. Values > 1 bias toward smoother fits. 1.4 is the Wood recommendation for parsimony |
+| **CV** | Checkbox | TRUE | 10-fold cross-validated R-squared |
+| **Select** | Checkbox | TRUE | Adds a shrinkage penalty so smooth terms can be penalized to zero. This is the `select` argument to `mgcv::gam()` |
+| **Default basis** | Dropdown | tp / cr | Basis type for smooth terms. `tp` = thin plate regression spline (adaptive), `cr` = cubic regression spline (fast, interpretable) |
+| **Default k** | Numeric | 0 / 5 | Basis dimension (max wiggliness). 0 = auto (mgcv default of 10). Lower values produce smoother curves |
+| **Tensor type** | Dropdown | ti | `ti` = tensor interaction (recommended), `te` = tensor product |
+
+### Advanced Parameters
+
+These are under the "Advanced Parameters" collapsible and rarely need changing:
+
+| Parameter | Default | When to Change |
+|-----------|---------|----------------|
+| **Optimizer** | outer/newton | Switch to `outer/bfgs` if newton convergence fails. `efs` for very large models |
+| **Scale** | 0 (estimate) | Fix to a known value for quasi-families or known-variance situations |
+| **Discrete** | FALSE | Enable for large datasets (>10k rows) for faster fitting via covariate discretization |
+| **Threads** | 1 | Increase for parallel computation on multi-core machines (e.g., 4-8 on Apple Silicon) |
+
+## Predictor Settings
+
+The variable table shows one row per column in your data (excluding the
+response). Each row has:
+
+| Column | Description |
+|--------|-------------|
+| **Variable** | Column name |
+| **Type** | Detected data type (numeric, integer, character, factor, etc.) |
+| **Inc** | Include in the model |
+| **Special** | Column role: `no` (default), `actual_age`, `area`, `concessions`, `contract_date`, `display_only`, `dom`, `effective_age`, `latitude`, `listing_date`, `living_area`, `longitude`, `lot_size`, `sale_age`, `site_dimensions`, `weights` |
+| **Factor** | Treat as a factor (categorical) variable |
+| **Linear** | Force linear (no smooth) |
+| **NAs** | Count and percentage of missing values |
+
+Variables with > 50% NAs are automatically excluded. Variables with only 2
+unique values are automatically converted to factors.
+
+## Interactions
+
+### Tensor Interactions (continuous x continuous)
+
+The Allowed Interactions matrix shows all included smooth (non-linear,
+non-factor) predictors. Check a cell to add a tensor interaction term
+(`ti(var1, var2)` or `te(var1, var2)`) to the model.
+
+When earth knots are imported, interactions detected by earth or allowed
+by the earthUI allowed matrix are pre-checked.
+
+### Factor-by-Smooth Interactions (factor x continuous)
+
+Below the tensor matrix, the Factor-by-Smooth section shows a grid of
+included factor variables (columns) vs. included smooth variables (rows).
+
+Checking a cell generates `s(smooth_var, by=factor_var)` -- this fits a
+**separate smooth curve for each level** of the factor. For example,
+`s(lot_size, by=area_id)` lets the lot size effect vary by neighborhood.
+
+The factor variable's main effect is already in the model as a linear
+term (needed for level-specific intercepts).
+
+### Block from Main Effect (Interaction Only)
+
+**Right-click** a variable name in the Allowed Interactions matrix to
+block it from entering the model as a main smooth term. A bold **" 1"**
+indicator appears after the variable name.
+
+When blocked:
+
+- The variable gets **no** main `s()` smooth term
+- The variable **can still** appear in tensor interactions
+  (`ti(var1, var2)`) and factor-by-smooth interactions
+  (`s(var, by=factor)`)
+- Right-click again to unblock
+- State persists via localStorage
+
+**Use case:** When modeling time adjustments that should scale with
+property size, block `sale_age` from the main effect and allow it only
+in a tensor interaction with `living_area`. This generates
+`ti(sale_age, living_area)` without a standalone `s(sale_age)` -- the
+time appreciation rate varies smoothly with house size rather than being
+a flat $/day rate.
+
+This feature works identically across earthUI, glmnetUI, and mgcvUI.
+In earthUI, it blocks degree-1 hinge functions. In glmnetUI, it removes
+the variable from main formula terms. In mgcvUI, it removes the main
+smooth term. In all three, the variable remains available for
+interactions.
+
+## What earthUI Imports Provide
+
+When you import an earthUI result `.rds` file, mgcvUI extracts and uses
+the following components:
+
+| Component | Source in Earth Model | How mgcvUI Uses It |
+|-----------|----------------------|---------------------|
+| **Knot positions** | `model$cuts` + `model$selected.terms` | Placed as `cr` basis knots via `gam(..., knots=)`. Earth found the breakpoints; mgcv smooths through them |
+| **Hinge directions** (signs) | `model$dirs` (+1 = forward, -1 = reverse) | Sign consistency check compares earth direction with GAM smooth derivative to flag contradictions |
+| **Interactions** | Rows in `dirs` where 2+ predictors are nonzero | Pre-checks the Allowed Interactions matrix |
+| **Target variable** | `earth_result$target` | Auto-sets the response dropdown |
+| **Predictors** | `earth_result$predictors` | Auto-checks "Inc" for each predictor |
+| **Categoricals** | `earth_result$categoricals` | Auto-checks "Factor" for categorical variables |
+| **Linear predictors** | `earth_result$linpreds` | Auto-checks "Linear" for variables earth forced linear |
+| **Interaction degree** | `earth_result$degree` | Shows info message if degree=1 (no interactions) |
+| **Allowed matrix** | `earth_result$allowed_matrix` | Seeds the interaction matrix checkboxes |
+| **R-squared, GCV, n_terms** | `model$rsq`, `model$gcv`, `length(selected.terms)` | Displayed in the earth import summary panel |
+| **Data** | `earth_result$data` | Available for reference but not directly used (user imports their own data file) |
+
+The key insight: **earth's job is discovery, mgcv's job is regularized
+estimation**. The knots are the bridge -- they tell mgcv *where* the
+nonlinearities are so it doesn't have to find them itself.
+
+## Concurvity
+
+Concurvity is the smooth analog of multicollinearity. Earth's hinge
+functions on correlated predictors (e.g., living area and room count) can
+produce near-concurve smooth terms in mgcv.
+
+The **Concurvity** tab (in the results panel) shows:
+
+- **Overall Concurvity** -- `mgcv::concurvity(model, full=TRUE)` with
+  three measures (worst, observed, estimate) for each smooth term.
+- **Pairwise Concurvity** -- `mgcv::concurvity(model, full=FALSE)` showing
+  the worst-case concurvity between each pair of smooth terms.
+
+Cells are color-coded:
+
+| Color | Value Range | Interpretation |
+|-------|-------------|----------------|
+| White | < 0.5 | No concern |
+| Yellow | 0.5 -- 0.8 | Moderate; monitor |
+| Red | > 0.8 | High; consider dropping or collapsing one of the terms |
+
+Values above ~0.8 in the "worst" row warrant collapsing or dropping one
+of the terms before treating the model as defensible.
+
+## Results Tabs Reference
+
+| Tab | Contents |
+|-----|----------|
+| **Data** | Preview of the imported data |
+| **Equation** | LaTeX-rendered model equation with smooth function definitions |
+| **Summary** | R-squared, CV R-squared, deviance explained, AIC, smooth and parametric term tables |
+| **Variable Importance** | Bar chart and table ranked by F-statistic (smooth) or |t|-statistic (parametric) |
+| **Contribution** | Interactive smooth plots (plotly) for each predictor showing partial effects with confidence bands |
+| **Correlation** | Heatmap of pairwise correlations among numeric predictors |
+| **Diagnostics** | Residual plots, Q-Q plot, and actual vs. predicted scatter |
+| **RCA Adjustments** | Residual, net, and gross percentage adjustment plots |
+| **Anova** | Combined parametric and smooth term ANOVA table |
+| **Mgcv Output** | Raw `print(model)`, `summary(model)`, and overall concurvity |
+| **Sign Check** | Earth vs. GAM direction consistency (only with earth import) |
+| **Concurvity** | Overall and pairwise concurvity tables with color coding |
+| **Basis Check** | `mgcv::gam.check()` output verifying basis dimension adequacy |
+
+## Memory and Persistence
+
+mgcvUI remembers your settings across sessions:
+
+- **Locale** -- Country, paper size, and import locale are saved
+  automatically to a SQLite database when changed.
+- **Per-file settings** -- Response variable, predictor configuration,
+  family, method, select, gamma are saved per data filename.
+- **Last-used files** -- The data file and earth file paths are remembered;
+  files are auto-loaded on next launch if they still exist at their
+  original locations.
+
+Settings are stored in `tools::R_user_dir("mgcvUI", "data")/settings.sqlite`.
+
+## Memory Checks
+
+Before loading any file, mgcvUI checks available system memory against the
+file size (with an expansion multiplier: 3x for CSV, 5x for RDS). If
+insufficient memory is detected, a clear error message is shown with the
+file size, estimated memory needed, and available memory. This works on
+macOS, Linux, and Windows.

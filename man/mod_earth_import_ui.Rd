@@ -13,7 +13,8 @@ mod_earth_import_ui(id)
 A \link[shiny:reexports]{shiny::tagList}.
 }
 \description{
-Compact widget for importing an earthUI result (.rds file).
+Compact widget for importing an earthUI result (.rds file) via
+file path. Reads directly from disk (no Shiny upload size limits).
 }
 \examples{
 if (interactive()) {

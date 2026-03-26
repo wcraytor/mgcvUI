@@ -48,6 +48,7 @@ import_earth <- function(path) {
     if (!file.exists(path)) {
       stop("File not found: ", path, call. = FALSE)
     }
+    check_memory_for_file_(path, multiplier = 5)
     obj <- readRDS(path)
   } else {
     obj <- path

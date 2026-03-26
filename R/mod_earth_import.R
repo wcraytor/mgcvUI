@@ -1,6 +1,7 @@
 #' Earth Import Module -- UI
 #'
-#' Compact widget for importing an earthUI result (.rds file).
+#' Compact widget for importing an earthUI result (.rds file) via
+#' file path. Reads directly from disk (no Shiny upload size limits).
 #'
 #' @param id Shiny module namespace ID.
 #' @return A [shiny::tagList].
@@ -16,14 +17,34 @@
 mod_earth_import_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    fileInput(ns("earth_file"), "earthUI Result (.rds)",
-              accept = ".rds"),
+    tags$label("earthUI Result (.rds)", class = "control-label"),
+    tags$div(
+      class = "input-group",
+      style = "margin-bottom:8px;",
+      shinyFiles::shinyFilesButton(
+        ns("earth_browse"), "Browse...",
+        title = "Select earthUI Result (.rds)",
+        multiple = FALSE,
+        class = "btn-secondary"
+      ),
+      tags$span(
+        class = "form-control",
+        style = "font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+        textOutput(ns("loaded_path"), inline = TRUE)
+      )
+    ),
     conditionalPanel(
       condition = sprintf("output['%s']", ns("has_earth")),
       verbatimTextOutput(ns("earth_summary")),
-      downloadButton(ns("download_knots"), "Export Knots CSV",
-                     class = "btn-sm btn-outline-secondary",
-                     style = "width: 100%;")
+      tags$div(
+        style = "display:flex; gap:6px; margin-top:4px;",
+        downloadButton(ns("download_knots"), "Export Knots CSV",
+                       class = "btn-sm btn-outline-secondary",
+                       style = "flex:1;"),
+        actionButton(ns("clear_earth"), "Clear",
+                     class = "btn-sm btn-outline-danger",
+                     style = "flex:0 0 auto;")
+      )
     )
   )
 }
@@ -38,46 +59,83 @@ mod_earth_import_ui <- function(id) {
 mod_earth_import_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     earth_knots <- reactiveVal(NULL)
+    loaded_file <- reactiveVal(NULL)
 
-    # Cache directory for persisting uploaded files across sessions
+    # Cache directory for persisting last-used path
     cache_dir <- file.path(tools::R_user_dir("mgcvUI", "data"), "cache")
     if (!dir.exists(cache_dir)) dir.create(cache_dir, recursive = TRUE)
 
     output$has_earth <- reactive(!is.null(earth_knots()))
     outputOptions(output, "has_earth", suspendWhenHidden = FALSE)
 
-    # Load and cache helper
+    output$loaded_path <- renderText({
+      f <- loaded_file()
+      if (is.null(f)) "No file chosen" else f
+    })
+
+    # Load helper -- reads directly from disk, no copy needed
     load_earth_ <- function(path, name) {
       ek <- import_earth(path)
       earth_knots(ek)
-      # Cache for next session
-      cached <- file.path(cache_dir, name)
-      tryCatch(file.copy(path, cached, overwrite = TRUE),
-               error = function(e) NULL)
-      last_file <- file.path(cache_dir, ".last_earth")
-      tryCatch(writeLines(name, last_file), error = function(e) NULL)
+      loaded_file(name)
+      # Save name and directory for next session
+      tryCatch({
+        writeLines(name, file.path(cache_dir, ".last_earth"))
+        writeLines(dirname(path), file.path(cache_dir, ".last_earth_dir"))
+        writeLines(normalizePath(path, mustWork = FALSE),
+                   file.path(cache_dir, ".last_earth_path"))
+      }, error = function(e) NULL)
       ek
     }
 
-    # Auto-load last-used earth file on startup
-    last_file_path <- file.path(cache_dir, ".last_earth")
-    if (file.exists(last_file_path)) {
-      last_name <- trimws(readLines(last_file_path, n = 1L, warn = FALSE))
-      cached_path <- file.path(cache_dir, last_name)
-      if (nzchar(last_name) && file.exists(cached_path)) {
-        tryCatch({
-          load_earth_(cached_path, last_name)
-          message("mgcvUI: auto-loaded cached earth: ", last_name)
-        }, error = function(e) {
-          message("mgcvUI: failed to auto-load cached earth: ", e$message)
-        })
+    # Restore last-used directory for file browser
+    last_dir <- path.expand("~")
+    last_dir_file <- file.path(cache_dir, ".last_earth_dir")
+    if (file.exists(last_dir_file)) {
+      saved_dir <- trimws(readLines(last_dir_file, n = 1L, warn = FALSE))
+      if (nzchar(saved_dir) && dir.exists(saved_dir)) {
+        last_dir <- saved_dir
       }
     }
 
-    observeEvent(input$earth_file, {
-      req(input$earth_file)
+    # Show last-used filename (but do NOT auto-load -- wait for Browse)
+    last_name_file <- file.path(cache_dir, ".last_earth")
+    last_path_file <- file.path(cache_dir, ".last_earth_path")
+    if (file.exists(last_name_file)) {
+      last_name <- trimws(readLines(last_name_file, n = 1L, warn = FALSE))
+      if (nzchar(last_name)) {
+        last_path <- if (file.exists(last_path_file))
+          trimws(readLines(last_path_file, n = 1L, warn = FALSE)) else ""
+        if (nzchar(last_path) && file.exists(last_path)) {
+          loaded_file(paste0("Last: ", last_name))
+        } else {
+          loaded_file(paste0("Last: ", last_name, " (not found)"))
+        }
+      }
+    }
+
+    # File browser with last-used directory as default
+    volumes <- c(Home = path.expand("~"), Root = "/")
+    default_root <- "Home"
+    default_path <- ""
+    home <- path.expand("~")
+    if (startsWith(last_dir, home) && last_dir != home) {
+      default_path <- sub(paste0("^", home, "/?"), "", last_dir)
+    } else if (last_dir != home) {
+      volumes <- c("Last Folder" = last_dir, volumes)
+      default_root <- "Last Folder"
+    }
+    shinyFiles::shinyFileChoose(input, "earth_browse", roots = volumes,
+                                defaultRoot = default_root,
+                                defaultPath = default_path,
+                                filetypes = "rds", session = session)
+
+    observeEvent(input$earth_browse, {
+      file_info <- shinyFiles::parseFilePaths(volumes, input$earth_browse)
+      if (nrow(file_info) == 0) return()
+      path <- as.character(file_info$datapath)
       tryCatch({
-        ek <- load_earth_(input$earth_file$datapath, input$earth_file$name)
+        ek <- load_earth_(path, basename(path))
         n_knots <- sum(vapply(ek$knots, length, integer(1)))
         showNotification(
           paste("Imported:", length(ek$knots), "variables,",
@@ -115,6 +173,21 @@ mod_earth_import_server <- function(id) {
       }
     )
 
-    reactive(earth_knots())
+    observeEvent(input$clear_earth, {
+      earth_knots(NULL)
+      loaded_file(NULL)
+      tryCatch(unlink(file.path(cache_dir, ".last_earth")),
+               error = function(e) NULL)
+      showNotification("earthUI import cleared.",
+                       type = "message", duration = 3)
+    })
+
+    list(
+      knots = reactive(earth_knots()),
+      reset = function() {
+        earth_knots(NULL)
+        loaded_file(NULL)
+      }
+    )
   })
 }

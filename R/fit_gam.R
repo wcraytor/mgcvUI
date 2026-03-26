@@ -23,6 +23,14 @@
 #'   to skip CV. Default `10`.
 #' @param weights Optional numeric vector of prior weights (one per
 #'   observation). Passed to [mgcv::gam()].
+#' @param optimizer Character optimizer key: `"outer_newton"` (default),
+#'   `"outer_bfgs"`, or `"efs"`.
+#' @param scale Numeric scale parameter. `0` (default) means estimate;
+#'   a positive value fixes it.
+#' @param discrete Logical. If `TRUE`, uses discretized covariate
+#'   method for faster fitting on large datasets. Default `FALSE`.
+#' @param nthreads Integer number of threads for parallel computation.
+#'   Default `1`.
 #' @return An `mgcvUI_result` object (a list) with components:
 #'   \describe{
 #'     \item{model}{The fitted [mgcv::gam] object.}
@@ -43,13 +51,25 @@
 #' summary(result$model)
 fit_gam <- function(data, response, smooth_specs, family = gaussian(),
                     method = "REML", earth_knots = NULL,
-                    select = FALSE, gamma = 1, cv_folds = 10L,
-                    weights = NULL) {
+                    select = TRUE, gamma = 1.2, cv_folds = 10L,
+                    weights = NULL, optimizer = NULL, scale = 0,
+                    discrete = FALSE, nthreads = 1L) {
+  # Ensure mgcv is on the search path (needed in callr subprocesses where
+
+  # discrete=TRUE causes gam() to internally call bam() by name)
+  if (!isNamespaceLoaded("mgcv")) requireNamespace("mgcv", quietly = TRUE)
+  if (!"package:mgcv" %in% search()) {
+    suppressPackageStartupMessages(require(mgcv, quietly = TRUE))
+  }
+
   # Defensive defaults for NULL parameters (Shiny inputs may be NULL)
   if (is.null(method)) method <- "REML"
-  if (is.null(select)) select <- FALSE
-  if (is.null(gamma) || is.na(gamma)) gamma <- 1
+  if (is.null(select)) select <- TRUE
+  if (is.null(gamma) || is.na(gamma)) gamma <- 1.2
   if (is.null(family)) family <- gaussian()
+  if (is.null(scale) || is.na(scale)) scale <- 0
+  if (is.null(discrete)) discrete <- FALSE
+  if (is.null(nthreads) || is.na(nthreads)) nthreads <- 1L
 
   # Ensure plain data.frame with types mgcv can handle
   data <- as.data.frame(data)
@@ -141,11 +161,35 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
       message("  capping k for ", paste(spec$vars, collapse = ","),
               ": ", k_eff, " -> ", new_k, " (unique=", n_unique, ")")
       smooth_specs[[i]]$k <- new_k
+      # For cr basis with earth knots, capping k breaks the k==length(knots)
+      # requirement -- switch to tp to avoid the mismatch
+      if (identical(spec$bs, "cr") && !is.null(earth_knots) &&
+          length(spec$vars) == 1L &&
+          !is.null(earth_knots$knots[[spec$vars]])) {
+        message("  switching ", spec$vars, " from cr to tp (k was capped)")
+        smooth_specs[[i]]$bs <- "tp"
+      }
+    }
+  }
+
+  # When earth knots are supplied, tensor product marginals default to "cr"
+
+  # basis in mgcv. The global knots list applies to ALL terms using that
+  # variable, so ti/te marginals would get the earth knots with a mismatched k.
+  # Fix: force marginals to "tp" for variables that have earth knots.
+  if (!is.null(earth_knots)) {
+    knot_vars <- names(earth_knots$knots)
+    for (i in seq_along(smooth_specs)) {
+      spec <- smooth_specs[[i]]
+      if (!spec$type %in% c("ti", "te")) next
+      if (any(spec$vars %in% knot_vars)) {
+        smooth_specs[[i]]$marginal_bs <- rep("tp", length(spec$vars))
+      }
     }
   }
 
   formula <- build_gam_formula(response, smooth_specs)
-  knots  <- build_gam_knots(smooth_specs, earth_knots)
+  knots  <- build_gam_knots(smooth_specs, earth_knots, data = complete_data)
 
   if (is.character(family)) {
     family <- get(family, mode = "function")()
@@ -191,28 +235,47 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
   # from dropping rows due to NAs in unrelated columns
   model_data <- data[, all_vars, drop = FALSE]
 
+  # Parse optimizer setting
+  opt <- if (!is.null(optimizer) && nzchar(optimizer)) {
+    switch(optimizer,
+      outer_newton = c("outer", "newton"),
+      outer_bfgs   = c("outer", "bfgs"),
+      efs          = c("efs"),
+      c("outer", "newton")  # default
+    )
+  } else {
+    c("outer", "newton")
+  }
+
+  cat("Fitting main GAM model...\n")
   t0 <- proc.time()
   gam_args <- list(
-    formula = formula,
-    data    = model_data,
-    family  = family,
-    method  = method,
-    knots   = knots,
-    select  = select,
-    gamma   = gamma
+    formula   = formula,
+    data      = model_data,
+    family    = family,
+    method    = method,
+    knots     = knots,
+    select    = select,
+    gamma     = gamma,
+    optimizer = opt,
+    scale     = scale,
+    discrete  = discrete,
+    control   = mgcv::gam.control(nthreads = as.integer(nthreads))
   )
   if (!is.null(weights)) {
     gam_args$weights <- weights
   }
   model <- do.call(mgcv::gam, gam_args)
   elapsed <- (proc.time() - t0)[["elapsed"]]
+  cat(sprintf("Main GAM fit complete in %.1fs\n", elapsed))
 
   # Cross-validated R-squared
   cv_folds <- if (is.null(cv_folds)) 0L else as.integer(cv_folds)
   cv_rsq <- NULL
   if (cv_folds >= 2L) {
+    cat(sprintf("Starting %d-fold cross-validation...\n", cv_folds))
     cv_rsq <- tryCatch(
-      cv_rsq_(data, formula, family, method, knots, select, gamma,
+      cv_rsq_(data, formula, family, method, select, gamma,
               cv_folds, response, weights),
       error = function(e) {
         message("  CV R-sq failed: ", e$message)
@@ -354,8 +417,11 @@ estimate_smooth_direction_ <- function(model, variable) {
 
 #' Reconcile smooth spec k values with earth knot counts
 #'
-#' For cr basis, mgcv requires k == length(knots). This adjusts k in
-#' each spec to match the actual knot count when earth knots are used.
+#' For cr basis, mgcv requires k == length(knots). Rather than capping k
+#' to the number of earth knots (which over-constrains the GAM), this
+#' sets k = max(n_earth_knots, user_k) so the GAM retains at least as
+#' much flexibility as it would have standalone. The knots list is later
+#' augmented with data quantiles in [build_gam_knots()] to fill the gap.
 #'
 #' @param smooth_specs List of smooth-term spec lists.
 #' @param earth_knots An mgcvUI_earth_knots object, or NULL.
@@ -381,8 +447,11 @@ reconcile_knots_ <- function(smooth_specs, earth_knots) {
         smooth_specs[[i]]$bs <- "tp"
         smooth_specs[[i]]$k <- NULL
       } else {
-        # cr basis: k must equal the number of knots supplied
-        smooth_specs[[i]]$k <- n_knots
+        # cr basis: k must equal length(knots). Use the larger of the
+        # earth knot count and the user/default k so the smooth is at
+        # least as flexible as standalone.
+        user_k <- spec$k %||% 10L
+        smooth_specs[[i]]$k <- max(n_knots, user_k)
       }
     } else if (identical(spec$bs, "ps") || identical(spec$bs, "bs")) {
       # ps/bs: k must be >= number of knots; set to knots + 2 if too low
@@ -401,37 +470,52 @@ reconcile_knots_ <- function(smooth_specs, earth_knots) {
 #' @param formula Formula object.
 #' @param family Family object.
 #' @param method Character fitting method.
-#' @param knots Knots list or NULL.
 #' @param select Logical.
 #' @param gamma Numeric.
 #' @param k Integer number of folds.
 #' @param response Character response variable name.
 #' @return Numeric CV R-squared.
 #' @noRd
-cv_rsq_ <- function(data, formula, family, method, knots, select,
+cv_rsq_ <- function(data, formula, family, method, select,
                     gamma, k, response, weights = NULL) {
-  # Remove rows with NA in columns used by the model
+  # Subset to model columns only (avoid na.action dropping unrelated NAs)
   used_vars <- all.vars(formula)
-  complete <- stats::complete.cases(data[, used_vars, drop = FALSE])
+  data <- data[, used_vars, drop = FALSE]
+  complete <- stats::complete.cases(data)
   data <- data[complete, , drop = FALSE]
   if (!is.null(weights)) weights <- weights[complete]
   n <- nrow(data)
+
+  # Drop unused factor levels to keep fold models consistent
+  for (v in names(data)) {
+    if (is.factor(data[[v]])) data[[v]] <- droplevels(data[[v]])
+  }
 
   folds <- sample(rep(seq_len(k), length.out = n))
   preds <- numeric(n)
   failed <- 0L
 
   for (fold in seq_len(k)) {
+    cat(sprintf("CV fold %d/%d...\n", fold, k))
     train <- data[folds != fold, , drop = FALSE]
     test  <- data[folds == fold, , drop = FALSE]
     train_wt <- if (!is.null(weights)) weights[folds != fold] else NULL
+
+    # Drop factor levels absent from training fold
+    for (v in names(train)) {
+      if (is.factor(train[[v]])) {
+        train[[v]] <- droplevels(train[[v]])
+        # Align test factor levels with training levels
+        test[[v]] <- factor(test[[v]], levels = levels(train[[v]]))
+      }
+    }
 
     gam_args <- list(
       formula = formula,
       data    = train,
       family  = family,
       method  = method,
-      knots   = knots,
+      knots   = NULL,  # let mgcv auto-place knots per fold
       select  = select,
       gamma   = gamma
     )
@@ -442,11 +526,26 @@ cv_rsq_ <- function(data, formula, family, method, knots, select,
       error = function(e) NULL
     )
 
+    n_test <- sum(folds == fold)
     if (is.null(fit)) {
       failed <- failed + 1L
       preds[folds == fold] <- NA_real_
     } else {
-      preds[folds == fold] <- predict(fit, newdata = test, type = "response")
+      p <- tryCatch(
+        predict(fit, newdata = test, type = "response"),
+        error = function(e) rep(NA_real_, n_test)
+      )
+      # Safety: ensure prediction length matches test set
+      if (length(p) != n_test) p <- rep(NA_real_, n_test)
+      # Replace non-finite predictions (Inf, -Inf, NaN) with NA
+      p[!is.finite(p)] <- NA_real_
+      n_na <- sum(is.na(p))
+      p_range <- if (any(!is.na(p))) range(p, na.rm = TRUE) else c(NA, NA)
+      a_range <- range(test[[response]], na.rm = TRUE)
+      cat(sprintf("  fold %d: pred range [%.2f, %.2f] actual [%.2f, %.2f] NAs=%d/%d\n",
+                  fold, p_range[1], p_range[2], a_range[1], a_range[2],
+                  n_na, n_test))
+      preds[folds == fold] <- p
     }
   }
 
@@ -455,9 +554,52 @@ cv_rsq_ <- function(data, formula, family, method, knots, select,
   }
 
   valid <- !is.na(preds)
+  n_valid <- sum(valid)
+  n_dropped <- length(preds) - n_valid
+  if (n_dropped > 0L) {
+    cat(sprintf("CV: %d of %d predictions were NA/non-finite (dropped)\n",
+                n_dropped, length(preds)))
+  }
+  cat(sprintf("CV complete (%d/%d folds succeeded, %d valid predictions)\n",
+              k - failed, k, n_valid))
+
+  if (n_valid < length(preds) * 0.5) {
+    message("  CV R-sq unreliable: too many predictions failed")
+    return(NA_real_)
+  }
+
   actual <- data[[response]][valid]
   p <- preds[valid]
+  # Use overall mean (not just valid subset) for proper R² denominator
+  overall_mean <- mean(data[[response]])
   ss_res <- sum((actual - p)^2)
-  ss_tot <- sum((actual - mean(actual))^2)
+  ss_tot <- sum((actual - overall_mean)^2)
   1 - ss_res / ss_tot
+}
+
+
+#' Back-transform a value from log or log10 scale
+#' @param x Numeric vector on the transformed scale.
+#' @param transform Character: "none", "log", or "log10".
+#' @return Numeric vector on the original scale.
+#' @noRd
+back_transform_ <- function(x, transform) {
+  switch(transform %||% "none",
+    log   = exp(x),
+    log10 = 10^x,
+    x
+  )
+}
+
+#' Apply a transform to a value
+#' @param x Numeric vector on the original scale.
+#' @param transform Character: "none", "log", or "log10".
+#' @return Numeric vector on the transformed scale.
+#' @noRd
+apply_transform_ <- function(x, transform) {
+  switch(transform %||% "none",
+    log   = log(x),
+    log10 = log10(x),
+    x
+  )
 }

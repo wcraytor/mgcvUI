@@ -12,6 +12,9 @@ NULL
 #' @return Character path.
 #' @noRd
 settings_db_path_ <- function() {
+  # Allow tests to redirect to a temp DB
+  override <- getOption("mgcvUI.settings_db_path")
+  if (!is.null(override)) return(override)
   dir <- tools::R_user_dir("mgcvUI", "data")
   if (!dir.exists(dir)) dir.create(dir, recursive = TRUE)
   file.path(dir, "settings.sqlite")

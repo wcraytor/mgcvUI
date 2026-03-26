@@ -39,7 +39,7 @@ summ <- format_gam_summary(gam_result)
 ## Formula
 
 ```
-`r deparse(gam_result$formula, width.cutoff = 80)`
+`r paste(deparse(gam_result$formula, width.cutoff = 80), collapse = " ")`
 ```
 
 ## Summary
@@ -50,8 +50,20 @@ summary(model)
 
 ## Smooth Term Plots
 
-```{r smooths, fig.width=8, fig.height=6}
-plot_smooths(gam_result)
+```{r smooths, fig.width=7, fig.height=4, results='asis'}
+for (spec in gam_result$smooth_specs) {
+  if (spec$type != "s" || length(spec$vars) != 1L) next
+  p <- tryCatch(
+    plot_smooth_single(gam_result, spec$vars[1],
+                       earth_knots = gam_result$earth_knots),
+    error = function(e) NULL
+  )
+  if (!is.null(p)) {
+    cat("\n###", spec$vars[1], "\n\n")
+    print(p)
+    cat("\n")
+  }
+}
 ```
 
 ## Diagnostics

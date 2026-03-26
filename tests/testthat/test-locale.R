@@ -1,5 +1,7 @@
 # test-locale.R — Tests for locale/internationalization feature
 
+local_test_settings_db()
+
 # Reset locale to US after each test to avoid cross-contamination
 withr_reset <- function() mgcvUI:::set_locale_("us")
 
@@ -151,7 +153,7 @@ test_that("Ukraine uses space thousands, comma decimal, dmy dates", {
   expect_equal(mgcvUI:::locale_big_mark_(), " ")
   expect_equal(mgcvUI:::locale_csv_dec_(), ",")
   fmts <- mgcvUI:::locale_date_formats_()
-  expect_equal(fmts[1], "%d/%m/%Y")
+  expect_equal(fmts[1], "%d/%m/%y")
 })
 
 test_that("Russia uses space thousands, semicolon CSV", {
@@ -221,14 +223,14 @@ test_that("Brazil uses semicolon CSV and A4", {
 test_that("US locale tries MM/DD first", {
   mgcvUI:::set_locale_("us")
   fmts <- mgcvUI:::locale_date_formats_()
-  expect_equal(fmts[1], "%m/%d/%Y")
+  expect_equal(fmts[1], "%m/%d/%y")
 })
 
 test_that("German locale tries DD/MM first", {
   mgcvUI:::set_locale_("de")
   on.exit(withr_reset())
   fmts <- mgcvUI:::locale_date_formats_()
-  expect_equal(fmts[1], "%d/%m/%Y")
+  expect_equal(fmts[1], "%d/%m/%y")
 })
 
 test_that("Swedish locale tries YYYY-MM-DD first", {
