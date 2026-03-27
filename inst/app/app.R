@@ -216,25 +216,9 @@ ui <- fluidPage(
     }
     .mgcv-param-help:hover { background: #5e81ac; }
 
-    /* --- shinyFiles browse: mimic native fileInput appearance --- */
-    .input-group .shinyFiles {
-      width: auto !important;
-      flex: 0 0 auto;
-      border-radius: 0.375rem 0 0 0.375rem !important;
-      font-size: 0.875em;
-      background-color: var(--bs-tertiary-bg) !important;
-      border: 1px solid var(--bs-border-color) !important;
-      color: var(--bs-secondary-color) !important;
-    }
-    .input-group .shinyFiles:hover {
-      background-color: var(--bs-secondary-bg) !important;
-    }
-    .input-group .form-control {
-      background-color: var(--bs-body-bg);
-      color: var(--bs-secondary-color);
-      border-color: var(--bs-border-color);
-      font-size: 0.875em;
-    }
+    /* --- Wrap long file paths in notifications --- */
+    .shiny-notification { word-wrap: break-word; overflow-wrap: anywhere; }
+
   "))),
 
   # --- Top Menu Bar ---
@@ -513,8 +497,10 @@ ui <- fluidPage(
       ),
       hr(),
 
-      conditionalPanel(
-        condition = "output.data_imported",
+      div(class = "shiny-panel-conditional",
+        `data-display-if` = "output.data_imported",
+        `data-ns-prefix` = "",
+        style = "display:none;",
 
         # --- 3. Project Output Folder ---
         tags$details(class = "mgcv-section",
@@ -586,8 +572,10 @@ ui <- fluidPage(
         ),
 
         # --- 7. Download Estimated Sale Prices & Residuals ---
-        conditionalPanel(
-          condition = "output.model_fitted",
+        div(class = "shiny-panel-conditional",
+          `data-display-if` = "output.model_fitted",
+          `data-ns-prefix` = "",
+          style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
             tags$summary(uiOutput("download_heading", inline = TRUE)),
@@ -598,8 +586,10 @@ ui <- fluidPage(
         ),
 
         # --- 8. Calculate RCA Adjustments (Appraisal/Market only) ---
-        conditionalPanel(
-          condition = "output.model_fitted && (input.purpose === 'appraisal' || input.purpose === 'market')",
+        div(class = "shiny-panel-conditional",
+          `data-display-if` = "output.model_fitted && (input.purpose === 'appraisal' || input.purpose === 'market')",
+          `data-ns-prefix` = "",
+          style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
             tags$summary(h4("8. Calculate RCA Adjustments & Download",
@@ -612,8 +602,10 @@ ui <- fluidPage(
         ),
 
         # --- 9. Generate Sales Grid & Download (Appraisal only) ---
-        conditionalPanel(
-          condition = "output.model_fitted && input.purpose === 'appraisal'",
+        div(class = "shiny-panel-conditional",
+          `data-display-if` = "output.model_fitted && input.purpose === 'appraisal'",
+          `data-ns-prefix` = "",
+          style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
             tags$summary(h4("9. Generate Sales Grid & Download",
@@ -629,8 +621,10 @@ ui <- fluidPage(
         ),
 
         # --- 10. Download Report ---
-        conditionalPanel(
-          condition = "output.model_fitted",
+        div(class = "shiny-panel-conditional",
+          `data-display-if` = "output.model_fitted",
+          `data-ns-prefix` = "",
+          style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
             tags$summary(uiOutput("report_heading", inline = TRUE)),
@@ -721,9 +715,8 @@ server <- function(input, output, session) {
     message("mgcvUI: restored locale defaults from SQLite")
   }
 
-  # Mark locale as ready after a delay so restoration completes first
-  locale_timer_ <- shiny::reactiveTimer(2000, session)
-  shiny::observeEvent(locale_timer_(), {
+  # Mark locale as ready after the first flush so restoration completes first
+  session$onFlushed(function() {
     locale_ready(TRUE)
     message("mgcvUI: locale guard released")
   }, once = TRUE)
@@ -812,13 +805,20 @@ server <- function(input, output, session) {
   outputOptions(output, "data_imported", suspendWhenHidden = FALSE)
 
   # --- Restore app-level settings when data file changes ---
+  # Flag survives across flush cycles so the purpose observer can skip
+  # the reset triggered by restoring the saved purpose radio button.
+  restoring_settings_ <- reactiveVal(FALSE)
   observeEvent(data_mod$filename(), {
     fname <- data_mod$filename()
     if (is.null(fname)) return()
     saved <- mgcvUI:::settings_db_read_(fname)
     if (is.null(saved)) return()
     if (!is.null(saved$purpose)) {
+      restoring_settings_(TRUE)
       updateRadioButtons(session, "purpose", selected = saved$purpose)
+      # Clear flag after flush in case the value didn't actually change
+      # (no change = no observer fire = flag stuck TRUE)
+      session$onFlushed(function() restoring_settings_(FALSE), once = TRUE)
     }
     if (!is.null(saved$output_folder)) {
       updateTextInput(session, "output_folder", value = saved$output_folder)
@@ -846,19 +846,16 @@ server <- function(input, output, session) {
     })
   })
 
-  output$data_preview_table <- DT::renderDT({
-    req(data_mod$data())
-    DT::datatable(data_mod$data(),
-                  options = list(scrollX = TRUE, pageLength = 15),
-                  rownames = FALSE)
-  })
-
   # Optional earth import
   earth_mod <- mod_earth_import_server("earth")
   earth_knots_r <- earth_mod$knots
 
-  # Reset data and earth imports when purpose changes
+  # Reset data and earth imports when purpose changes (user action only)
   observeEvent(input$purpose, {
+    if (restoring_settings_()) {
+      restoring_settings_(FALSE)
+      return()
+    }
     data_mod$reset()
     earth_mod$reset()
   }, ignoreInit = TRUE)

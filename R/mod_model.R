@@ -27,13 +27,15 @@ mod_model_fit_ui <- function(id) {
 #' @export
 mod_model_results_ui <- function(id) {
   ns <- NS(id)
-  conditionalPanel(
-    condition = "output.data_imported",
+  div(class = "shiny-panel-conditional",
+    `data-display-if` = "output.data_imported",
+    `data-ns-prefix` = "",
+    style = "display:none;",
     tabsetPanel(
       id = ns("results_tabs"),
       tabPanel("Data",
         br(),
-        DT::DTOutput("data_preview_table")
+        DT::DTOutput(ns("data_preview_table"))
       ),
       tabPanel("Equation",
         br(),
@@ -142,6 +144,13 @@ mod_model_server <- function(id, data_r, var_config_r,
 
     output$has_model <- reactive(!is.null(result()))
     outputOptions(output, "has_model", suspendWhenHidden = FALSE)
+
+    output$data_preview_table <- DT::renderDT({
+      req(data_r())
+      DT::datatable(data_r(),
+                    options = list(scrollX = TRUE, pageLength = 15),
+                    rownames = FALSE)
+    })
 
     observeEvent(input$fit, {
       df <- isolate(data_r())

@@ -4,7 +4,13 @@
 \alias{mod_model_server}
 \title{Model Module -- Server (shared by fit button and results)}
 \usage{
-mod_model_server(id, data_r, var_config_r, earth_knots_r = reactive(NULL))
+mod_model_server(
+  id,
+  data_r,
+  var_config_r,
+  earth_knots_r = reactive(NULL),
+  dark_mode_r = reactive(FALSE)
+)
 }
 \arguments{
 \item{id}{Shiny module namespace ID.}

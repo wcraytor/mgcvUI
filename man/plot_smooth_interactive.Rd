@@ -4,7 +4,12 @@
 \alias{plot_smooth_interactive}
 \title{Interactive Smooth Plot with Slope Tooltip}
 \usage{
-plot_smooth_interactive(gam_result, variable, earth_knots = NULL)
+plot_smooth_interactive(
+  gam_result,
+  variable,
+  earth_knots = NULL,
+  dark_mode = FALSE
+)
 }
 \arguments{
 \item{gam_result}{An \code{mgcvUI_result} from \code{\link[=fit_gam]{fit_gam()}}.}

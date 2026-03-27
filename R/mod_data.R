@@ -1,8 +1,7 @@
 #' Data Import Module -- UI
 #'
-#' Compact file browser widget for embedding in a sidebar, with a per-file
+#' Compact file upload widget for embedding in a sidebar, with a per-file
 #' locale country selector for CSV separator and decimal conventions.
-#' Reads files directly from disk via shinyFiles (no upload size limits).
 #'
 #' @param id Shiny module namespace ID.
 #' @return A [shiny::tagList].
@@ -29,21 +28,8 @@ mod_data_ui <- function(id) {
         )
       )
     ),
-    tags$div(
-      class = "input-group",
-      style = "margin-bottom:8px;",
-      shinyFiles::shinyFilesButton(
-        ns("file_browse"), "Browse...",
-        title = "Select Data File (.csv, .xlsx, .xls)",
-        multiple = FALSE,
-        class = "btn-secondary"
-      ),
-      tags$span(
-        class = "form-control",
-        style = "font-size: 0.9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
-        textOutput(ns("loaded_path"), inline = TRUE)
-      )
-    ),
+    fileInput(ns("file_input"), NULL,
+              accept = c(".csv", ".xlsx", ".xls")),
     uiOutput(ns("sheet_selector")),
     uiOutput(ns("data_preview_info"))
   )
@@ -60,12 +46,8 @@ mod_data_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     imported <- reactiveVal(NULL)
     orig_filename <- reactiveVal(NULL)
-    loaded_path <- reactiveVal(NULL)
+    file_path <- reactiveVal(NULL)
     sheets <- reactiveVal(NULL)
-
-    # Cache directory for persisting last-used path
-    cache_dir <- file.path(tools::R_user_dir("mgcvUI", "data"), "cache")
-    if (!dir.exists(cache_dir)) dir.create(cache_dir, recursive = TRUE)
 
     # --- Restore saved import locale on startup ---
     locale_defaults <- settings_db_read_locale_()
@@ -77,94 +59,31 @@ mod_data_server <- function(id) {
         updateSelectInput(session, "locale_import", selected = ld$locale_country)
     }
 
-    output$loaded_path <- renderText({
-      f <- loaded_path()
-      if (is.null(f)) "No file chosen" else basename(f)
-    })
+    observeEvent(input$file_input, {
+      req(input$file_input)
+      path <- input$file_input$datapath
+      name <- input$file_input$name
+      ext <- tolower(tools::file_ext(name))
 
-    # Load helper -- reads directly from disk, no copy needed
-    load_data_ <- function(path, name, sheet = 1L) {
-      import_country <- tryCatch(
-        input$locale_import %||% "us",
-        error = function(e) "us"
-      )
+      import_country <- input$locale_import %||% "us"
       presets <- locale_country_presets_()
       preset <- presets[[import_country]] %||% presets[["us"]]
-      sep <- preset$csv_sep
-      dec <- preset$csv_dec
-      df <- import_data(path, sheet = sheet, sep = sep, dec = dec)
-      imported(df)
-      orig_filename(name)
-      loaded_path(normalizePath(path, mustWork = FALSE))
 
-      # Detect sheets for Excel files
-      ext <- tolower(tools::file_ext(path))
-      if (ext %in% c("xlsx", "xls")) {
-        sheets(readxl::excel_sheets(path))
-      } else {
-        sheets(NULL)
-      }
-
-      # Save name, directory, and full path for next session
       tryCatch({
-        writeLines(name, file.path(cache_dir, ".last_data"))
-        writeLines(dirname(path), file.path(cache_dir, ".last_data_dir"))
-        writeLines(normalizePath(path, mustWork = FALSE),
-                   file.path(cache_dir, ".last_data_path"))
-      }, error = function(e) NULL)
-      df
-    }
+        df <- import_data(path, sheet = 1L,
+                          sep = preset$csv_sep, dec = preset$csv_dec)
+        imported(df)
+        orig_filename(name)
+        file_path(path)
 
-    # Restore last-used directory for file browser
-    last_dir <- path.expand("~")
-    last_dir_file <- file.path(cache_dir, ".last_data_dir")
-    if (file.exists(last_dir_file)) {
-      saved_dir <- trimws(readLines(last_dir_file, n = 1L, warn = FALSE))
-      if (nzchar(saved_dir) && dir.exists(saved_dir)) {
-        last_dir <- saved_dir
-      }
-    }
-
-    # Show last-used filename (but do NOT auto-load -- wait for Browse)
-    last_name_file <- file.path(cache_dir, ".last_data")
-    last_path_file <- file.path(cache_dir, ".last_data_path")
-    if (file.exists(last_name_file)) {
-      last_name <- trimws(readLines(last_name_file, n = 1L, warn = FALSE))
-      if (nzchar(last_name)) {
-        last_path <- if (file.exists(last_path_file))
-          trimws(readLines(last_path_file, n = 1L, warn = FALSE)) else ""
-        if (nzchar(last_path) && file.exists(last_path)) {
-          loaded_path(last_path)
-          orig_filename(last_name)
+        if (ext %in% c("xlsx", "xls")) {
+          sheets(readxl::excel_sheets(path))
+        } else {
+          sheets(NULL)
         }
-      }
-    }
 
-    # File browser with last-used directory as default
-    volumes <- c(Home = path.expand("~"), Root = "/")
-    default_root <- "Home"
-    default_path <- ""
-    home <- path.expand("~")
-    if (startsWith(last_dir, home) && last_dir != home) {
-      default_path <- sub(paste0("^", home, "/?"), "", last_dir)
-    } else if (last_dir != home) {
-      volumes <- c("Last Folder" = last_dir, volumes)
-      default_root <- "Last Folder"
-    }
-    shinyFiles::shinyFileChoose(input, "file_browse", roots = volumes,
-                                defaultRoot = default_root,
-                                defaultPath = default_path,
-                                filetypes = c("csv", "xlsx", "xls"),
-                                session = session)
-
-    observeEvent(input$file_browse, {
-      file_info <- shinyFiles::parseFilePaths(volumes, input$file_browse)
-      if (nrow(file_info) == 0) return()
-      path <- as.character(file_info$datapath)
-      tryCatch({
-        load_data_(path, basename(path), sheet = input$sheet %||% 1L)
         showNotification(
-          paste("Loaded", nrow(imported()), "rows,", ncol(imported()), "columns"),
+          paste("Loaded", nrow(df), "rows,", ncol(df), "columns"),
           type = "message"
         )
       }, error = function(e) {
@@ -182,12 +101,12 @@ mod_data_server <- function(id) {
     })
 
     observeEvent(input$sheet, {
-      req(loaded_path(), input$sheet)
+      req(file_path(), input$sheet)
       import_country <- input$locale_import %||% "us"
       presets <- locale_country_presets_()
       preset <- presets[[import_country]] %||% presets[["us"]]
       tryCatch({
-        imported(import_data(loaded_path(), sheet = input$sheet,
+        imported(import_data(file_path(), sheet = input$sheet,
                              sep = preset$csv_sep, dec = preset$csv_dec))
       }, error = function(e) {
         showNotification(paste("Import error:", e$message),
@@ -211,7 +130,7 @@ mod_data_server <- function(id) {
       reset    = function() {
         imported(NULL)
         orig_filename(NULL)
-        loaded_path(NULL)
+        file_path(NULL)
         sheets(NULL)
       }
     )

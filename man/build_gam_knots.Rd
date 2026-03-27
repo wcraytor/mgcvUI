@@ -4,13 +4,17 @@
 \alias{build_gam_knots}
 \title{Build the knots list for gam() from earth knot data}
 \usage{
-build_gam_knots(smooth_specs, earth_knots)
+build_gam_knots(smooth_specs, earth_knots, data = NULL)
 }
 \arguments{
 \item{smooth_specs}{List of smooth-term specs (same as
 \code{\link[=build_gam_formula]{build_gam_formula()}}).}
 
 \item{earth_knots}{An \code{mgcvUI_earth_knots} object, or \code{NULL}.}
+
+\item{data}{Data frame used for fitting. Needed to compute
+quantile-based filler knots when \code{k > length(earth_knots)}.
+If \code{NULL}, terms needing augmentation are skipped.}
 }
 \value{
 A named list suitable for the \code{knots} argument of
@@ -19,7 +23,10 @@ A named list suitable for the \code{knots} argument of
 \description{
 When earth knots are available for variables using \code{"cr"} or \code{"ps"}
 basis types, this function prepares the \code{knots} argument for
-\code{\link[mgcv:gam]{mgcv::gam()}}.
+\code{\link[mgcv:gam]{mgcv::gam()}}. If \code{k} exceeds the number of earth knots (because
+the GAM should be at least as flexible as standalone), additional
+knots are placed at data quantiles, preserving the earth-derived
+positions as anchor points.
 }
 \examples{
 specs <- list(
