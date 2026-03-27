@@ -850,7 +850,7 @@ server <- function(input, output, session) {
   earth_mod <- mod_earth_import_server("earth")
   earth_knots_r <- earth_mod$knots
 
-  # Reset data and earth imports when purpose changes (user action only)
+  # Reset ALL state when purpose changes (user action only)
   observeEvent(input$purpose, {
     if (restoring_settings_()) {
       restoring_settings_(FALSE)
@@ -858,6 +858,11 @@ server <- function(input, output, session) {
     }
     data_mod$reset()
     earth_mod$reset()
+    model_mod$reset()
+    rv_rca$pct_data       <- NULL
+    rv_rca$rca_df         <- NULL
+    rv_rca$sg_recommended <- NULL
+    rv_rca$sg_others      <- NULL
   }, ignoreInit = TRUE)
 
   # Variable selection - returns config list
@@ -908,11 +913,12 @@ server <- function(input, output, session) {
   })
 
   # Model fitting + results display
-  gam_result_r <- mod_model_server("model",
-                                   data_r        = app_data_r,
-                                   var_config_r  = var_config_r,
-                                   earth_knots_r = earth_knots_r,
-                                   dark_mode_r   = reactive(identical(input$dark_mode, "dark")))
+  model_mod <- mod_model_server("model",
+                                data_r        = app_data_r,
+                                var_config_r  = var_config_r,
+                                earth_knots_r = earth_knots_r,
+                                dark_mode_r   = reactive(identical(input$dark_mode, "dark")))
+  gam_result_r <- model_mod$result
 
   # Report export (existing module — kept for function export features)
   mod_report_server("report",
@@ -1801,6 +1807,74 @@ server <- function(input, output, session) {
           }
         }
 
+        # Variable importance plot
+        p_imp <- tryCatch({
+          imp_df <- data.frame(Term = character(0), Statistic = numeric(0),
+                               Type = character(0), stringsAsFactors = FALSE)
+          if (nrow(summ$smooth_table) > 0)
+            imp_df <- rbind(imp_df, data.frame(
+              Term = summ$smooth_table$Term, Statistic = summ$smooth_table$F,
+              Type = "Smooth", stringsAsFactors = FALSE))
+          pt_no_int <- summ$parametric_table[
+            summ$parametric_table$Term != "(Intercept)", , drop = FALSE]
+          if (nrow(pt_no_int) > 0)
+            imp_df <- rbind(imp_df, data.frame(
+              Term = pt_no_int$Term, Statistic = abs(pt_no_int$t_value),
+              Type = "Parametric", stringsAsFactors = FALSE))
+          if (nrow(imp_df) == 0) NULL else {
+            imp_df$Term <- factor(imp_df$Term,
+                                  levels = imp_df$Term[order(imp_df$Statistic)])
+            ggplot2::ggplot(imp_df,
+              ggplot2::aes(x = .data$Statistic, y = .data$Term,
+                           fill = .data$Type)) +
+              ggplot2::geom_col(alpha = 0.85) +
+              ggplot2::scale_fill_manual(
+                values = c("Smooth" = "#5e81ac", "Parametric" = "#a3be8c")) +
+              ggplot2::labs(title = "Variable Importance (F / |t| statistic)",
+                            x = "Statistic", y = NULL) +
+              ggplot2::theme_minimal(base_size = 13)
+          }
+        }, error = function(e) NULL)
+        if (!is.null(p_imp)) {
+          ggplot2::ggsave(file.path(tmpdir, "importance.png"), p_imp,
+                          width = 7, height = 4, dpi = 150)
+        }
+
+        # Correlation heatmap
+        p_cor <- tryCatch({
+          mf <- model$model
+          pd <- mf[, setdiff(names(mf), res$response), drop = FALSE]
+          nc <- vapply(pd, is.numeric, logical(1))
+          pd <- pd[, nc, drop = FALSE]
+          if (ncol(pd) < 2L) NULL else {
+            cm <- stats::cor(pd, use = "pairwise.complete.obs")
+            vs <- colnames(cm)
+            cl <- expand.grid(Var1 = vs, Var2 = vs, stringsAsFactors = FALSE)
+            cl$value <- as.numeric(cm)
+            cl$Var1 <- factor(cl$Var1, levels = rev(vs))
+            cl$Var2 <- factor(cl$Var2, levels = vs)
+            ts <- max(2.5, 5 - length(vs) * 0.15)
+            ggplot2::ggplot(cl, ggplot2::aes(x = .data$Var2, y = .data$Var1,
+                                             fill = .data$value)) +
+              ggplot2::geom_tile(color = "white", linewidth = 0.5) +
+              ggplot2::geom_text(ggplot2::aes(
+                label = sprintf("%.2f", .data$value)), size = ts) +
+              ggplot2::scale_fill_gradient2(
+                low = "#2166AC", mid = "white", high = "#B2182B",
+                midpoint = 0, limits = c(-1, 1), name = "Correlation") +
+              ggplot2::coord_fixed() +
+              ggplot2::labs(title = "Correlation Matrix", x = NULL, y = NULL) +
+              ggplot2::theme_minimal(base_size = 12) +
+              ggplot2::theme(axis.text.x = ggplot2::element_text(
+                               angle = 45, hjust = 1),
+                             panel.grid = ggplot2::element_blank())
+          }
+        }, error = function(e) NULL)
+        if (!is.null(p_cor)) {
+          ggplot2::ggsave(file.path(tmpdir, "correlation.png"), p_cor,
+                          width = 7, height = 7, dpi = 150)
+        }
+
         # Diagnostics
         p_diag <- tryCatch(plot_diagnostics(res), error = function(e) NULL)
         if (!is.null(p_diag)) {
@@ -1825,7 +1899,6 @@ server <- function(input, output, session) {
 
         # Model summary
         doc <- officer::body_add_par(doc, "Model Summary", style = "heading 2")
-        summ <- format_gam_summary(res)
         doc <- officer::body_add_par(doc, paste("R-squared:",
                                      round(summ$r_squared, 4)))
         doc <- officer::body_add_par(doc, paste("Deviance explained:",
@@ -1844,7 +1917,12 @@ server <- function(input, output, session) {
         # Smooth terms table
         if (nrow(summ$smooth_table) > 0) {
           doc <- officer::body_add_par(doc, "Smooth Terms", style = "heading 2")
-          doc <- officer::body_add_table(doc, value = summ$smooth_table,
+          st <- summ$smooth_table
+          st$EDF <- round(st$EDF, 2)
+          st$Ref.df <- round(st$Ref.df, 2)
+          st$F <- round(st$F, 2)
+          st$p_value <- format.pval(st$p_value, digits = 3)
+          doc <- officer::body_add_table(doc, value = st,
                                          style = "table_template")
         }
 
@@ -1852,11 +1930,25 @@ server <- function(input, output, session) {
         if (nrow(summ$parametric_table) > 0) {
           doc <- officer::body_add_par(doc, "Parametric Terms",
                                        style = "heading 2")
-          doc <- officer::body_add_table(doc, value = summ$parametric_table,
+          ptbl <- summ$parametric_table
+          ptbl$Estimate <- round(ptbl$Estimate, 4)
+          ptbl$Std_Error <- round(ptbl$Std_Error, 4)
+          ptbl$t_value <- round(ptbl$t_value, 3)
+          ptbl$p_value <- format.pval(ptbl$p_value, digits = 3)
+          doc <- officer::body_add_table(doc, value = ptbl,
                                          style = "table_template")
         }
 
-        # Plots
+        # Variable importance
+        fp <- file.path(tmpdir, "importance.png")
+        if (file.exists(fp)) {
+          doc <- officer::body_add_par(doc, "Variable Importance",
+                                       style = "heading 2")
+          doc <- officer::body_add_img(doc, src = fp, width = 6, height = 3.5)
+          doc <- officer::body_add_par(doc, "")
+        }
+
+        # Smooth plots
         doc <- officer::body_add_par(doc, "Smooth Plots", style = "heading 2")
         for (var in plotted) {
           fp <- file.path(tmpdir, paste0("smooth_", var, ".png"))
@@ -1866,18 +1958,125 @@ server <- function(input, output, session) {
           }
         }
 
+        # Correlation
+        fp <- file.path(tmpdir, "correlation.png")
+        if (file.exists(fp)) {
+          doc <- officer::body_add_par(doc, "Correlation Matrix",
+                                       style = "heading 2")
+          doc <- officer::body_add_img(doc, src = fp, width = 6, height = 6)
+          doc <- officer::body_add_par(doc, "")
+        }
+
+        # Diagnostics
         doc <- officer::body_add_par(doc, "Diagnostics", style = "heading 2")
         fp <- file.path(tmpdir, "diagnostics.png")
         if (file.exists(fp)) {
           doc <- officer::body_add_img(doc, src = fp, width = 7, height = 5.25)
         }
 
+        # Actual vs Predicted
         doc <- officer::body_add_par(doc, "Actual vs Predicted",
                                      style = "heading 2")
         fp <- file.path(tmpdir, "actual_vs_predicted.png")
         if (file.exists(fp)) {
           doc <- officer::body_add_img(doc, src = fp, width = 6, height = 4.3)
         }
+
+        # ANOVA table
+        tryCatch({
+          aov <- summary(model)
+          parts <- list()
+          if (!is.null(aov$p.table) && nrow(aov$p.table) > 0) {
+            ptab <- as.data.frame(aov$p.table)
+            ptab$Term <- rownames(ptab)
+            ptab$Type <- "parametric"
+            parts <- c(parts, list(ptab))
+          }
+          if (!is.null(aov$s.table) && nrow(aov$s.table) > 0) {
+            stab <- as.data.frame(aov$s.table)
+            stab$Term <- rownames(stab)
+            stab$Type <- "smooth"
+            parts <- c(parts, list(stab))
+          }
+          if (length(parts) > 0) {
+            all_cols <- unique(unlist(lapply(parts, names)))
+            aov_df <- do.call(rbind, lapply(parts, function(p) {
+              for (m in setdiff(all_cols, names(p))) p[[m]] <- NA
+              p[, all_cols, drop = FALSE]
+            }))
+            front <- c("Term", "Type")
+            aov_df <- aov_df[, c(front, setdiff(names(aov_df), front)),
+                              drop = FALSE]
+            rownames(aov_df) <- NULL
+            for (pc in grep("p-value|Pr\\(", names(aov_df), value = TRUE))
+              aov_df[[pc]] <- format.pval(aov_df[[pc]], digits = 3)
+            doc <- officer::body_add_par(doc, "ANOVA", style = "heading 2")
+            doc <- officer::body_add_table(doc, value = aov_df,
+                                           style = "table_template")
+          }
+        }, error = function(e) NULL)
+
+        # Concurvity
+        tryCatch({
+          if (length(model$smooth) > 0L) {
+            con <- mgcv::concurvity(model, full = TRUE)
+            con_df <- as.data.frame(round(con, 4))
+            doc <<- officer::body_add_par(doc, "Concurvity (Overall)",
+                                          style = "heading 2")
+            doc <<- officer::body_add_table(doc, value = con_df,
+                                            style = "table_template")
+          }
+          if (length(model$smooth) >= 2L) {
+            con_pw <- mgcv::concurvity(model, full = FALSE)
+            if (is.list(con_pw) && "worst" %in% names(con_pw)) {
+              pw_df <- as.data.frame(round(con_pw$worst, 4))
+              doc <<- officer::body_add_par(doc, "Concurvity (Pairwise Worst)",
+                                            style = "heading 2")
+              doc <<- officer::body_add_table(doc, value = pw_df,
+                                              style = "table_template")
+            }
+          }
+        }, error = function(e) NULL)
+
+        # Sign consistency (earth only)
+        tryCatch({
+          signs <- check_sign_consistency(res)
+          if (!is.null(signs)) {
+            doc <<- officer::body_add_par(doc,
+              "Earth vs GAM Sign Consistency", style = "heading 2")
+            doc <<- officer::body_add_table(doc,
+              value = signs[, c("variable", "earth_direction",
+                                "gam_direction", "consistent")],
+              style = "table_template")
+          }
+        }, error = function(e) NULL)
+
+        # Basis check
+        tryCatch({
+          bc_text <- utils::capture.output(mgcv::gam.check(model, type = "n"))
+          if (length(bc_text) > 0) {
+            doc <<- officer::body_add_par(doc, "Basis Dimension Check",
+                                          style = "heading 2")
+            for (line in bc_text)
+              doc <<- officer::body_add_par(doc, line)
+          }
+        }, error = function(e) NULL)
+
+        # Mgcv output
+        tryCatch({
+          out_text <- utils::capture.output({
+            cat(sprintf("Timing: %.2f seconds\n\n", res$elapsed))
+            cat("Formula:\n")
+            print(res$formula)
+            cat("\nSummary:\n")
+            print(summary(model))
+            cat("\nFamily:\n")
+            print(model$family)
+          })
+          doc <<- officer::body_add_par(doc, "Mgcv Output", style = "heading 2")
+          for (line in out_text)
+            doc <<- officer::body_add_par(doc, line)
+        }, error = function(e) NULL)
 
         print(doc, target = out_path)
 

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>mgcvUI User Guide</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">mgcvUI User Guide</h1>
+
+
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>mgcvUI is an interactive Shiny application for building Generalized
+Additive Models (GAMs) via the <code>mgcv</code> package. It is designed
+for real estate appraisers who need transparent, defensible nonlinear
+models, but is useful for anyone doing regression modeling with smooth
+terms.</p>
+<p>mgcvUI can run <strong>standalone</strong> (import a CSV/Excel file,
+configure smooths, fit a GAM, generate a report) or as part of a
+<strong>two-stage pipeline</strong> with earthUI, where MARS models
+discover breakpoints and mgcvUI refines them into smooth, statistically
+rigorous curves.</p>
+</div>
+<div id="application-layout" class="section level2">
+<h2>Application Layout</h2>
+<p>The sidebar contains numbered workflow steps:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Import Data</strong> – Browse for a CSV or Excel file (read
+directly from disk, no upload size limits).</li>
+<li><strong>Import from earthUI</strong> (optional) – Browse for an
+earthUI result <code>.rds</code> file to seed knot positions from a MARS
+model.</li>
+<li><strong>Variable Configuration</strong> – Select the response
+variable, configure predictors (include/exclude, type, special roles,
+factor/linear flags).</li>
+<li><strong>Predictor Settings</strong> – The variable table showing all
+columns with checkboxes for Inc, Factor, Linear, and dropdowns for Type
+and Special.</li>
+<li><strong>Mgcv Call Parameters</strong> – Family, method, gamma,
+select, basis, k, and advanced parameters (optimizer, scale, discrete,
+threads).</li>
+<li><strong>Fit Mgcv GAM Model</strong> – Click to fit.</li>
+<li><strong>Download</strong> – Export estimated prices, residuals, and
+reports.</li>
+</ol>
+<p>The main panel shows results in tabs: Data, Equation, Summary,
+Variable Importance, Contribution (smooth plots), Correlation,
+Diagnostics, RCA Adjustments, Anova, Mgcv Output, Sign Check,
+Concurvity, and Basis Check.</p>
+</div>
+<div id="parameter-presets" class="section level2">
+<h2>Parameter Presets</h2>
+<p>mgcvUI provides two parameter presets, selectable at the top of the
+Mgcv Call Parameters section:</p>
+<div id="standalone-discovery" class="section level3">
+<h3>Standalone (Discovery)</h3>
+<p>Use when fitting a GAM without earth knot input. mgcv must discover
+the nonlinearities itself.</p>
+<table>
+<colgroup>
+<col width="37%" />
+<col width="29%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Setting</th>
+<th>Value</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Default basis</td>
+<td><code>tp</code> (thin plate)</td>
+<td>Adaptive; finds shape without pre-specified knots</td>
+</tr>
+<tr class="even">
+<td>Default k</td>
+<td>0 (auto = 10)</td>
+<td>Needs flexibility to discover nonlinearity</td>
+</tr>
+<tr class="odd">
+<td>Gamma</td>
+<td>1.2</td>
+<td>Mild parsimony bias</td>
+</tr>
+<tr class="even">
+<td>Select</td>
+<td>TRUE</td>
+<td>Lets mgcv drop unhelpful terms</td>
+</tr>
+<tr class="odd">
+<td>Method</td>
+<td>REML</td>
+<td>Best for correlated predictors, small n</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="earth-pipeline-refinement" class="section level3">
+<h3>Earth Pipeline (Refinement)</h3>
+<p>Auto-selected when an earthUI result is imported. Earth already found
+the breakpoints; mgcv’s job is regularized estimation, not
+discovery.</p>
+<table>
+<colgroup>
+<col width="37%" />
+<col width="29%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Setting</th>
+<th>Value</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Default basis</td>
+<td><code>cr</code> (cubic regression)</td>
+<td>Faster, interpretable, uses earth knot positions directly</td>
+</tr>
+<tr class="even">
+<td>Default k</td>
+<td>5</td>
+<td>Earth already found breakpoints; low k prevents refitting</td>
+</tr>
+<tr class="odd">
+<td>Gamma</td>
+<td>1.4</td>
+<td>Stronger parsimony bias (Wood &amp; Fasiolo recommendation)</td>
+</tr>
+<tr class="even">
+<td>Select</td>
+<td>TRUE</td>
+<td>Second-stage shrinkage guard</td>
+</tr>
+<tr class="odd">
+<td>Method</td>
+<td>REML</td>
+<td>Best for correlated predictors, small n</td>
+</tr>
+</tbody>
+</table>
+<p>All values remain individually editable after a preset is
+applied.</p>
+</div>
+</div>
+<div id="mgcv-call-parameters-reference" class="section level2">
+<h2>Mgcv Call Parameters Reference</h2>
+<div id="core-parameters" class="section level3">
+<h3>Core Parameters</h3>
+<table>
+<colgroup>
+<col width="25%" />
+<col width="25%" />
+<col width="20%" />
+<col width="29%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>UI Control</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Family</strong></td>
+<td>Dropdown</td>
+<td>gaussian</td>
+<td>Distribution family. Use <code>gaussian</code> for continuous sale
+prices, <code>Gamma</code> for strictly positive values</td>
+</tr>
+<tr class="even">
+<td><strong>Method</strong></td>
+<td>Dropdown</td>
+<td>REML</td>
+<td>Smoothing parameter estimation method. REML is strongly preferred
+over GCV.Cp for correlated predictors and modest sample sizes</td>
+</tr>
+<tr class="odd">
+<td><strong>Gamma</strong></td>
+<td>Numeric</td>
+<td>1.2 / 1.4</td>
+<td>Inflates the effective degrees of freedom penalty. Values &gt; 1
+bias toward smoother fits. 1.4 is the Wood recommendation for
+parsimony</td>
+</tr>
+<tr class="even">
+<td><strong>CV</strong></td>
+<td>Checkbox</td>
+<td>TRUE</td>
+<td>10-fold cross-validated R-squared</td>
+</tr>
+<tr class="odd">
+<td><strong>Select</strong></td>
+<td>Checkbox</td>
+<td>TRUE</td>
+<td>Adds a shrinkage penalty so smooth terms can be penalized to zero.
+This is the <code>select</code> argument to
+<code>mgcv::gam()</code></td>
+</tr>
+<tr class="even">
+<td><strong>Default basis</strong></td>
+<td>Dropdown</td>
+<td>tp / cr</td>
+<td>Basis type for smooth terms. <code>tp</code> = thin plate regression
+spline (adaptive), <code>cr</code> = cubic regression spline (fast,
+interpretable)</td>
+</tr>
+<tr class="odd">
+<td><strong>Default k</strong></td>
+<td>Numeric</td>
+<td>0 / 5</td>
+<td>Basis dimension (max wiggliness). 0 = auto (mgcv default of 10).
+Lower values produce smoother curves</td>
+</tr>
+<tr class="even">
+<td><strong>Tensor type</strong></td>
+<td>Dropdown</td>
+<td>ti</td>
+<td><code>ti</code> = tensor interaction (recommended), <code>te</code>
+= tensor product</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="advanced-parameters" class="section level3">
+<h3>Advanced Parameters</h3>
+<p>These are under the “Advanced Parameters” collapsible and rarely need
+changing:</p>
+<table>
+<colgroup>
+<col width="30%" />
+<col width="25%" />
+<col width="44%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter</th>
+<th>Default</th>
+<th>When to Change</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Optimizer</strong></td>
+<td>outer/newton</td>
+<td>Switch to <code>outer/bfgs</code> if newton convergence fails.
+<code>efs</code> for very large models</td>
+</tr>
+<tr class="even">
+<td><strong>Scale</strong></td>
+<td>0 (estimate)</td>
+<td>Fix to a known value for quasi-families or known-variance
+situations</td>
+</tr>
+<tr class="odd">
+<td><strong>Discrete</strong></td>
+<td>FALSE</td>
+<td>Enable for large datasets (&gt;10k rows) for faster fitting via
+covariate discretization</td>
+</tr>
+<tr class="even">
+<td><strong>Threads</strong></td>
+<td>1</td>
+<td>Increase for parallel computation on multi-core machines (e.g., 4-8
+on Apple Silicon)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="predictor-settings" class="section level2">
+<h2>Predictor Settings</h2>
+<p>The variable table shows one row per column in your data (excluding
+the response). Each row has:</p>
+<table>
+<colgroup>
+<col width="38%" />
+<col width="61%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Variable</strong></td>
+<td>Column name</td>
+</tr>
+<tr class="even">
+<td><strong>Type</strong></td>
+<td>Detected data type (numeric, integer, character, factor, etc.)</td>
+</tr>
+<tr class="odd">
+<td><strong>Inc</strong></td>
+<td>Include in the model</td>
+</tr>
+<tr class="even">
+<td><strong>Special</strong></td>
+<td>Column role: <code>no</code> (default), <code>actual_age</code>,
+<code>area</code>, <code>concessions</code>, <code>contract_date</code>,
+<code>display_only</code>, <code>dom</code>, <code>effective_age</code>,
+<code>latitude</code>, <code>listing_date</code>,
+<code>living_area</code>, <code>longitude</code>, <code>lot_size</code>,
+<code>sale_age</code>, <code>site_dimensions</code>,
+<code>weights</code></td>
+</tr>
+<tr class="odd">
+<td><strong>Factor</strong></td>
+<td>Treat as a factor (categorical) variable</td>
+</tr>
+<tr class="even">
+<td><strong>Linear</strong></td>
+<td>Force linear (no smooth)</td>
+</tr>
+<tr class="odd">
+<td><strong>NAs</strong></td>
+<td>Count and percentage of missing values</td>
+</tr>
+</tbody>
+</table>
+<p>Variables with &gt; 50% NAs are automatically excluded. Variables
+with only 2 unique values are automatically converted to factors.</p>
+</div>
+<div id="interactions" class="section level2">
+<h2>Interactions</h2>
+<div id="tensor-interactions-continuous-x-continuous" class="section level3">
+<h3>Tensor Interactions (continuous x continuous)</h3>
+<p>The Allowed Interactions matrix shows all included smooth
+(non-linear, non-factor) predictors. Check a cell to add a tensor
+interaction term (<code>ti(var1, var2)</code> or
+<code>te(var1, var2)</code>) to the model.</p>
+<p>When earth knots are imported, interactions detected by earth or
+allowed by the earthUI allowed matrix are pre-checked.</p>
+</div>
+<div id="factor-by-smooth-interactions-factor-x-continuous" class="section level3">
+<h3>Factor-by-Smooth Interactions (factor x continuous)</h3>
+<p>Below the tensor matrix, the Factor-by-Smooth section shows a grid of
+included factor variables (columns) vs. included smooth variables
+(rows).</p>
+<p>Checking a cell generates <code>s(smooth_var, by=factor_var)</code> –
+this fits a <strong>separate smooth curve for each level</strong> of the
+factor. For example, <code>s(lot_size, by=area_id)</code> lets the lot
+size effect vary by neighborhood.</p>
+<p>The factor variable’s main effect is already in the model as a linear
+term (needed for level-specific intercepts).</p>
+</div>
+<div id="block-from-main-effect-interaction-only" class="section level3">
+<h3>Block from Main Effect (Interaction Only)</h3>
+<p><strong>Right-click</strong> a variable name in the Allowed
+Interactions matrix to block it from entering the model as a main smooth
+term. A bold <strong>” 1”</strong> indicator appears after the variable
+name.</p>
+<p>When blocked:</p>
+<ul>
+<li>The variable gets <strong>no</strong> main <code>s()</code> smooth
+term</li>
+<li>The variable <strong>can still</strong> appear in tensor
+interactions (<code>ti(var1, var2)</code>) and factor-by-smooth
+interactions (<code>s(var, by=factor)</code>)</li>
+<li>Right-click again to unblock</li>
+<li>State persists via localStorage</li>
+</ul>
+<p><strong>Use case:</strong> When modeling time adjustments that should
+scale with property size, block <code>sale_age</code> from the main
+effect and allow it only in a tensor interaction with
+<code>living_area</code>. This generates
+<code>ti(sale_age, living_area)</code> without a standalone
+<code>s(sale_age)</code> – the time appreciation rate varies smoothly
+with house size rather than being a flat $/day rate.</p>
+<p>This feature works identically across earthUI, glmnetUI, and mgcvUI.
+In earthUI, it blocks degree-1 hinge functions. In glmnetUI, it removes
+the variable from main formula terms. In mgcvUI, it removes the main
+smooth term. In all three, the variable remains available for
+interactions.</p>
+</div>
+</div>
+<div id="what-earthui-imports-provide" class="section level2">
+<h2>What earthUI Imports Provide</h2>
+<p>When you import an earthUI result <code>.rds</code> file, mgcvUI
+extracts and uses the following components:</p>
+<table>
+<colgroup>
+<col width="20%" />
+<col width="40%" />
+<col width="38%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Source in Earth Model</th>
+<th>How mgcvUI Uses It</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Knot positions</strong></td>
+<td><code>model$cuts</code> + <code>model$selected.terms</code></td>
+<td>Placed as <code>cr</code> basis knots via
+<code>gam(..., knots=)</code>. Earth found the breakpoints; mgcv smooths
+through them</td>
+</tr>
+<tr class="even">
+<td><strong>Hinge directions</strong> (signs)</td>
+<td><code>model$dirs</code> (+1 = forward, -1 = reverse)</td>
+<td>Sign consistency check compares earth direction with GAM smooth
+derivative to flag contradictions</td>
+</tr>
+<tr class="odd">
+<td><strong>Interactions</strong></td>
+<td>Rows in <code>dirs</code> where 2+ predictors are nonzero</td>
+<td>Pre-checks the Allowed Interactions matrix</td>
+</tr>
+<tr class="even">
+<td><strong>Target variable</strong></td>
+<td><code>earth_result$target</code></td>
+<td>Auto-sets the response dropdown</td>
+</tr>
+<tr class="odd">
+<td><strong>Predictors</strong></td>
+<td><code>earth_result$predictors</code></td>
+<td>Auto-checks “Inc” for each predictor</td>
+</tr>
+<tr class="even">
+<td><strong>Categoricals</strong></td>
+<td><code>earth_result$categoricals</code></td>
+<td>Auto-checks “Factor” for categorical variables</td>
+</tr>
+<tr class="odd">
+<td><strong>Linear predictors</strong></td>
+<td><code>earth_result$linpreds</code></td>
+<td>Auto-checks “Linear” for variables earth forced linear</td>
+</tr>
+<tr class="even">
+<td><strong>Interaction degree</strong></td>
+<td><code>earth_result$degree</code></td>
+<td>Shows info message if degree=1 (no interactions)</td>
+</tr>
+<tr class="odd">
+<td><strong>Allowed matrix</strong></td>
+<td><code>earth_result$allowed_matrix</code></td>
+<td>Seeds the interaction matrix checkboxes</td>
+</tr>
+<tr class="even">
+<td><strong>R-squared, GCV, n_terms</strong></td>
+<td><code>model$rsq</code>, <code>model$gcv</code>,
+<code>length(selected.terms)</code></td>
+<td>Displayed in the earth import summary panel</td>
+</tr>
+<tr class="odd">
+<td><strong>Data</strong></td>
+<td><code>earth_result$data</code></td>
+<td>Available for reference but not directly used (user imports their
+own data file)</td>
+</tr>
+</tbody>
+</table>
+<p>The key insight: <strong>earth’s job is discovery, mgcv’s job is
+regularized estimation</strong>. The knots are the bridge – they tell
+mgcv <em>where</em> the nonlinearities are so it doesn’t have to find
+them itself.</p>
+</div>
+<div id="concurvity" class="section level2">
+<h2>Concurvity</h2>
+<p>Concurvity is the smooth analog of multicollinearity. Earth’s hinge
+functions on correlated predictors (e.g., living area and room count)
+can produce near-concurve smooth terms in mgcv.</p>
+<p>The <strong>Concurvity</strong> tab (in the results panel) shows:</p>
+<ul>
+<li><strong>Overall Concurvity</strong> –
+<code>mgcv::concurvity(model, full=TRUE)</code> with three measures
+(worst, observed, estimate) for each smooth term.</li>
+<li><strong>Pairwise Concurvity</strong> –
+<code>mgcv::concurvity(model, full=FALSE)</code> showing the worst-case
+concurvity between each pair of smooth terms.</li>
+</ul>
+<p>Cells are color-coded:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Color</th>
+<th>Value Range</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>White</td>
+<td>&lt; 0.5</td>
+<td>No concern</td>
+</tr>
+<tr class="even">
+<td>Yellow</td>
+<td>0.5 – 0.8</td>
+<td>Moderate; monitor</td>
+</tr>
+<tr class="odd">
+<td>Red</td>
+<td>&gt; 0.8</td>
+<td>High; consider dropping or collapsing one of the terms</td>
+</tr>
+</tbody>
+</table>
+<p>Values above ~0.8 in the “worst” row warrant collapsing or dropping
+one of the terms before treating the model as defensible.</p>
+</div>
+<div id="results-tabs-reference" class="section level2">
+<h2>Results Tabs Reference</h2>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="66%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Tab</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Data</strong></td>
+<td>Preview of the imported data</td>
+</tr>
+<tr class="even">
+<td><strong>Equation</strong></td>
+<td>LaTeX-rendered model equation with smooth function definitions</td>
+</tr>
+<tr class="odd">
+<td><strong>Summary</strong></td>
+<td>R-squared, CV R-squared, deviance explained, AIC, smooth and
+parametric term tables</td>
+</tr>
+<tr class="even">
+<td><strong>Variable Importance</strong></td>
+<td>Bar chart and table ranked by F-statistic (smooth) or</td>
+</tr>
+<tr class="odd">
+<td><strong>Contribution</strong></td>
+<td>Interactive smooth plots (plotly) for each predictor showing partial
+effects with confidence bands</td>
+</tr>
+<tr class="even">
+<td><strong>Correlation</strong></td>
+<td>Heatmap of pairwise correlations among numeric predictors</td>
+</tr>
+<tr class="odd">
+<td><strong>Diagnostics</strong></td>
+<td>Residual plots, Q-Q plot, and actual vs. predicted scatter</td>
+</tr>
+<tr class="even">
+<td><strong>RCA Adjustments</strong></td>
+<td>Residual, net, and gross percentage adjustment plots</td>
+</tr>
+<tr class="odd">
+<td><strong>Anova</strong></td>
+<td>Combined parametric and smooth term ANOVA table</td>
+</tr>
+<tr class="even">
+<td><strong>Mgcv Output</strong></td>
+<td>Raw <code>print(model)</code>, <code>summary(model)</code>, and
+overall concurvity</td>
+</tr>
+<tr class="odd">
+<td><strong>Sign Check</strong></td>
+<td>Earth vs. GAM direction consistency (only with earth import)</td>
+</tr>
+<tr class="even">
+<td><strong>Concurvity</strong></td>
+<td>Overall and pairwise concurvity tables with color coding</td>
+</tr>
+<tr class="odd">
+<td><strong>Basis Check</strong></td>
+<td><code>mgcv::gam.check()</code> output verifying basis dimension
+adequacy</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="memory-and-persistence" class="section level2">
+<h2>Memory and Persistence</h2>
+<p>mgcvUI remembers your settings across sessions:</p>
+<ul>
+<li><strong>Locale</strong> – Country, paper size, and import locale are
+saved automatically to a SQLite database when changed.</li>
+<li><strong>Per-file settings</strong> – Response variable, predictor
+configuration, family, method, select, gamma are saved per data
+filename.</li>
+<li><strong>Last-used files</strong> – The data file and earth file
+paths are remembered; files are auto-loaded on next launch if they still
+exist at their original locations.</li>
+</ul>
+<p>Settings are stored in
+<code>tools::R_user_dir(&quot;mgcvUI&quot;, &quot;data&quot;)/settings.sqlite</code>.</p>
+</div>
+<div id="memory-checks" class="section level2">
+<h2>Memory Checks</h2>
+<p>Before loading any file, mgcvUI checks available system memory
+against the file size (with an expansion multiplier: 3x for CSV, 5x for
+RDS). If insufficient memory is detected, a clear error message is shown
+with the file size, estimated memory needed, and available memory. This
+works on macOS, Linux, and Windows.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

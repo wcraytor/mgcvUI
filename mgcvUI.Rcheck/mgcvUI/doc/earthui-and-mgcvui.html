@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Using earthUI and mgcvUI Together</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Using earthUI and mgcvUI Together</h1>
+
+
+
+<div id="the-two-stage-workflow" class="section level2">
+<h2>The Two-Stage Workflow</h2>
+<p>Real estate valuation models benefit from a two-stage approach:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Discover structure</strong> with <code>earthUI</code> – MARS
+(Multivariate Adaptive Regression Splines) is excellent at finding
+breakpoints (knots) and identifying which variables matter.</li>
+<li><strong>Confirm and report</strong> with <code>mgcvUI</code> – GAMs
+provide smooth, statistically rigorous curves with proper confidence
+intervals and p-values, which are better suited for defensible appraisal
+reports.</li>
+</ol>
+<p>The idea: let earth find the knots, then let mgcv smooth through
+them.</p>
+</div>
+<div id="what-mgcvui-extracts-from-earthui" class="section level2">
+<h2>What mgcvUI Extracts from earthUI</h2>
+<p>When you import an earthUI result <code>.rds</code> file, mgcvUI
+extracts the following components:</p>
+<table>
+<colgroup>
+<col width="20%" />
+<col width="40%" />
+<col width="38%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Source in Earth Model</th>
+<th>How mgcvUI Uses It</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Knot positions</strong></td>
+<td><code>model$cuts</code> + <code>model$selected.terms</code></td>
+<td>Placed as <code>cr</code> basis knots via
+<code>gam(..., knots=)</code>. Earth found the breakpoints; mgcv smooths
+through them</td>
+</tr>
+<tr class="even">
+<td><strong>Hinge directions</strong></td>
+<td><code>model$dirs</code> (+1 = forward, -1 = reverse)</td>
+<td>Sign consistency check compares earth direction with GAM smooth
+derivative to flag contradictions</td>
+</tr>
+<tr class="odd">
+<td><strong>Interactions</strong></td>
+<td>Rows in <code>dirs</code> where 2+ predictors nonzero</td>
+<td>Pre-checks the Allowed Interactions matrix</td>
+</tr>
+<tr class="even">
+<td><strong>Target variable</strong></td>
+<td><code>earth_result$target</code></td>
+<td>Auto-sets the response dropdown</td>
+</tr>
+<tr class="odd">
+<td><strong>Predictors</strong></td>
+<td><code>earth_result$predictors</code></td>
+<td>Auto-checks “Inc” for each predictor</td>
+</tr>
+<tr class="even">
+<td><strong>Categoricals</strong></td>
+<td><code>earth_result$categoricals</code></td>
+<td>Auto-checks “Factor”</td>
+</tr>
+<tr class="odd">
+<td><strong>Linear predictors</strong></td>
+<td><code>earth_result$linpreds</code></td>
+<td>Auto-checks “Linear”</td>
+</tr>
+<tr class="even">
+<td><strong>Interaction degree</strong></td>
+<td><code>earth_result$degree</code></td>
+<td>Info message if degree=1</td>
+</tr>
+<tr class="odd">
+<td><strong>Allowed matrix</strong></td>
+<td><code>earth_result$allowed_matrix</code></td>
+<td>Seeds interaction checkboxes</td>
+</tr>
+<tr class="even">
+<td><strong>R-sq, GCV, n_terms</strong></td>
+<td><code>model$rsq</code>, <code>model$gcv</code></td>
+<td>Displayed in import summary</td>
+</tr>
+</tbody>
+</table>
+<p>The key insight: <strong>earth’s job is discovery, mgcv’s job is
+regularized estimation</strong>. The knots are the bridge – they tell
+mgcv <em>where</em> the nonlinearities are so it doesn’t have to find
+them itself.</p>
+</div>
+<div id="parameter-presets-why-they-differ" class="section level2">
+<h2>Parameter Presets: Why They Differ</h2>
+<p>When an earthUI result is imported, mgcvUI auto-switches to the
+<strong>Earth Pipeline</strong> preset:</p>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="21%" />
+<col width="31%" />
+<col width="29%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Setting</th>
+<th>Standalone</th>
+<th>Earth Pipeline</th>
+<th>Why Different</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Basis</td>
+<td><code>tp</code></td>
+<td><code>cr</code></td>
+<td>Earth provides knot positions; <code>cr</code> uses them
+directly</td>
+</tr>
+<tr class="even">
+<td>k</td>
+<td>auto (10)</td>
+<td>5</td>
+<td>Earth already found breakpoints; low k prevents refitting</td>
+</tr>
+<tr class="odd">
+<td>Gamma</td>
+<td>1.2</td>
+<td>1.4</td>
+<td>Stronger parsimony – mgcv refines, not discovers</td>
+</tr>
+<tr class="even">
+<td>Select</td>
+<td>TRUE</td>
+<td>TRUE</td>
+<td>Second-stage shrinkage guard</td>
+</tr>
+</tbody>
+</table>
+<p>Every setting reinforces the division: earth discovers, mgcv
+estimates.</p>
+</div>
+<div id="step-1-fit-an-earth-model-in-earthui" class="section level2">
+<h2>Step 1: Fit an Earth Model in earthUI</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(earthUI)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>earthUI<span class="sc">::</span><span class="fu">launch</span>()</span></code></pre></div>
+<p>In the earthUI app:</p>
+<ol style="list-style-type: decimal">
+<li>Upload your sales data.</li>
+<li>Select sale price as the response, property features as
+predictors.</li>
+<li>Fit the model.</li>
+<li><strong>Save the result</strong> – click the download button to save
+the earthUI result as an <code>.rds</code> file.</li>
+</ol>
+<p>Or programmatically:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(earthUI)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>result <span class="ot">&lt;-</span> earthUI<span class="sc">::</span><span class="fu">fit_earth</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">df         =</span> sales_data,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">target     =</span> <span class="st">&quot;sale_price&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">predictors =</span> <span class="fu">c</span>(<span class="st">&quot;living_area&quot;</span>, <span class="st">&quot;lot_size&quot;</span>, <span class="st">&quot;year_built&quot;</span>, <span class="st">&quot;condition&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="fu">saveRDS</span>(result, <span class="st">&quot;earth_result.rds&quot;</span>)</span></code></pre></div>
+</div>
+<div id="step-2-import-into-mgcvui" class="section level2">
+<h2>Step 2: Import into mgcvUI</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(mgcvUI)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">mgcvUI</span>()</span></code></pre></div>
+<p>In the mgcvUI app:</p>
+<ol style="list-style-type: decimal">
+<li>Upload your sales data via <strong>Browse</strong> in the Data
+section.</li>
+<li>Expand <strong>Import from earthUI</strong> and browse for the
+<code>.rds</code> file. Files are read directly from disk – no upload
+size limit.</li>
+<li>mgcvUI extracts the knot positions and pre-configures the GAM:
+<ul>
+<li>Predictors are auto-selected to match the earth model.</li>
+<li>Basis dimensions (<code>k</code>) are set based on the number of
+earth knots.</li>
+<li>Cubic regression splines (<code>cr</code>) are used for variables
+with earth knots, allowing knot positions to be passed to
+<code>gam()</code>.</li>
+<li>The parameter preset auto-switches to <strong>Earth
+Pipeline</strong>.</li>
+</ul></li>
+<li>Review the <strong>Predictor Settings</strong> table – earth’s
+categoricals are flagged as Factor, linear predictors are flagged as
+Linear.</li>
+<li>Fit the model.</li>
+<li>Check the <strong>Sign Check</strong> tab to verify GAM smooth
+directions agree with earth hinge directions.</li>
+<li>Check the <strong>Concurvity</strong> tab – earth’s hinge functions
+on correlated predictors can produce near-concurve smooth terms. Values
+&gt; 0.8 warrant collapsing or dropping terms.</li>
+</ol>
+</div>
+<div id="concurvity-why-it-matters-in-this-pipeline" class="section level2">
+<h2>Concurvity: Why It Matters in This Pipeline</h2>
+<p>Earth’s hinge functions on correlated predictors (GLA and room count,
+for instance) can produce near-concurve smooth terms in mgcv – the
+smooth analog of multicollinearity.</p>
+<p>The <strong>Concurvity</strong> tab shows:</p>
+<ul>
+<li><strong>Overall</strong>: worst/observed/estimate for each smooth
+term</li>
+<li><strong>Pairwise</strong>: worst-case between each pair of smooth
+terms</li>
+</ul>
+<p>Color coding: white (&lt; 0.5), yellow (0.5–0.8), red (&gt; 0.8).</p>
+<p>Values above ~0.8 in the “worst” row warrant collapsing or dropping
+one of the terms before treating the model as defensible.</p>
+</div>
+<div id="programmatic-pipeline" class="section level2">
+<h2>Programmatic Pipeline</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(mgcvUI)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co"># Import earth result and extract knots</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>ek <span class="ot">&lt;-</span> <span class="fu">import_earth</span>(<span class="st">&quot;earth_result.rds&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># View the knots</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="fu">str</span>(ek<span class="sc">$</span>knots)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co"># Build GAM specs informed by earth knots</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>specs <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">vars =</span> <span class="st">&quot;living_area&quot;</span>, <span class="at">type =</span> <span class="st">&quot;s&quot;</span>, <span class="at">bs =</span> <span class="st">&quot;cr&quot;</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>       <span class="at">k =</span> <span class="fu">length</span>(ek<span class="sc">$</span>knots<span class="sc">$</span>living_area)),</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">vars =</span> <span class="st">&quot;lot_size&quot;</span>, <span class="at">type =</span> <span class="st">&quot;s&quot;</span>, <span class="at">bs =</span> <span class="st">&quot;cr&quot;</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>       <span class="at">k =</span> <span class="fu">length</span>(ek<span class="sc">$</span>knots<span class="sc">$</span>lot_size)),</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">vars =</span> <span class="st">&quot;year_built&quot;</span>, <span class="at">type =</span> <span class="st">&quot;s&quot;</span>, <span class="at">bs =</span> <span class="st">&quot;cr&quot;</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>       <span class="at">k =</span> <span class="fu">length</span>(ek<span class="sc">$</span>knots<span class="sc">$</span>year_built)),</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">vars =</span> <span class="st">&quot;condition&quot;</span>, <span class="at">type =</span> <span class="st">&quot;linear&quot;</span>, <span class="at">bs =</span> <span class="cn">NULL</span>, <span class="at">k =</span> <span class="cn">NULL</span>)</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>)</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co"># Fit GAM with earth knots -- note earth pipeline defaults</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">fit_gam</span>(</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>  <span class="at">data         =</span> sales_data,</span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>  <span class="at">response     =</span> <span class="st">&quot;sale_price&quot;</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>  <span class="at">smooth_specs =</span> specs,</span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>  <span class="at">earth_knots  =</span> ek,</span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>  <span class="at">method       =</span> <span class="st">&quot;REML&quot;</span>,</span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>  <span class="at">select       =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>  <span class="at">gamma        =</span> <span class="fl">1.4</span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>)</span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co"># Check concurvity</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a>mgcv<span class="sc">::</span><span class="fu">concurvity</span>(result<span class="sc">$</span>model, <span class="at">full =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co"># Check sign consistency</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="fu">check_sign_consistency</span>(result)</span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co"># Export knots to CSV for documentation</span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="fu">export_knots_csv</span>(ek, <span class="st">&quot;knot_positions.csv&quot;</span>)</span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co"># Generate appraisal report</span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="fu">render_gam_report</span>(result, <span class="st">&quot;docx&quot;</span>, <span class="st">&quot;appraisal_model_report.docx&quot;</span>,</span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a>                  <span class="at">title =</span> <span class="st">&quot;GAM Valuation Model&quot;</span>)</span></code></pre></div>
+</div>
+<div id="understanding-sign-consistency" class="section level2">
+<h2>Understanding Sign Consistency</h2>
+<p>When you import earth knots, mgcvUI checks whether the GAM smooth
+curves agree with the earth hinge directions:</p>
+<table>
+<colgroup>
+<col width="64%" />
+<col width="36%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Earth Direction</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Forward (+)</td>
+<td>The hinge function increases after the knot – earth implies a
+positive relationship in that region</td>
+</tr>
+<tr class="even">
+<td>Reverse (-)</td>
+<td>The hinge function decreases after the knot – earth implies a
+negative relationship</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>Sign Check</strong> tab compares these with the overall
+direction of the fitted GAM smooth. A <strong>consistent</strong> result
+means the GAM and earth agree. An <strong>inconsistent</strong> result
+flags variables where the GAM smooth goes in the opposite direction from
+what earth found – this may indicate:</p>
+<ul>
+<li>The relationship is genuinely complex (U-shaped, etc.)</li>
+<li>The earth model over-fit in that region</li>
+<li>Additional predictors are needed to account for confounding</li>
+</ul>
+<p>Inconsistency is a flag for investigation, not necessarily a
+problem.</p>
+</div>
+<div id="exporting-knots" class="section level2">
+<h2>Exporting Knots</h2>
+<p>The knot CSV contains one row per knot with columns:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>variable</code></td>
+<td>Predictor name</td>
+</tr>
+<tr class="even">
+<td><code>knot</code></td>
+<td>The knot value (breakpoint)</td>
+</tr>
+<tr class="odd">
+<td><code>direction</code></td>
+<td><code>&quot;forward&quot;</code> or <code>&quot;reverse&quot;</code></td>
+</tr>
+</tbody>
+</table>
+<p>This provides a transparent record of the MARS-derived structure that
+informed the GAM, suitable for inclusion in appraisal workfiles.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

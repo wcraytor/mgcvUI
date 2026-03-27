@@ -1,0 +1,1002 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "mgcvUI"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> base::assign(".ExTimings", "mgcvUI-Ex.timings", pos = 'CheckExEnv')
+> base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+> base::assign(".format_ptime",
++ function(x) {
++   if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
++   if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
++   options(OutDec = '.')
++   format(x[1L:3L], digits = 7L)
++ },
++ pos = 'CheckExEnv')
+> 
+> ### * </HEADER>
+> library('mgcvUI')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("build_gam_formula")
+> ### * build_gam_formula
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: build_gam_formula
+> ### Title: Build a GAM Formula from Variable Specifications
+> ### Aliases: build_gam_formula
+> 
+> ### ** Examples
+> 
+> specs <- list(
++   list(vars = "wt", type = "s", bs = "cr", k = 5L),
++   list(vars = "hp", type = "s", bs = "tp", k = NULL),
++   list(vars = "cyl", type = "linear", bs = NULL, k = NULL)
++ )
+> build_gam_formula("mpg", specs)
+mpg ~ s(wt, bs = "cr", k = 5) + s(hp, bs = "tp") + cyl
+<environment: 0x10afb82d8>
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("build_gam_formula", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("build_gam_knots")
+> ### * build_gam_knots
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: build_gam_knots
+> ### Title: Build the knots list for gam() from earth knot data
+> ### Aliases: build_gam_knots
+> 
+> ### ** Examples
+> 
+> specs <- list(
++   list(vars = "wt", type = "s", bs = "cr", k = 5L)
++ )
+> build_gam_knots(specs, NULL)
+NULL
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("build_gam_knots", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("check_sign_consistency")
+> ### * check_sign_consistency
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: check_sign_consistency
+> ### Title: Check for Sign Discrepancies Between Earth and GAM
+> ### Aliases: check_sign_consistency
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("earth", quietly = TRUE)) {
++   m <- earth::earth(mpg ~ wt + hp, data = mtcars)
++   er <- structure(
++     list(model = m, target = "mpg",
++          predictors = c("wt", "hp"),
++          categoricals = character(0), linpreds = character(0),
++          degree = 1L, cv_enabled = FALSE, allowed_matrix = NULL,
++          data = mtcars, elapsed = 0, trace_output = character(0)),
++     class = "earthUI_result"
++   )
++   ek <- import_earth(er)
++   specs <- list(
++     list(vars = "wt", type = "s", bs = "tp", k = NULL),
++     list(vars = "hp", type = "s", bs = "tp", k = NULL)
++   )
++   gam_res <- fit_gam(mtcars, "mpg", specs, earth_knots = ek)
++   check_sign_consistency(gam_res)
++ }
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.03, 20.17] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.08, 25.53] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.22, 20.10] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [14.64, 21.76] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 31.28] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [12.97, 26.79] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [22.30, 29.04] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.44, 29.54] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.94, 19.03] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [15.03, 16.08] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  variable earth_direction gam_direction consistent
+1       wt      increasing    decreasing      FALSE
+2       hp      increasing    decreasing      FALSE
+                                                            warning
+1 Earth suggests 'increasing' but GAM smooth is 'decreasing' for wt
+2 Earth suggests 'increasing' but GAM smooth is 'decreasing' for hp
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("check_sign_consistency", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("detect_column_types")
+> ### * detect_column_types
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: detect_column_types
+> ### Title: Detect Column Types from a Data Frame
+> ### Aliases: detect_column_types
+> 
+> ### ** Examples
+> 
+> detect_column_types(mtcars)
+      mpg       cyl      disp        hp      drat        wt      qsec        vs 
+"numeric" "numeric" "numeric" "numeric" "numeric" "numeric" "numeric" "numeric" 
+       am      gear      carb 
+"numeric" "numeric" "numeric" 
+> df <- data.frame(
++   x = 1:5, y = letters[1:5],
++   d = Sys.Date() + 1:5,
++   t = Sys.time() + 1:5
++ )
+> detect_column_types(df)
+          x           y           d           t 
+  "integer" "character"      "Date"   "POSIXct" 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("detect_column_types", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("export_gam_docx")
+> ### * export_gam_docx
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: export_gam_docx
+> ### Title: Export GAM Summary to Word (officer)
+> ### Aliases: export_gam_docx
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
++   res <- fit_gam(mtcars, "mpg", specs)
++   export_gam_docx(res, tempfile(fileext = ".docx"))
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("export_gam_docx", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("export_knots_csv")
+> ### * export_knots_csv
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: export_knots_csv
+> ### Title: Export Knot Positions to CSV
+> ### Aliases: export_knots_csv
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("earth", quietly = TRUE)) {
++   m <- earth::earth(mpg ~ wt + hp, data = mtcars)
++   er <- structure(
++     list(model = m, target = "mpg",
++          predictors = c("wt", "hp"),
++          categoricals = character(0), linpreds = character(0),
++          degree = 1L, cv_enabled = FALSE, allowed_matrix = NULL,
++          data = mtcars, elapsed = 0, trace_output = character(0)),
++     class = "earthUI_result"
++   )
++   knots <- import_earth(er)
++   tmp <- tempfile(fileext = ".csv")
++   export_knots_csv(knots, tmp)
++   cat(readLines(tmp), sep = "\n")
++   unlink(tmp)
++ }
+"variable","knot","direction"
+"wt",3.52,"forward"
+"hp",105,"forward"
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("export_knots_csv", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("extract_smooth_grids")
+> ### * extract_smooth_grids
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: extract_smooth_grids
+> ### Title: Extract Smooth Functions as Lookup Tables
+> ### Aliases: extract_smooth_grids
+> 
+> ### ** Examples
+> 
+> specs <- list(
++   list(vars = "wt", type = "s", bs = "tp", k = NULL),
++   list(vars = "hp", type = "s", bs = "tp", k = NULL)
++ )
+> res <- fit_gam(mtcars, "mpg", specs, cv_folds = 0)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+> grids <- extract_smooth_grids(res, n_points = 50)
+> names(grids)
+[1] "wt" "hp"
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("extract_smooth_grids", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("fit_gam")
+> ### * fit_gam
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: fit_gam
+> ### Title: Fit a GAM Model
+> ### Aliases: fit_gam
+> 
+> ### ** Examples
+> 
+> specs <- list(
++   list(vars = "wt", type = "s", bs = "tp", k = NULL),
++   list(vars = "hp", type = "s", bs = "tp", k = NULL)
++ )
+> result <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.03, 20.17] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.08, 25.53] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.22, 20.10] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [14.64, 21.76] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 31.28] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [12.97, 26.79] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [22.30, 29.04] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.44, 29.54] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.94, 19.03] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [15.03, 16.08] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> summary(result$model)
+
+Family: gaussian 
+Link function: identity 
+
+Formula:
+mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+
+Parametric coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  20.0906     0.3767   53.34   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+        edf Ref.df     F  p-value    
+s(wt) 2.169      9 4.703 1.64e-06 ***
+s(hp) 1.993      9 1.950 0.000456 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.875   Deviance explained = 89.2%
+-REML = 63.728  Scale est. = 4.54      n = 32
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("fit_gam", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("format_gam_summary")
+> ### * format_gam_summary
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: format_gam_summary
+> ### Title: Format GAM Summary Statistics
+> ### Aliases: format_gam_summary
+> 
+> ### ** Examples
+> 
+> specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.11, 19.65] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.36, 31.65] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.04, 22.27] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [15.98, 21.03] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 29.99] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.38, 26.99] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [21.94, 28.37] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.47, 28.48] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.92, 17.88] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [14.13, 16.39] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> format_gam_summary(res)
+$r_squared
+[1] 0.8050021
+
+$cv_rsq
+[1] 0.7603131
+
+$dev_explained
+[1] 0.8193024
+
+$aic
+[1] 159.5458
+
+$bic
+[1] 166.5373
+
+$n_obs
+[1] 32
+
+$n_smooths
+[1] 1
+
+$method
+[1] "REML"
+
+$family
+[1] "gaussian"
+
+$smooth_table
+   Term      EDF Ref.df        F p_value
+1 s(wt) 2.273399      9 14.16198       0
+
+$parametric_table
+         Term Estimate Std_Error  t_value      p_value
+1 (Intercept) 20.09063 0.4704759 42.70277 1.524066e-27
+
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("format_gam_summary", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("glance_gam")
+> ### * glance_gam
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: glance_gam
+> ### Title: Glance at GAM Model Fit
+> ### Aliases: glance_gam
+> 
+> ### ** Examples
+> 
+> specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.11, 19.65] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.36, 31.65] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.04, 22.27] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [15.98, 21.03] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 29.99] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.38, 26.99] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [21.94, 28.37] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.47, 28.48] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.92, 17.88] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [14.13, 16.39] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> glance_gam(res)
+# A tibble: 1 × 9
+     df logLik   AIC   BIC deviance df.residual  nobs adj.r.squared  npar
+  <dbl>  <dbl> <dbl> <dbl>    <dbl>       <dbl> <int>         <dbl> <int>
+1  3.27  -75.0  160.  167.     203.        28.7    32         0.805    10
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("glance_gam", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("import_data")
+> ### * import_data
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: import_data
+> ### Title: Import Data from CSV or Excel
+> ### Aliases: import_data
+> 
+> ### ** Examples
+> 
+> tmp <- tempfile(fileext = ".csv")
+> write.csv(mtcars, tmp, row.names = FALSE)
+> df <- import_data(tmp)
+> head(df)
+   mpg cyl disp  hp drat    wt  qsec vs am gear carb
+1 21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+2 21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+3 22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+4 21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
+5 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
+6 18.1   6  225 105 2.76 3.460 20.22  1  0    3    1
+> unlink(tmp)
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("import_data", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("import_earth")
+> ### * import_earth
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: import_earth
+> ### Title: Import an Earth Model and Extract Knot Structure
+> ### Aliases: import_earth
+> 
+> ### ** Examples
+> 
+> if (requireNamespace("earth", quietly = TRUE)) {
++   m <- earth::earth(mpg ~ wt + hp + disp, data = mtcars)
++   er <- structure(
++     list(model = m, target = "mpg",
++          predictors = c("wt", "hp", "disp"),
++          categoricals = character(0), linpreds = character(0),
++          degree = 1L, cv_enabled = FALSE, allowed_matrix = NULL,
++          data = mtcars, elapsed = 0, trace_output = character(0)),
++     class = "earthUI_result"
++   )
++   knots <- import_earth(er)
++   str(knots$knots)
++ }
+List of 2
+ $ wt: num [1:2] 2.77 3.17
+ $ hp: num 150
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("import_earth", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mgcvUI")
+> ### * mgcvUI
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mgcvUI
+> ### Title: Launch the mgcvUI Shiny Application
+> ### Aliases: mgcvUI
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   mgcvUI()
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mgcvUI", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mod_data_ui")
+> ### * mod_data_ui
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mod_data_ui
+> ### Title: Data Import Module - UI
+> ### Aliases: mod_data_ui
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   ui <- fluidPage(mod_data_ui("data1"))
++   server <- function(input, output, session) {
++     mod_data_server("data1")
++   }
++   shinyApp(ui, server)
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mod_data_ui", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mod_earth_import_ui")
+> ### * mod_earth_import_ui
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mod_earth_import_ui
+> ### Title: Earth Import Module - UI
+> ### Aliases: mod_earth_import_ui
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   ui <- fluidPage(mod_earth_import_ui("earth1"))
++   server <- function(input, output, session) {
++     mod_earth_import_server("earth1")
++   }
++   shinyApp(ui, server)
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mod_earth_import_ui", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mod_model_fit_ui")
+> ### * mod_model_fit_ui
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mod_model_fit_ui
+> ### Title: Model Fit Button - UI (sidebar)
+> ### Aliases: mod_model_fit_ui
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   ui <- fluidPage(mod_model_fit_ui("model1"))
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mod_model_fit_ui", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mod_report_ui")
+> ### * mod_report_ui
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mod_report_ui
+> ### Title: Report Export Module - UI
+> ### Aliases: mod_report_ui
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   ui <- fluidPage(mod_report_ui("report1"))
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mod_report_ui", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("mod_variables_ui")
+> ### * mod_variables_ui
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: mod_variables_ui
+> ### Title: Variable Selection Module - UI
+> ### Aliases: mod_variables_ui
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   ui <- fluidPage(mod_variables_ui("vars1"))
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("mod_variables_ui", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("plot_actual_vs_predicted")
+> ### * plot_actual_vs_predicted
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: plot_actual_vs_predicted
+> ### Title: Plot Actual vs Predicted
+> ### Aliases: plot_actual_vs_predicted
+> 
+> ### ** Examples
+> 
+> specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.11, 19.65] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.36, 31.65] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.04, 22.27] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [15.98, 21.03] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 29.99] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.38, 26.99] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [21.94, 28.37] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.47, 28.48] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.92, 17.88] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [14.13, 16.39] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> plot_actual_vs_predicted(res)
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("plot_actual_vs_predicted", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("plot_diagnostics")
+> ### * plot_diagnostics
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: plot_diagnostics
+> ### Title: Plot GAM Residual Diagnostics
+> ### Aliases: plot_diagnostics
+> 
+> ### ** Examples
+> 
+> specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.11, 19.65] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.36, 31.65] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.04, 22.27] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [15.98, 21.03] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 29.99] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.38, 26.99] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [21.94, 28.37] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.47, 28.48] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.92, 17.88] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [14.13, 16.39] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> plot_diagnostics(res)
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("plot_diagnostics", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("plot_smooth_single")
+> ### * plot_smooth_single
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: plot_smooth_single
+> ### Title: Plot a Single GAM Smooth Term
+> ### Aliases: plot_smooth_single
+> 
+> ### ** Examples
+> 
+> specs <- list(
++   list(vars = "wt", type = "s", bs = "tp", k = NULL),
++   list(vars = "hp", type = "s", bs = "tp", k = NULL)
++ )
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.03, 20.17] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.08, 25.53] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.22, 20.10] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [14.64, 21.76] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 31.28] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [12.97, 26.79] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [22.30, 29.04] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.44, 29.54] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.94, 19.03] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [15.03, 16.08] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> plot_smooth_single(res, "wt")
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("plot_smooth_single", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("plot_smooths")
+> ### * plot_smooths
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: plot_smooths
+> ### Title: Plot GAM Smooth Terms
+> ### Aliases: plot_smooths
+> 
+> ### ** Examples
+> 
+> specs <- list(
++   list(vars = "wt", type = "s", bs = "tp", k = NULL),
++   list(vars = "hp", type = "s", bs = "tp", k = NULL)
++ )
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.03, 20.17] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.08, 25.53] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.22, 20.10] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [14.64, 21.76] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 31.28] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [12.97, 26.79] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [22.30, 29.04] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.44, 29.54] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.94, 19.03] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [15.03, 16.08] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> plot_smooths(res)
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("plot_smooths", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("render_gam_report")
+> ### * render_gam_report
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: render_gam_report
+> ### Title: Render a GAM Report
+> ### Aliases: render_gam_report
+> 
+> ### ** Examples
+> 
+> if (interactive()) {
++   specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
++   res <- fit_gam(mtcars, "mpg", specs)
++   render_gam_report(res, "html")
++ }
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("render_gam_report", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> cleanEx()
+> nameEx("tidy_gam")
+> ### * tidy_gam
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: tidy_gam
+> ### Title: Tidy GAM Results with broom
+> ### Aliases: tidy_gam
+> 
+> ### ** Examples
+> 
+> specs <- list(list(vars = "wt", type = "s", bs = "tp", k = NULL))
+> res <- fit_gam(mtcars, "mpg", specs)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [15.11, 19.65] actual [14.30, 21.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.36, 31.65] actual [15.20, 30.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [18.04, 22.27] actual [15.20, 19.70] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [15.98, 21.03] actual [13.30, 24.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [22.74, 29.99] actual [21.00, 32.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.38, 26.99] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [21.94, 28.37] actual [21.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [15.47, 28.48] actual [19.20, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.92, 17.88] actual [14.70, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [14.13, 16.39] actual [10.40, 17.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+> tidy_gam(res)
+# A tibble: 1 × 5
+  term    edf ref.df statistic p.value
+  <chr> <dbl>  <dbl>     <dbl>   <dbl>
+1 s(wt)  2.27      9      14.2       0
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("tidy_gam", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  5.193 0.275 5.558 0.003 0.004 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')

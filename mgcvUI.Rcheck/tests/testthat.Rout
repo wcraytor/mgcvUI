@@ -1,0 +1,1866 @@
+
+R version 4.5.2 (2025-10-31) -- "[Not] Part in a Rumble"
+Copyright (C) 2025 The R Foundation for Statistical Computing
+Platform: aarch64-apple-darwin20
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> library(testthat)
+> library(mgcvUI)
+> 
+> test_check("mgcvUI")
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 5-fold cross-validation...
+CV fold 1/5...
+  fold 1: pred range [16.08, 25.75] actual [13.30, 32.40] NAs=0/7
+CV fold 2/5...
+  fold 2: pred range [12.38, 32.04] actual [10.40, 30.40] NAs=0/7
+CV fold 3/5...
+  fold 3: pred range [10.13, 25.37] actual [14.30, 22.80] NAs=0/6
+CV fold 4/5...
+  fold 4: pred range [11.91, 28.44] actual [10.40, 33.90] NAs=0/6
+CV fold 5/5...
+  fold 5: pred range [15.05, 30.57] actual [15.20, 30.40] NAs=0/6
+CV complete (5/5 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 5-fold cross-validation...
+CV fold 1/5...
+  fold 1: pred range [16.06, 28.34] actual [14.30, 33.90] NAs=0/7
+CV fold 2/5...
+  fold 2: pred range [9.71, 28.33] actual [14.70, 32.40] NAs=0/7
+CV fold 3/5...
+  fold 3: pred range [12.54, 32.68] actual [10.40, 30.40] NAs=0/6
+CV fold 4/5...
+  fold 4: pred range [12.87, 25.62] actual [10.40, 22.80] NAs=0/6
+CV fold 5/5...
+  fold 5: pred range [13.75, 22.25] actual [13.30, 22.80] NAs=0/6
+CV complete (5/5 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 5-fold cross-validation...
+CV fold 1/5...
+  fold 1: pred range [12.37, 24.33] actual [10.40, 24.40] NAs=0/7
+CV fold 2/5...
+  fold 2: pred range [15.59, 30.28] actual [19.20, 33.90] NAs=0/7
+CV fold 3/5...
+  fold 3: pred range [9.08, 25.49] actual [10.40, 22.80] NAs=0/6
+CV fold 4/5...
+  fold 4: pred range [14.97, 17.88] actual [15.00, 19.20] NAs=0/6
+CV fold 5/5...
+  fold 5: pred range [18.18, 26.48] actual [15.80, 32.40] NAs=0/6
+CV complete (5/5 folds succeeded, 32 valid predictions)
+  complete cases: 50 of 50
+  col 'y': class=numeric length=50 NAs=0
+  col 'dt': class=numeric length=50 NAs=0
+  formula: y ~ s(dt, bs = "tp")
+  term: s(dt) bs=tp k=default(10) unique(complete)=50
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 50 of 50
+  col 'y': class=numeric length=50 NAs=0
+  col 'ts': class=numeric length=50 NAs=0
+  formula: y ~ s(ts, bs = "tp")
+  term: s(ts) bs=tp k=default(10) unique(complete)=50
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl_chr': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl_chr
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 10 of 10
+  col 'y': class=numeric length=10 NAs=0
+  col 'x1': class=numeric length=10 NAs=0
+  formula: y ~ s(x1, bs = "tp", k = 9)
+  term: s(x1) bs=tp k=9 unique(complete)=10
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 9 of 9
+  col 'y': class=numeric length=9 NAs=0
+  col 'x1': class=numeric length=9 NAs=0
+  formula: y ~ s(x1, bs = "tp", k = 8)
+  term: s(x1) bs=tp k=8 unique(complete)=9
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 24 of 30
+  col 'y': class=numeric length=30 NAs=0
+  col 'x1': class=numeric length=30 NAs=3
+  col 'x2': class=numeric length=30 NAs=3
+  formula: y ~ s(x1, bs = "tp") + s(x2, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=24
+  term: s(x2) bs=tp k=default(10) unique(complete)=24
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 25 of 30
+  col 'y': class=numeric length=30 NAs=5
+  col 'x1': class=numeric length=30 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=25
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 10 of 20
+  col 'y': class=numeric length=20 NAs=0
+  col 'x1': class=numeric length=20 NAs=10
+  col 'grp': class=factor length=20 NAs=0
+  formula: y ~ s(x1, bs = "tp", k = 9) + grp
+  term: s(x1) bs=tp k=9 unique(complete)=10
+Fitting main GAM model...
+  dropping 'const_var': only 1 unique value(s)
+  complete cases: 30 of 30
+  col 'y': class=numeric length=30 NAs=0
+  col 'x1': class=numeric length=30 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  'binary': 2 unique values, converting to factor
+  complete cases: 30 of 30
+  col 'y': class=numeric length=30 NAs=0
+  col 'x1': class=numeric length=30 NAs=0
+  col 'binary': class=factor length=30 NAs=0
+  formula: y ~ s(x1, bs = "tp") + binary
+  term: s(x1) bs=tp k=default(10) unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 30 of 30
+  col 'y': class=numeric length=30 NAs=0
+  col 'x1': class=numeric length=30 NAs=0
+  formula: y ~ s(x1, bs = "tp", k = 4)
+  term: s(x1) bs=tp k=4 unique(complete)=5
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 1000 of 1000
+  col 'y': class=numeric length=1000 NAs=0
+  col 'x1': class=numeric length=1000 NAs=0
+  col 'x2': class=numeric length=1000 NAs=0
+  formula: y ~ s(x1, bs = "tp") + s(x2, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=1000
+  term: s(x2) bs=tp k=default(10) unique(complete)=1000
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 200 of 200
+  col 'y': class=numeric length=200 NAs=0
+  col 'x1': class=numeric length=200 NAs=0
+  col 'x2': class=numeric length=200 NAs=0
+  col 'x3': class=numeric length=200 NAs=0
+  col 'x4': class=numeric length=200 NAs=0
+  col 'x5': class=numeric length=200 NAs=0
+  col 'x6': class=numeric length=200 NAs=0
+  col 'x7': class=numeric length=200 NAs=0
+  col 'x8': class=numeric length=200 NAs=0
+  col 'x9': class=numeric length=200 NAs=0
+  col 'x10': class=numeric length=200 NAs=0
+  col 'x11': class=numeric length=200 NAs=0
+  col 'x12': class=numeric length=200 NAs=0
+  formula: y ~ s(x1, bs = "tp") + s(x2, bs = "tp") + s(x3, bs = "tp") +     s(x4, bs = "tp") + s(x5, bs = "tp") + s(x6, bs = "tp") +     s(x7, bs = "tp") + s(x8, bs = "tp") + s(x9, bs = "tp") +     s(x10, bs = "tp") + s(x11, bs = "tp") + s(x12, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=200
+  term: s(x2) bs=tp k=default(10) unique(complete)=200
+  term: s(x3) bs=tp k=default(10) unique(complete)=200
+  term: s(x4) bs=tp k=default(10) unique(complete)=200
+  term: s(x5) bs=tp k=default(10) unique(complete)=200
+  term: s(x6) bs=tp k=default(10) unique(complete)=200
+  term: s(x7) bs=tp k=default(10) unique(complete)=200
+  term: s(x8) bs=tp k=default(10) unique(complete)=200
+  term: s(x9) bs=tp k=default(10) unique(complete)=200
+  term: s(x10) bs=tp k=default(10) unique(complete)=200
+  term: s(x11) bs=tp k=default(10) unique(complete)=200
+  term: s(x12) bs=tp k=default(10) unique(complete)=200
+Fitting main GAM model...
+Main GAM fit complete in 0.6s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ wt + hp
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 10 of 10
+  col 'y': class=numeric length=10 NAs=0
+  col 'x1': class=numeric length=10 NAs=0
+  formula: y ~ s(x1, bs = "tp", k = 9)
+  term: s(x1) bs=tp k=9 unique(complete)=10
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 15 of 15
+  col 'y': class=numeric length=15 NAs=0
+  col 'x1': class=numeric length=15 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=15
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 100 of 100
+  col 'y': class=numeric length=100 NAs=0
+  col 'x1': class=numeric length=100 NAs=0
+  col 'x2': class=numeric length=100 NAs=0
+  col 'x3': class=numeric length=100 NAs=0
+  col 'x4': class=numeric length=100 NAs=0
+  formula: y ~ s(x1, bs = "tp") + s(x2, bs = "tp") + s(x3, bs = "tp") +     s(x4, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=100
+  term: s(x2) bs=tp k=default(10) unique(complete)=100
+  term: s(x3) bs=tp k=default(10) unique(complete)=100
+  term: s(x4) bs=tp k=default(10) unique(complete)=100
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ wt + hp
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 15 of 15
+  col 'y': class=numeric length=15 NAs=0
+  col 'x1': class=numeric length=15 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=15
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 15 of 15
+  col 'y': class=numeric length=15 NAs=0
+  col 'x1': class=numeric length=15 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=15
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg_pos': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg_pos ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ wt + hp
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ wt + hp
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + hp
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + hp
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 100 of 100
+  col 'y': class=numeric length=100 NAs=0
+  col 'x1': class=numeric length=100 NAs=0
+  col 'x2': class=numeric length=100 NAs=0
+  col 'x3': class=numeric length=100 NAs=0
+  formula: y ~ s(x1, bs = "tp") + s(x2, bs = "tp") + s(x3, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=100
+  term: s(x2) bs=tp k=default(10) unique(complete)=100
+  term: s(x3) bs=tp k=default(10) unique(complete)=100
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 50 of 50
+  col 'y': class=numeric length=50 NAs=0
+  col 'x1': class=numeric length=50 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=50
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  dropping 'c1': only 1 unique value(s)
+  dropping 'c2': only 1 unique value(s)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+This is mgcv 1.9-4. For overview type '?mgcv'.
+  complete cases: 100 of 100
+  col 'y': class=numeric length=100 NAs=0
+  col 'x1': class=numeric length=100 NAs=0
+  col 'x2': class=numeric length=100 NAs=0
+  formula: y ~ s(x1, bs = "tp") + s(x2, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=100
+  term: s(x2) bs=tp k=default(10) unique(complete)=100
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 50 of 50
+  col 'y': class=numeric length=50 NAs=0
+  col 'x1': class=numeric length=50 NAs=0
+  formula: y ~ s(x1, bs = "tp")
+  term: s(x1) bs=tp k=default(10) unique(complete)=50
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 2-fold cross-validation...
+CV fold 1/2...
+  fold 1: pred range [12.53, 30.92] actual [10.40, 33.90] NAs=0/16
+CV fold 2/2...
+  fold 2: pred range [8.78, 30.62] actual [10.40, 32.40] NAs=0/16
+CV complete (2/2 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  adding: gam_functions.R (deflated 34%)
+  adding: gam_functions.py (deflated 32%)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [12.24, 21.85] actual [15.00, 24.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [15.50, 25.59] actual [19.20, 22.80] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [19.73, 29.04] actual [19.70, 33.90] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [10.02, 26.85] actual [14.70, 32.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [14.96, 32.48] actual [16.40, 30.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [14.80, 25.13] actual [13.30, 30.40] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [12.53, 19.93] actual [10.40, 18.10] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [12.95, 26.54] actual [10.40, 26.00] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [15.94, 24.57] actual [17.30, 21.50] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [17.12, 21.80] actual [15.50, 21.00] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [19.05, 26.42] actual [19.20, 22.80] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [12.59, 16.31] actual [10.40, 17.30] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [14.51, 27.22] actual [15.20, 26.00] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [19.21, 22.14] actual [17.80, 21.00] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [21.76, 28.68] actual [19.70, 27.30] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [10.77, 30.32] actual [14.70, 30.40] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [22.42, 28.02] actual [24.40, 33.90] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [13.03, 16.24] actual [10.40, 15.00] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [15.11, 26.22] actual [15.80, 32.40] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [16.09, 24.70] actual [14.30, 21.40] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [16.62, 28.15] actual [15.80, 33.90] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [12.56, 21.69] actual [10.40, 24.40] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [15.57, 26.53] actual [15.20, 26.00] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [13.00, 16.02] actual [10.40, 17.30] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [15.27, 18.08] actual [14.30, 16.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [18.76, 25.26] actual [19.70, 30.40] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [17.60, 32.29] actual [15.50, 30.40] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [19.19, 29.42] actual [17.80, 27.30] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [9.93, 23.08] actual [14.70, 21.00] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [14.52, 25.52] actual [13.30, 22.80] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [17.74, 25.74] actual [15.50, 32.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [15.14, 18.04] actual [14.30, 18.70] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [22.23, 31.96] actual [19.70, 30.40] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [12.25, 25.58] actual [10.40, 22.80] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [16.23, 28.08] actual [13.30, 33.90] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.10, 19.39] actual [15.00, 22.80] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [17.83, 23.04] actual [15.20, 24.40] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [9.92, 30.79] actual [14.70, 30.40] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [12.05, 21.94] actual [10.40, 21.40] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [17.76, 28.37] actual [17.80, 27.30] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [9.66, 28.07] actual [14.70, 33.90] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [16.62, 22.40] actual [13.30, 19.70] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [16.07, 24.23] actual [15.20, 24.40] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [14.75, 30.78] actual [16.40, 30.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [15.67, 19.04] actual [15.20, 21.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.40, 26.88] actual [15.00, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [25.85, 32.54] actual [22.80, 30.40] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [14.16, 25.61] actual [10.40, 32.40] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [17.95, 22.02] actual [17.80, 21.40] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [17.63, 17.74] actual [18.10, 19.20] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + ti(wt, hp, k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: ti(wt,hp) bs=NULL k=5 unique(complete)=31
+Fitting main GAM model...
+Main GAM fit complete in 0.2s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ te(wt, hp, k = 5)
+  term: te(wt,hp) bs=NULL k=5 unique(complete)=31
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'disp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(disp, bs = "tp") + ti(wt, disp, k = 4)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(disp) bs=tp k=default(10) unique(complete)=27
+  term: ti(wt,disp) bs=NULL k=4 unique(complete)=31
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl_f': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5, by = cyl_f) + cyl_f
+  term: s(wt) bs=tp k=5 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl_f': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5, by = cyl_f) + cyl_f
+  term: s(wt) bs=tp k=5 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg_log': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg_log ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg_log10': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg_log10 ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "cr", k = 5)
+  term: s(wt) bs=cr k=5 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "ps", k = 8)
+  term: s(wt) bs=ps k=8 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "bs", k = 8)
+  term: s(wt) bs=bs k=8 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'disp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "cr", k = 5) + s(hp, bs = "ps", k = 8) + s(disp,     bs = "tp")
+  term: s(wt) bs=cr k=5 unique(complete)=29
+  term: s(hp) bs=ps k=8 unique(complete)=22
+  term: s(disp) bs=tp k=default(10) unique(complete)=27
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'disp': class=numeric length=32 NAs=0
+  col 'cyl_f': class=factor length=32 NAs=0
+  col 'am_f': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + disp + cyl_f + am_f
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 20)
+  term: s(wt) bs=tp k=20 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  capping k for gear: 3 -> 3 (unique=3)
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'gear': class=numeric length=32 NAs=0
+  formula: mpg ~ s(gear, bs = "tp", k = 3)
+  term: s(gear) bs=tp k=3 unique(complete)=3
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 3)
+  term: s(wt) bs=tp k=3 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 3)
+  term: s(wt) bs=tp k=3 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 150 of 150
+  col 'Sepal.Length': class=numeric length=150 NAs=0
+  col 'Sepal.Width': class=numeric length=150 NAs=0
+  col 'Petal.Length': class=numeric length=150 NAs=0
+  formula: Sepal.Length ~ s(Sepal.Width, bs = "tp") + s(Petal.Length, bs = "tp")
+  term: s(Sepal.Width) bs=tp k=default(10) unique(complete)=23
+  term: s(Petal.Length) bs=tp k=default(10) unique(complete)=43
+Fitting main GAM model...
+Main GAM fit complete in 0.1s
+  complete cases: 150 of 150
+  col 'Sepal.Length': class=numeric length=150 NAs=0
+  col 'Petal.Length': class=numeric length=150 NAs=0
+  col 'Species': class=factor length=150 NAs=0
+  formula: Sepal.Length ~ s(Petal.Length, bs = "tp") + Species
+  term: s(Petal.Length) bs=tp k=default(10) unique(complete)=43
+Fitting main GAM model...
+Main GAM fit complete in 0.1s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl_chr': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl_chr
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ te(wt, hp, k = 5)
+  term: te(wt,hp) bs=NULL k=5 unique(complete)=31
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + cyl
+  term: s(wt) bs=tp k=5 unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 29 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=3
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=26
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg_pos': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg_pos ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  capping k for gear: 3 -> 3 (unique=3)
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'gear': class=numeric length=32 NAs=0
+  formula: mpg ~ s(gear, bs = "tp", k = 3)
+  term: s(gear) bs=tp k=3 unique(complete)=3
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  'is_auto': 2 unique values, converting to factor
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'is_auto': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + is_auto
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  dropping 'const': only 1 unique value(s)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  dropping 'const1': only 1 unique value(s)
+  dropping 'const2': only 1 unique value(s)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  plot_smooth_interactive 'wt': x range = [1.51, 5.42], y range = [-8.6909, 11.269]
+  DEBUG scatter 'wt': x class=numeric range=[1.513,5.424] y range=[-10,14]
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'log_mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: log_mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) +     s(qsec, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 20 of 20
+  col 'mpg': class=numeric length=20 NAs=0
+  col 'wt': class=numeric length=20 NAs=0
+  col 'hp': class=numeric length=20 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=18
+  term: s(hp) bs=tp k=5 unique(complete)=15
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'log_mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: log_mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) +     s(qsec, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'log10_mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: log10_mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) +     s(qsec, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) + s(qsec,     bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'log_mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: log_mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) +     s(qsec, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'log_mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: log_mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5) +     s(qsec, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=29
+  term: s(hp) bs=tp k=5 unique(complete)=22
+  term: s(qsec) bs=tp k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 20 of 20
+  col 'mpg': class=numeric length=20 NAs=0
+  col 'wt': class=numeric length=20 NAs=0
+  col 'hp': class=numeric length=20 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=18
+  term: s(hp) bs=tp k=5 unique(complete)=15
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 20 of 20
+  col 'mpg': class=numeric length=20 NAs=0
+  col 'wt': class=numeric length=20 NAs=0
+  col 'hp': class=numeric length=20 NAs=0
+  formula: mpg ~ s(wt, bs = "tp", k = 5) + s(hp, bs = "tp", k = 5)
+  term: s(wt) bs=tp k=5 unique(complete)=18
+  term: s(hp) bs=tp k=5 unique(complete)=15
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  adding: gam_functions.R (deflated 34%)
+  adding: gam_functions.py (deflated 32%)
+  adding: gam_functions.hpp (deflated 45%)
+  adding: gam_functions.sqlite (deflated 96%)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  adding: gam_functions.R (deflated 34%)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'disp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(disp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(disp) bs=tp k=default(10) unique(complete)=27
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'cyl_f': class=factor length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + cyl_f
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'log_mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: log_mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'disp': class=numeric length=32 NAs=0
+  col 'drat': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(disp, bs = "tp") +     s(drat, bs = "tp") + s(qsec, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(disp) bs=tp k=default(10) unique(complete)=27
+  term: s(drat) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=tp k=default(10) unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.1s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'qsec': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + s(qsec, bs = "cr",     k = 5)
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+  term: s(qsec) bs=cr k=5 unique(complete)=30
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  col 'cyl': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp") + cyl
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [16.19, 28.34] actual [15.20, 27.30] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [15.69, 21.27] actual [15.00, 21.00] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [27.73, 29.77] actual [30.40, 33.90] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [16.53, 22.03] actual [15.50, 21.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [14.90, 25.67] actual [15.80, 22.80] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [12.12, 27.05] actual [10.40, 26.00] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [10.01, 19.60] actual [14.70, 22.80] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [17.41, 23.26] actual [14.30, 21.00] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [16.21, 22.21] actual [13.30, 19.70] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [12.53, 25.50] actual [10.40, 32.40] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  col 'hp': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp") + s(hp, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+  term: s(hp) bs=tp k=default(10) unique(complete)=22
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [16.16, 28.97] actual [15.20, 33.90] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [12.57, 16.74] actual [10.40, 18.70] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [12.63, 15.42] actual [10.40, 19.20] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [16.06, 25.50] actual [15.80, 30.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [18.04, 29.34] actual [15.20, 27.30] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [17.88, 26.68] actual [15.50, 32.40] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [18.92, 21.31] actual [18.10, 22.80] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [13.93, 26.47] actual [13.30, 26.00] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [10.00, 32.29] actual [14.70, 30.40] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [19.97, 24.44] actual [21.40, 24.40] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+  complete cases: 32 of 32
+  col 'mpg': class=numeric length=32 NAs=0
+  col 'wt': class=numeric length=32 NAs=0
+  formula: mpg ~ s(wt, bs = "tp")
+  term: s(wt) bs=tp k=default(10) unique(complete)=29
+Fitting main GAM model...
+Main GAM fit complete in 0.0s
+Starting 10-fold cross-validation...
+CV fold 1/10...
+  fold 1: pred range [16.99, 18.63] actual [18.10, 24.40] NAs=0/4
+CV fold 2/10...
+  fold 2: pred range [12.06, 26.92] actual [10.40, 26.00] NAs=0/4
+CV fold 3/10...
+  fold 3: pred range [12.27, 28.13] actual [10.40, 33.90] NAs=0/3
+CV fold 4/10...
+  fold 4: pred range [15.65, 25.65] actual [19.20, 32.40] NAs=0/3
+CV fold 5/10...
+  fold 5: pred range [15.13, 19.74] actual [15.00, 16.40] NAs=0/3
+CV fold 6/10...
+  fold 6: pred range [9.84, 18.27] actual [14.70, 15.50] NAs=0/3
+CV fold 7/10...
+  fold 7: pred range [24.83, 29.00] actual [21.50, 27.30] NAs=0/3
+CV fold 8/10...
+  fold 8: pred range [16.12, 32.21] actual [13.30, 30.40] NAs=0/3
+CV fold 9/10...
+  fold 9: pred range [17.76, 17.76] actual [17.80, 19.20] NAs=0/3
+CV fold 10/10...
+  fold 10: pred range [17.47, 23.33] actual [14.30, 21.40] NAs=0/3
+CV complete (10/10 folds succeeded, 32 valid predictions)
+[ FAIL 0 | WARN 2 | SKIP 8 | PASS 1384 ]
+
+══ Skipped tests (8) ═══════════════════════════════════════════════════════════
+• On CRAN (8): 'test-export_report.R:51:3', 'test-report_integration.R:68:3',
+  'test-report_integration.R:80:3', 'test-report_integration.R:92:3',
+  'test-report_integration.R:104:3', 'test-report_integration.R:116:3',
+  'test-report_integration.R:128:3', 'test-report_integration.R:834:3'
+
+[ FAIL 0 | WARN 2 | SKIP 8 | PASS 1384 ]
+> 
+> proc.time()
+   user  system elapsed 
+ 11.577   1.849  14.821 

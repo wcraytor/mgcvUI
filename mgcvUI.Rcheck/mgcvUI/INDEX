@@ -1,0 +1,48 @@
+build_gam_formula       Build a GAM Formula from Variable
+                        Specifications
+build_gam_knots         Build the knots list for gam() from earth knot
+                        data
+check_sign_consistency
+                        Check for Sign Discrepancies Between Earth and
+                        GAM
+detect_column_types     Detect Column Types from a Data Frame
+export_functions_sqlite
+                        Export Smooth Functions to SQLite
+export_functions_zip    Export Smooth Functions as a Zip Archive
+export_gam_docx         Export GAM Summary to Word (officer)
+export_knots_csv        Export Knot Positions to CSV
+extract_smooth_grids    Extract Smooth Functions as Lookup Tables
+fit_gam                 Fit a GAM Model
+format_gam_summary      Format GAM Summary Statistics
+generate_cpp_code       Generate C++ Code for Smooth Functions
+generate_python_code    Generate Python Code for Smooth Functions
+generate_r_code         Generate R Code for Smooth Functions
+glance_gam              Glance at GAM Model Fit
+import_data             Import Data from CSV or Excel
+import_earth            Import an Earth Model and Extract Knot
+                        Structure
+mgcvUI                  Launch the mgcvUI Shiny Application
+mod_data_server         Data Import Module - Server
+mod_data_ui             Data Import Module - UI
+mod_earth_import_server
+                        Earth Import Module - Server
+mod_earth_import_ui     Earth Import Module - UI
+mod_model_fit_ui        Model Fit Button - UI (sidebar)
+mod_model_results_ui    Model Results - UI (main panel)
+mod_model_server        Model Module - Server (shared by fit button and
+                        results)
+mod_report_server       Report Export Module - Server
+mod_report_ui           Report Export Module - UI
+mod_variables_params_ui
+                        Mgcv Call Parameters - UI
+mod_variables_server    Variable Selection Module - Server
+mod_variables_ui        Variable Selection Module - UI
+plot_actual_vs_predicted
+                        Plot Actual vs Predicted
+plot_diagnostics        Plot GAM Residual Diagnostics
+plot_smooth_interactive
+                        Interactive Smooth Plot with Slope Tooltip
+plot_smooth_single      Plot a Single GAM Smooth Term
+plot_smooths            Plot GAM Smooth Terms
+render_gam_report       Render a GAM Report
+tidy_gam                Tidy GAM Results with broom

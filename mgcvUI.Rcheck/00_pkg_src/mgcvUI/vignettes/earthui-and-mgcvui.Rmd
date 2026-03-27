@@ -1,0 +1,215 @@
+---
+title: "Using earthUI and mgcvUI Together"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using earthUI and mgcvUI Together}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## The Two-Stage Workflow
+
+Real estate valuation models benefit from a two-stage approach:
+
+1. **Discover structure** with `earthUI` -- MARS (Multivariate Adaptive
+   Regression Splines) is excellent at finding breakpoints (knots) and
+   identifying which variables matter.
+2. **Confirm and report** with `mgcvUI` -- GAMs provide smooth,
+   statistically rigorous curves with proper confidence intervals and
+   p-values, which are better suited for defensible appraisal reports.
+
+The idea: let earth find the knots, then let mgcv smooth through them.
+
+## What mgcvUI Extracts from earthUI
+
+When you import an earthUI result `.rds` file, mgcvUI extracts the
+following components:
+
+| Component | Source in Earth Model | How mgcvUI Uses It |
+|-----------|----------------------|---------------------|
+| **Knot positions** | `model$cuts` + `model$selected.terms` | Placed as `cr` basis knots via `gam(..., knots=)`. Earth found the breakpoints; mgcv smooths through them |
+| **Hinge directions** | `model$dirs` (+1 = forward, -1 = reverse) | Sign consistency check compares earth direction with GAM smooth derivative to flag contradictions |
+| **Interactions** | Rows in `dirs` where 2+ predictors nonzero | Pre-checks the Allowed Interactions matrix |
+| **Target variable** | `earth_result$target` | Auto-sets the response dropdown |
+| **Predictors** | `earth_result$predictors` | Auto-checks "Inc" for each predictor |
+| **Categoricals** | `earth_result$categoricals` | Auto-checks "Factor" |
+| **Linear predictors** | `earth_result$linpreds` | Auto-checks "Linear" |
+| **Interaction degree** | `earth_result$degree` | Info message if degree=1 |
+| **Allowed matrix** | `earth_result$allowed_matrix` | Seeds interaction checkboxes |
+| **R-sq, GCV, n_terms** | `model$rsq`, `model$gcv` | Displayed in import summary |
+
+The key insight: **earth's job is discovery, mgcv's job is regularized
+estimation**. The knots are the bridge -- they tell mgcv *where* the
+nonlinearities are so it doesn't have to find them itself.
+
+## Parameter Presets: Why They Differ
+
+When an earthUI result is imported, mgcvUI auto-switches to the
+**Earth Pipeline** preset:
+
+| Setting | Standalone | Earth Pipeline | Why Different |
+|---------|-----------|----------------|---------------|
+| Basis | `tp` | `cr` | Earth provides knot positions; `cr` uses them directly |
+| k | auto (10) | 5 | Earth already found breakpoints; low k prevents refitting |
+| Gamma | 1.2 | 1.4 | Stronger parsimony -- mgcv refines, not discovers |
+| Select | TRUE | TRUE | Second-stage shrinkage guard |
+
+Every setting reinforces the division: earth discovers, mgcv estimates.
+
+## Step 1: Fit an Earth Model in earthUI
+
+```{r eval=FALSE}
+library(earthUI)
+earthUI::launch()
+```
+
+In the earthUI app:
+
+1. Upload your sales data.
+2. Select sale price as the response, property features as predictors.
+3. Fit the model.
+4. **Save the result** -- click the download button to save the
+   earthUI result as an `.rds` file.
+
+Or programmatically:
+
+```{r eval=FALSE}
+library(earthUI)
+result <- earthUI::fit_earth(
+  df         = sales_data,
+  target     = "sale_price",
+  predictors = c("living_area", "lot_size", "year_built", "condition")
+)
+saveRDS(result, "earth_result.rds")
+```
+
+## Step 2: Import into mgcvUI
+
+```{r eval=FALSE}
+library(mgcvUI)
+mgcvUI()
+```
+
+In the mgcvUI app:
+
+1. Upload your sales data via **Browse** in the Data section.
+2. Expand **Import from earthUI** and browse for the `.rds` file.
+   Files are read directly from disk -- no upload size limit.
+3. mgcvUI extracts the knot positions and pre-configures the GAM:
+   - Predictors are auto-selected to match the earth model.
+   - Basis dimensions (`k`) are set based on the number of earth knots.
+   - Cubic regression splines (`cr`) are used for variables with earth
+     knots, allowing knot positions to be passed to `gam()`.
+   - The parameter preset auto-switches to **Earth Pipeline**.
+4. Review the **Predictor Settings** table -- earth's categoricals
+   are flagged as Factor, linear predictors are flagged as Linear.
+5. Fit the model.
+6. Check the **Sign Check** tab to verify GAM smooth directions agree
+   with earth hinge directions.
+7. Check the **Concurvity** tab -- earth's hinge functions on correlated
+   predictors can produce near-concurve smooth terms. Values > 0.8
+   warrant collapsing or dropping terms.
+
+## Concurvity: Why It Matters in This Pipeline
+
+Earth's hinge functions on correlated predictors (GLA and room count,
+for instance) can produce near-concurve smooth terms in mgcv -- the
+smooth analog of multicollinearity.
+
+The **Concurvity** tab shows:
+
+- **Overall**: worst/observed/estimate for each smooth term
+- **Pairwise**: worst-case between each pair of smooth terms
+
+Color coding: white (< 0.5), yellow (0.5--0.8), red (> 0.8).
+
+Values above ~0.8 in the "worst" row warrant collapsing or dropping one
+of the terms before treating the model as defensible.
+
+## Programmatic Pipeline
+
+```{r eval=FALSE}
+library(mgcvUI)
+
+# Import earth result and extract knots
+ek <- import_earth("earth_result.rds")
+
+# View the knots
+str(ek$knots)
+
+# Build GAM specs informed by earth knots
+specs <- list(
+  list(vars = "living_area", type = "s", bs = "cr",
+       k = length(ek$knots$living_area)),
+  list(vars = "lot_size", type = "s", bs = "cr",
+       k = length(ek$knots$lot_size)),
+  list(vars = "year_built", type = "s", bs = "cr",
+       k = length(ek$knots$year_built)),
+  list(vars = "condition", type = "linear", bs = NULL, k = NULL)
+)
+
+# Fit GAM with earth knots -- note earth pipeline defaults
+result <- fit_gam(
+  data         = sales_data,
+  response     = "sale_price",
+  smooth_specs = specs,
+  earth_knots  = ek,
+  method       = "REML",
+  select       = TRUE,
+  gamma        = 1.4
+)
+
+# Check concurvity
+mgcv::concurvity(result$model, full = TRUE)
+
+# Check sign consistency
+check_sign_consistency(result)
+
+# Export knots to CSV for documentation
+export_knots_csv(ek, "knot_positions.csv")
+
+# Generate appraisal report
+render_gam_report(result, "docx", "appraisal_model_report.docx",
+                  title = "GAM Valuation Model")
+```
+
+## Understanding Sign Consistency
+
+When you import earth knots, mgcvUI checks whether the GAM smooth
+curves agree with the earth hinge directions:
+
+| Earth Direction | Meaning |
+|----------------|---------|
+| Forward (+) | The hinge function increases after the knot -- earth implies a positive relationship in that region |
+| Reverse (-) | The hinge function decreases after the knot -- earth implies a negative relationship |
+
+The **Sign Check** tab compares these with the overall direction of the
+fitted GAM smooth. A **consistent** result means the GAM and earth
+agree. An **inconsistent** result flags variables where the GAM smooth
+goes in the opposite direction from what earth found -- this may indicate:
+
+- The relationship is genuinely complex (U-shaped, etc.)
+- The earth model over-fit in that region
+- Additional predictors are needed to account for confounding
+
+Inconsistency is a flag for investigation, not necessarily a problem.
+
+## Exporting Knots
+
+The knot CSV contains one row per knot with columns:
+
+| Column | Description |
+|--------|-------------|
+| `variable` | Predictor name |
+| `knot` | The knot value (breakpoint) |
+| `direction` | `"forward"` or `"reverse"` |
+
+This provides a transparent record of the MARS-derived structure that
+informed the GAM, suitable for inclusion in appraisal workfiles.

@@ -1,0 +1,1485 @@
+---
+title: ""
+format:
+  pdf:
+    documentclass: extarticle
+    classoption:
+      - 9pt
+    mainfont: "Helvetica Neue"
+    sansfont: "Helvetica Neue"
+    monofont: "Menlo"
+    monofontoptions:
+      - Scale=0.8
+    fontsize: 9pt
+    geometry:
+      - top=1in
+      - bottom=1in
+      - left=1in
+      - right=1in
+    include-in-header:
+      text: |
+        \usepackage{xcolor}
+        \usepackage{fancyhdr}
+        \usepackage{tcolorbox}
+        \usepackage{tabularx}
+        \usepackage{colortbl}
+        \usepackage{titlesec}
+        \usepackage{enumitem}
+        \definecolor{nordblue}{HTML}{5E81AC}
+        \definecolor{norddark}{HTML}{2E3440}
+        \definecolor{nordred}{HTML}{BF616A}
+        \definecolor{nordgreen}{HTML}{A3BE8C}
+        \definecolor{nordtableheader}{HTML}{2E3440}
+        \pagestyle{fancy}
+        \fancyhf{}
+        \fancyhead[L]{\small\textbf{mgcvUI}}
+        \fancyhead[R]{\small User Guide}
+        \fancyfoot[C]{\small Page \thepage\ | mgcvUI User Guide | Confidential \& Proprietary}
+        \renewcommand{\headrulewidth}{0.5pt}
+        \renewcommand{\footrulewidth}{0pt}
+        \titleformat{\section}{\large\bfseries\color{nordblue}}{}{0em}{}
+        \titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+        \titleformat{\subsubsection}{\normalsize\bfseries\itshape}{}{0em}{}
+        \titlespacing*{\section}{0pt}{1.5ex plus .5ex minus .2ex}{0.8ex plus .2ex}
+        \titlespacing*{\subsection}{0pt}{1.2ex plus .4ex minus .2ex}{0.5ex plus .2ex}
+        \titlespacing*{\subsubsection}{0pt}{1ex plus .3ex minus .1ex}{0.4ex plus .1ex}
+        \setlength{\parskip}{0.4em}
+        \setlength{\parindent}{0pt}
+        \setlist{nosep, leftmargin=2em}
+        \setlist[itemize]{topsep=0.3em, itemsep=0.15em}
+        \setlist[enumerate]{topsep=0.3em, itemsep=0.15em}
+---
+
+<!-- Cover Page -->
+\thispagestyle{empty}
+\pagecolor{norddark}
+\color{white}
+
+\vspace*{3cm}
+
+\begin{center}
+{\fontsize{48}{56}\selectfont\textbf{mgcvUI}}\\[12pt]
+{\Large User Guide}\\[24pt]
+{\small General Use · Appraisal Features · Market Area Analysis · Complete Reference}\\[24pt]
+{\small by William B. Craytor, 3/26/2026}
+\end{center}
+
+\vspace{2cm}
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabular}{|>{\centering\arraybackslash}p{3cm}|>{\centering\arraybackslash}p{3cm}|>{\centering\arraybackslash}p{3cm}|}
+\hline
+\rowcolor{nordblue}\textbf{Version} & \textbf{Audience} & \textbf{Last Updated} \\
+\hline
+0.1.0 & All Users & 2026 \\
+\hline
+\end{tabular}
+\end{center}
+
+\vfill
+
+\begin{center}
+{\footnotesize mgcvUI User Guide | Confidential \& Proprietary}
+\end{center}
+
+\newpage
+\pagecolor{white}
+\color{black}
+
+<!-- Table of Contents -->
+
+\begingroup\Huge\textbf{Table of Contents}\endgroup
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{1.5pt}}
+
+\medskip
+
+\begin{small}
+\begin{enumerate}[itemsep=0.2em, parsep=0.1em]
+\item \textbf{\textcolor{norddark}{Introduction}}
+  \begin{itemize}
+    \item What Is mgcvUI?
+    \item Three Purpose Modes
+    \item Real Estate--Specific Features
+    \item Getting Started
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{MLS Input Data Requirements}}
+  \begin{itemize}
+    \item File Format \& Structure
+    \item Required Columns for Appraisal Mode
+    \item Special Column Naming Conventions
+    \item Data Quality \& Completeness
+    \item Subject Row Placement
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{General Purpose Mode}}
+  \begin{itemize}
+    \item Overview
+    \item The Sidebar Workflow
+    \item Import from earthUI (Optional)
+    \item Main Panel Tabs
+    \item Settings Persistence
+    \item Dark Mode
+    \item Locale \& Regional Settings
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Appraisal Mode}}
+  \begin{itemize}
+    \item Subject Row Handling
+    \item Effective Date \& Sale Age
+    \item Special Column Designations
+    \item RCA Adjustments Overview
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Market Area Analysis Mode}}
+  \begin{itemize}
+    \item Differences from Appraisal Mode
+    \item When to Use Market Mode
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Variable Selection}}
+  \begin{itemize}
+    \item Target Variable
+    \item Response Transform
+    \item The Predictor Table
+    \item Data Type Detection \& Overrides
+    \item Special Column Types Reference
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Parameter Selection}}
+  \begin{itemize}
+    \item Parameter Presets
+    \item Family
+    \item Method
+    \item Gamma (Smoothing Multiplier)
+    \item Cross-Validation
+    \item Select (Shrinkage)
+    \item Default Basis
+    \item Default k (Basis Dimension)
+    \item Tensor Type
+    \item Allowed Interactions
+    \item Factor-by-Smooth Interactions
+    \item Advanced Parameters
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Fitting the Model}}
+  \begin{itemize}
+    \item The Fit Button
+    \item What Happens During Fitting
+    \item Background Fitting \& Progress
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Result Tabs}}
+  \begin{itemize}
+    \item Data Preview
+    \item Equation
+    \item Summary
+    \item Variable Importance
+    \item Contribution (Smooth Plots)
+    \item Correlation
+    \item Diagnostics
+    \item RCA Adjustments
+    \item Anova
+    \item Mgcv Output
+    \item Sign Check
+    \item Concurvity
+    \item Basis Check
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Downloading Data}}
+  \begin{itemize}
+    \item Output Columns
+    \item CQA Scores
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{RCA Calculations \& Downloading}}
+  \begin{itemize}
+    \item Opening the RCA Dialog
+    \item CQA Score Interpolation
+    \item Output Columns
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Sales Comparison Grid}}
+  \begin{itemize}
+    \item Comp Selection Dialog
+    \item Workbook Layout
+    \item Sheet Protection \& Residual Cells
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Downloading Reports}}
+  \begin{itemize}
+    \item Report Formats
+    \item Report Contents
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Exporting Model Functions}}
+  \begin{itemize}
+    \item R Functions
+    \item Python Functions
+    \item C++ Header
+    \item SQLite Database
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Comparison with earthUI and glmnetUI}}
+  \begin{itemize}
+    \item Key Differences
+    \item Shared Features
+    \item Recommended Workflow
+  \end{itemize}
+
+\item \textbf{\textcolor{norddark}{Demo Dataset: Appraisal\_1.csv}}
+  \begin{itemize}
+    \item Description
+    \item Columns
+    \item Suggested Quick Start
+  \end{itemize}
+\end{enumerate}
+\end{small}
+
+\newpage
+
+<!-- CHAPTER 1 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 1}}\\[2pt]
+{\Huge\textbf{Introduction}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## History and Background
+
+### Generalized Additive Models
+
+**Generalized Additive Models** (GAMs) were formalized by Trevor Hastie and Robert Tibshirani in their 1990 monograph. GAMs extend the linear model by replacing each linear term $\beta_j x_j$ with a smooth function $f_j(x_j)$, so the model becomes:
+
+$$y = \beta_0 + f_1(x_1) + f_2(x_2) + \cdots + f_p(x_p) + \varepsilon$$
+
+Each $f_j$ is estimated from the data using a penalized regression spline. The smooth functions allow the model to capture nonlinear relationships without the user specifying a functional form in advance. The penalty controls the wiggliness of each smooth, preventing overfitting while allowing enough flexibility to track real patterns.
+
+### The mgcv Package
+
+The R package \texttt{mgcv} (Mixed GAM Computation Vehicle) was developed by Simon Wood at the University of Bath. First released in 2001, it is now the standard R implementation of GAMs and ships with every R installation. Key features include:
+
+- **Automatic smoothness selection**: The smoothing parameter for each term is estimated as part of the model fitting, using REML (Restricted Maximum Likelihood), GCV (Generalized Cross-Validation), or ML (Maximum Likelihood).
+- **Multiple basis types**: Thin plate regression splines (tp), cubic regression splines (cr), P-splines (ps), and B-splines (bs), each with different properties.
+- **Tensor product smooths**: \texttt{te()} and \texttt{ti()} allow smooth interactions between variables without the curse of dimensionality.
+- **Variable selection**: The \texttt{select = TRUE} option adds an extra penalty that can shrink smooth terms to zero, effectively performing variable selection.
+- **Concurvity diagnostics**: Measures the analogue of multicollinearity for smooth terms.
+
+### Comparison with MARS (earth) and Elastic Net (glmnet)
+
+mgcvUI, earthUI, and glmnetUI are companion applications that use different modeling engines. The following table summarizes the key differences:
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
+\hline
+\rowcolor{nordblue!15}
+\textbf{Feature} & \textbf{mgcv (GAM)} & \textbf{earth (MARS)} & \textbf{glmnet (Elastic Net)} \\
+\hline
+\textbf{Model type} & Smooth nonlinear (penalized splines) & Piecewise linear (adaptive splines) & Linear (with regularization) \\
+\hline
+\textbf{Nonlinearity} & Automatic via smooth functions (thin plate, cubic, etc.) & Automatic via hinge functions with data-driven knots & Only through interactions or basis expansion \\
+\hline
+\textbf{Variable selection} & Optional via double-penalty shrinkage (\texttt{select=TRUE}) & Built-in via forward/backward stepwise with GCV pruning & Built-in via $L_1$ penalty (Lasso) \\
+\hline
+\textbf{Interactions} & Tensor product smooths (\texttt{te()}, \texttt{ti()}) & Hinge-based products (interpretable, up to degree 3) & Pairwise cross-products (hard to interpret) \\
+\hline
+\textbf{Interpretability} & Smooth partial effect curves; very intuitive & g-functions show piecewise linear partial effects per variable & Coefficients are linear weights; easy to explain individually \\
+\hline
+\textbf{Best for} & Smooth nonlinear relationships, flexible modeling & Automatic nonlinearity and interaction detection & High-dimensional data, variable selection, small samples \\
+\hline
+\textbf{RCA adjustments} & Smooth adjustments via partial effects & Piecewise linear adjustments via g-functions & Linear per-variable adjustments \\
+\hline
+\textbf{Overfitting control} & REML/GCV smoothing parameter estimation & GCV-based pruning & Cross-validated lambda \\
+\hline
+\end{tabularx}
+\end{center}
+
+\medskip
+
+**MARS** (Multivariate Adaptive Regression Splines) was introduced by Jerome Friedman in 1991. It builds piecewise linear models by adaptively selecting hinge functions and their knot positions from the data. The R implementation is the \texttt{earth} package by Stephen Milborrow.
+
+**Elastic net** regression, implemented in the \texttt{glmnet} package by Friedman, Hastie, and Tibshirani (2010), combines Lasso ($L_1$) and ridge ($L_2$) penalties for simultaneous variable selection and coefficient shrinkage.
+
+### The earthUI--mgcvUI Pipeline
+
+A powerful workflow combines earthUI's automatic knot discovery with mgcvUI's smooth estimation. When earthUI exports an \texttt{.rds} result file and mgcvUI imports it:
+
+1. **Earth discovers the knots** --- MARS finds data-driven hinge positions (change points) for each variable.
+2. **mgcvUI uses them as anchors** --- The earth knots become the basis for cubic regression splines (\texttt{cr} basis) in the GAM, giving the smooth terms a head start with knot positions that reflect real structure in the data.
+3. **mgcv refines the fit** --- The penalized spline estimation smooths out the piecewise linear earth fit, producing smooth partial effect curves while preserving the general shape discovered by earth.
+
+This pipeline bridges exploratory modelling (earth) with confirmatory modelling (GAM), combining the best of both approaches.
+
+### Recommended Workflow
+
+For real estate appraisal and similar applications requiring interpretable, defensible models:
+
+\begin{enumerate}
+\item \textbf{Start with earthUI} to discover the important variables, nonlinear relationships, and interactions in your data. Earth's automatic basis selection and g-functions provide excellent initial insights.
+\item \textbf{Refine with mgcvUI} if you want smoother partial effects. Import earthUI's knots into mgcvUI for a seamless transition from piecewise linear to smooth models.
+\item \textbf{Use glmnetUI} when you need aggressive variable selection (Lasso), when the number of predictors approaches or exceeds the number of observations, or when you want a purely linear model with regularization for defensibility.
+\end{enumerate}
+
+## What Is mgcvUI?
+
+mgcvUI is a graphical user interface for the R \texttt{mgcv} package. It runs as a local Shiny application --- there is no login, no server, and no accounts. You launch it from R, import a dataset (CSV or Excel), configure your model, and fit a GAM interactively.
+
+The application provides a complete workflow: data import, variable configuration with smooth term specification, model fitting with background processing, diagnostic plots, smooth partial effect curves, and downloadable reports in Word, PDF, or HTML format.
+
+**Generalized Additive Models** replace the linear relationship $\beta x$ with a smooth function $f(x)$ for each predictor. This means:
+
+- **No need to specify functional forms** --- the data determines the shape of each relationship.
+- **Smooth partial effects** --- each predictor's contribution is a smooth curve, not a straight line, making it easy to see how a variable affects the response at different values.
+- **Automatic smoothness selection** --- mgcv determines how wiggly each curve should be via REML or GCV, balancing fit against overfitting.
+
+## Three Purpose Modes
+
+When you launch mgcvUI, a **Purpose** radio button at the top of the sidebar lets you choose one of three modes:
+
+- **General** --- GAM regression for any type of population or dataset. This is the default mode. It provides the full GAM workflow without any domain-specific additions.
+- **For Appraisal** --- GAM regression tailored for real estate appraisal. Adds features specific to single-property valuation, including subject property handling, special column designations, and Reconciliation by Comparable Adjustment (RCA).
+- **Market Area Analysis** --- GAM regression tailored for market area studies. Adds features for analyzing groups of properties in a defined market, with optional subject row handling.
+
+In all three modes, the core modeling engine is identical --- you are always fitting a GAM via \texttt{mgcv::gam()}. The purpose setting controls which additional tools and interface elements are available.
+
+## Real Estate--Specific Features
+
+When either **For Appraisal** or **Market Area Analysis** is selected, mgcvUI activates several features designed for real estate analysis:
+
+- **Special column designations** --- Each predictor can be tagged with a special role such as `contract_date`, `dom`, `concessions`, `latitude`, `longitude`, `living_area`, `lot_size`, `actual_age`, `effective_age`, `area`, `site_dimensions`, or `display_only`. These designations control how the column is handled during fitting and output.
+- **Sale Age column** --- When a column is designated as `contract_date` and an Effective Date is provided, mgcvUI computes a `sale_age` column (days between sale date and effective date) and substitutes it as a predictor.
+- **RCA computations (appraisal only)** --- In appraisal mode, after fitting the model mgcvUI can compute Reconciliation by Comparable Adjustment (RCA) output, which produces per-comparable adjustments, net/gross adjustment summaries, and an adjusted sale price for the subject property.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} The General purpose mode works for any dataset --- financial, scientific, engineering, or real estate. The appraisal and market modes simply add convenience features for real estate professionals.}
+\end{tcolorbox}
+
+## Getting Started
+
+To use mgcvUI:
+
+1. **Install the package** in R: `install.packages("mgcvUI")` or install from source.
+2. **Launch the application**: run `mgcvUI::mgcvUI()` in R. The app opens in your web browser on port 7880. The app remembers your last-used purpose mode and restores it automatically.
+3. **Import your data** using the file upload in Section 1 of the sidebar. mgcvUI accepts CSV and Excel files.
+4. **Import from earthUI (optional)** --- Section 2 lets you import an earthUI result `.rds` file to seed the GAM with earth-discovered knots. Skip this step if you do not have an earthUI result.
+5. **Select your Purpose** (General, For Appraisal, or Market Area Analysis). Note that changing the purpose resets both the data import and the earthUI import --- you must re-import after switching.
+6. **Configure variables** --- choose your target and predictors, set data types, assign any special column roles, and mark variables as factor or linear.
+7. **Set mgcv parameters** --- family, method, gamma, basis type, k, tensor type, interactions, and other options.
+8. **Fit the model** --- click "Fit Mgcv GAM Model" and review the results in the main panel.
+9. **Export** --- download predictions as Excel, generate reports, or (in appraisal mode) compute RCA adjustments and sales grids.
+
+Settings are automatically persisted in a SQLite database and restored when you reload the same input file.
+
+\newpage
+
+<!-- CHAPTER 2 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 2}}\\[2pt]
+{\Huge\textbf{MLS Input Data Requirements}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+For real estate appraisal and market analysis workflows, your input data typically comes from a Multiple Listing Service (MLS) export. This chapter describes the expected file structure and the columns that mgcvUI can use.
+
+## File Format \& Structure
+
+mgcvUI accepts **CSV** and **Excel** (`.xlsx`, `.xls`) files. On import, column names are automatically converted to `snake_case` --- for example, "Living SqFt" becomes `living_sqft`, "Contract Date" becomes `contract_date`, and "Sale Price" becomes `sale_price`. This normalization ensures consistent column references throughout the workflow. The CSV separator and decimal mark used during import are determined by the locale settings (see Chapter 3, "Locale \& Regional Settings").
+
+Your data file should be a flat table with one row per property and one column per attribute. The first row of the file must contain column headers.
+
+## Required Columns for Appraisal Mode
+
+While mgcvUI works with any set of columns, the full appraisal workflow benefits from having the following columns:
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.2cm}|>{\raggedright\arraybackslash}p{2.5cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Special Type} & \color{white}\textbf{Purpose} \\
+\hline
+Sale Price & (target) & Response variable for the model \\
+\hline
+Contract Date & \texttt{contract\_date} & Used to compute \texttt{sale\_age} (days from effective date) \\
+\hline
+Listing Date & \texttt{listing\_date} & Used with contract date to compute DOM if no DOM column exists \\
+\hline
+Days on Market & \texttt{dom} & Days on market; displayed in exports \\
+\hline
+Concessions & \texttt{concessions} & Sale concessions; Net SP = Sale Price $-$ Concessions \\
+\hline
+Living Area (SF) & \texttt{living\_area} & Enables per-SF residuals (\texttt{residual\_sf}, \texttt{cqa\_sf}) \\
+\hline
+Lot Size & \texttt{lot\_size} & Site size column \\
+\hline
+Site Dimensions & \texttt{site\_dimensions} & Grouped with lot size \\
+\hline
+Latitude & \texttt{latitude} & Rounded to 3 dp \\
+\hline
+Longitude & \texttt{longitude} & Rounded to 3 dp \\
+\hline
+Area ID & \texttt{area} & Market area / neighborhood identifier \\
+\hline
+Actual Age & \texttt{actual\_age} & Property age \\
+\hline
+Effective Age & \texttt{effective\_age} & Effective property age \\
+\hline
+Address & \texttt{display\_only} & Shown in exports; excluded from model \\
+\hline
+\end{tabularx}
+\end{center}
+
+Spreadsheet column names can be in a foreign language --- the "special" names are in English so that the R program can give them special treatment. Otherwise, the given column names show up in the regression models, graphs and, if doing appraisals, the output reports.
+
+Not all columns are required. mgcvUI adapts --- if a column is missing, the corresponding feature is simply omitted. However, for real estate pricing models certain columns are highly recommended:
+
+1. **Sale Age** --- the number of days between the contract sale date and the effective date. If multi-year sales history is being used, `sale_age` often plays a central role.
+2. **Living Area** --- also goes by names such as "Living Sqft," "GLA" (gross living area).
+3. **Total Bath Count** --- the total number of full, quarter, half, and 3/4 bathrooms.
+4. **Garage Bays** or **Garage Area** --- garage spaces or square footage.
+5. **Lot Size** --- the land area of the property.
+6. **Longitude, Latitude,** and if available **Area ID** for geographic price variation.
+
+## Special Column Naming Conventions
+
+mgcvUI identifies columns by their **special type designation**, not by their column name. You can name your columns anything you like in the MLS export --- what matters is that you assign the correct special type in the Variable Configuration table (Chapter 6).
+
+## Data Quality \& Completeness
+
+- **Missing values (NA)**: Rows with NA values in any predictor or target column are automatically removed before fitting. mgcvUI subsets the data to only the columns used in the model, so NAs in unused columns do not cause row drops.
+- **Numeric columns**: Sale price, living area, lot size, and similar fields must be numeric.
+- **Factor columns**: Categorical variables like area ID, style, or condition should contain a manageable number of unique values. mgcvUI auto-detects factors but you can override.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} Review the NA column in the predictor table after import. Columns with many missing values may cause rows to be dropped. Columns with $\geq$50\% NAs are flagged red and automatically excluded.}
+\end{tcolorbox}
+
+## Subject Row Placement
+
+In **Appraisal** mode, **row 1 must be the subject property**. All remaining rows are comparable sales. The subject row is excluded from model fitting. After fitting, the model still generates predictions for the subject row.
+
+In **Market Area Analysis** mode, placing the subject in row 1 is optional.
+
+In **General** mode, there is no special row handling --- all rows are treated equally.
+
+\newpage
+
+<!-- CHAPTER 3 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 3}}\\[2pt]
+{\Huge\textbf{General Purpose Mode}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## Overview
+
+General Purpose mode is the default when you launch mgcvUI. It provides the complete GAM workflow for any dataset --- not just real estate. You can use mgcvUI for scientific data, financial analysis, engineering studies, or any regression problem where smooth nonlinear relationships are expected.
+
+In General mode, the interface omits the real estate--specific features (special columns, sale age, RCA). The sidebar is streamlined to focus on variable selection, parameter configuration, model fitting, and export.
+
+## The Sidebar Workflow
+
+The sidebar is organized into numbered, collapsible sections that guide you from data import through export:
+
+**1. Import Data** --- File upload accepting CSV and Excel files. For Excel files with multiple sheets, a sheet selector appears. Column names are automatically converted to snake\_case.
+
+**2. Import from earthUI (optional)** --- Import an earthUI result \texttt{.rds} file to seed the GAM with earth-discovered knot positions. This step is optional --- skip it if you do not have an earthUI result to import.
+
+**3. Project Output Folder** --- A text field specifying where downloads are saved (defaults to `~/Downloads`).
+
+**4. Variable Configuration** --- Target variable selector, response transform (none, log, log10), predictor table with checkboxes for Include, Factor, and Linear. The Special column appears only in Appraisal and Market modes. See Chapter 6 for full details.
+
+**5. Mgcv Call Parameters** --- All model configuration: parameter presets, family, method, gamma, cross-validation, select, basis type, k, tensor type, interaction matrix, and advanced parameters. See Chapter 7 for the complete parameter reference.
+
+**6. Fit Mgcv GAM Model** --- The button that runs the model.
+
+**7. Download Output** --- Exports predictions, residuals, CQA scores, and per-variable contributions as an Excel file. Available in all purpose modes.
+
+**8. Download Report** --- Generates a formatted report (Word, PDF, or HTML) saved to the output folder. Steps 8--10 (RCA Adjustments, Sales Grid, Report) appear only in Appraisal/Market modes; in General mode the report step is numbered 8.
+
+## Import from earthUI (Optional)
+
+Section 2 of the sidebar --- **Import from earthUI** --- lets you import an earthUI result \texttt{.rds} file. This enables the earth--mgcv pipeline: earth's data-driven knot positions become anchor points for GAM smooth terms.
+
+When an earthUI result is imported, mgcvUI:
+
+- Displays a summary showing the target variable, R-squared, number of terms, and knot positions per variable.
+- Auto-selects the "Earth Pipeline" parameter preset (cubic regression spline basis, gamma = 1.4).
+- Sets the target variable to match earth's target.
+- Pre-checks Include for earth's predictor variables.
+- Pre-checks Factor for earth's categorical variables and Linear for earth's linear predictors.
+- Pre-populates interactions detected by earth (highlighted yellow in the interaction matrix, locked from manual changes).
+- Provides an **Export Knots CSV** button to download earth's knots as a CSV file.
+
+A **Clear** button removes the imported earth data and resets to standalone mode.
+
+## Main Panel Tabs
+
+After data import, the main panel provides the following tabs (model-dependent tabs populate after fitting):
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Tab} & \color{white}\textbf{Contents} \\
+\hline
+Data Preview & Interactive DataTable of imported data. \\
+\hline
+Equation & Full GAM formula rendered in MathJax, plus a table of smooth function definitions. \\
+\hline
+Summary & Key metrics (R$^2$, CV R$^2$, Dev.\ Explained, AIC, n, Smooth count) and smooth/parametric terms tables. \\
+\hline
+Variable Importance & Horizontal bar chart of F-statistics (smooth) and $|t|$-values (parametric), plus ranked table. \\
+\hline
+Contribution & Interactive plotly smooth partial effect curves with confidence ribbons and earth knot markers. \\
+\hline
+Correlation & Heatmap of numeric predictor correlations (available before fitting). \\
+\hline
+Diagnostics & Residuals vs fitted, Q-Q plot, histogram, response vs fitted (via \texttt{gratia}). Actual vs Predicted scatter. \\
+\hline
+RCA Adjustments & RCA analysis histograms (appraisal/market mode, after computation). \\
+\hline
+Anova & Combined parametric and smooth terms ANOVA table. \\
+\hline
+Mgcv Output & Raw text: timing, formula, model summary, family, concurvity. \\
+\hline
+Sign Check & Earth vs GAM direction consistency check (when earth imported). \\
+\hline
+Concurvity & Overall and pairwise concurvity matrices with color coding. \\
+\hline
+Basis Check & \texttt{gam.check()} basis dimension adequacy tests. \\
+\hline
+\end{tabularx}
+\end{center}
+
+## Settings Persistence
+
+mgcvUI automatically saves your configuration to an SQLite database, keyed by the input filename. When you reload the same file, all settings are restored: target selection, predictor checkboxes, data types, mgcv parameters, and interaction matrix. The last-used purpose mode is also persisted globally and restored when the app is relaunched.
+
+## Dark Mode
+
+Click the moon/sun icon in the upper-right corner to toggle between Nord Light and Nord Dark themes. The theme preference is saved in localStorage and persists across sessions. All UI elements adapt to the selected theme.
+
+## Locale \& Regional Settings
+
+mgcvUI supports international number and CSV formatting conventions through a country-based locale system. The **Settings** dropdown in the title bar provides **Country** and **Paper** selectors for 30+ supported countries. Each preset configures:
+
+- **CSV separator** --- comma (`,`) for US/UK/Japan or semicolon (`;`) for most of Europe.
+- **Decimal mark** --- period (`.`) or comma (`,`).
+- **Thousands separator** --- comma (US/UK/Japan), period (Germany/Italy/Spain), space (Finland/France/Poland/Baltics), or apostrophe (Switzerland).
+- **Paper size** --- Letter (US/Canada/Mexico) or A4 (everywhere else).
+
+Click **Save as my default** to store your locale preferences globally.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} Number formatting on plot axes and slope labels automatically adapts to your locale. German locale uses periods for thousands (200.000), Finnish uses spaces (200 000), Swiss uses apostrophes (200'000). No currency symbols are displayed --- mgcvUI is currency-agnostic.}
+\end{tcolorbox}
+
+\newpage
+
+<!-- CHAPTER 4 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 4}}\\[2pt]
+{\Huge\textbf{Appraisal Mode}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+When you select **For Appraisal** as the Purpose, mgcvUI configures itself for single-property valuation. All features described in Chapter 3 remain available; this chapter covers only the appraisal-specific additions.
+
+## Subject Row Handling
+
+In appraisal mode, **row 1 of your dataset is the subject property** and all remaining rows are comparable sales. Your input file must be organized accordingly (see Chapter 2). The subject's sale price can be left blank or set to any value --- mgcvUI automatically treats it as NA during fitting.
+
+After fitting, the model generates predictions for the subject row, which is the basis for the RCA adjustment workflow.
+
+## Effective Date \& Sale Age
+
+In appraisal and market modes, an **Effective Date** field appears in the Variable Configuration section (defaulting to today's date). If you designate a column as `contract_date` in the Special dropdown, mgcvUI computes a `sale_age` column --- the number of integer days between each sale's contract date and the effective date. This column is added as a predictor.
+
+When the Effective Date changes, `sale_age` is automatically recomputed.
+
+## Special Column Designations
+
+In appraisal and market modes, a **Special** dropdown appears for each predictor in the Variable Configuration table. See Chapter 6 for the complete reference of special types and their effects.
+
+## RCA Adjustments Overview
+
+The **Calculate RCA Adjustments \& Download** button (visible only in appraisal mode after fitting) computes market-derived adjustments for each comparable relative to the subject. The full RCA workflow is described in Chapter 11.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} The CQA score you assign to the subject controls how much of the residual distribution is attributed to the subject. A score of 5.00 places the subject at the median of the comparables.}
+\end{tcolorbox}
+
+\newpage
+
+<!-- CHAPTER 5 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 5}}\\[2pt]
+{\Huge\textbf{Market Area Analysis Mode}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+When you select **Market Area Analysis** as the Purpose, mgcvUI provides the same real estate--specific features as appraisal mode (special columns, sale age) but is oriented toward analyzing a group of properties rather than valuing a single subject.
+
+## Differences from Appraisal Mode
+
+- **Subject row handling is flexible** --- in market mode, row 1 is not automatically treated as a subject property.
+- **No Sales Grid** --- the "Generate Sales Grid \& Download" step is not available.
+
+## When to Use Market Mode
+
+Market Area Analysis mode is appropriate when you are:
+
+- Building a GAM model for a neighborhood or market area to understand nonlinear value drivers
+- Analyzing how variables like square footage, age, lot size, and location affect sale prices across a group of properties
+- Preparing support for a market conditions analysis or neighborhood delineation
+- Working with a dataset where you want special column features (sale age) but do not need the sales grid workflow
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} Market mode is also useful for general real estate regression where you want special column features but do not need the single-property valuation workflow.}
+\end{tcolorbox}
+
+\newpage
+
+<!-- CHAPTER 6 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 6}}\\[2pt]
+{\Huge\textbf{Variable Selection}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+Section 4 of the sidebar --- **Variable Configuration** --- is where you choose which columns participate in the model and how they are treated.
+
+## Target Variable
+
+The **Target (response) variable** dropdown at the top of Section 4 lists every numeric column in your dataset. Select one column as the response variable (e.g., sale price). The target column is automatically excluded from the predictor list.
+
+## Response Transform
+
+Below the target selector, a **Response Transform** dropdown offers three options:
+
+- **None (raw)** --- Use the response as-is. Appropriate when the relationship between predictors and response is approximately additive on the original scale.
+- **Log (natural)** --- Apply natural log transform before fitting. When back-transformed, this makes adjustments proportional (\%) rather than absolute (\$). Particularly useful for sale prices, where a \$10,000 adjustment means very different things at different price levels.
+- **Log10** --- Apply base-10 log transform.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} Log transform makes time adjustments proportional (\%) instead of absolute (\$). For real estate models spanning a wide price range, log transforms often produce better-behaved residuals.}
+\end{tcolorbox}
+
+When a log transform is selected, values $\leq 0$ in the response are automatically filtered out. All output (predictions, contributions, residuals) is automatically back-transformed to the original scale.
+
+## The Predictor Table
+
+Below the target selector, a scrollable table lists every remaining column with the following fields:
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Description} \\
+\hline
+\texttt{Variable} & Column name (monospace font, truncated with ellipsis) \\
+\hline
+\texttt{Type} & Data type dropdown: numeric, integer, character, factor, logical, Date, POSIXct \\
+\hline
+\texttt{Inc} & Checkbox --- include this column as a predictor in the model \\
+\hline
+\texttt{Special} & Dropdown (appraisal/market only) --- see Special Column Types Reference below \\
+\hline
+\texttt{Factor} & Checkbox --- treat as a categorical factor (creates a separate coefficient per level) \\
+\hline
+\texttt{Linear} & Checkbox --- force a linear relationship (no smooth, just $\beta x$) \\
+\hline
+\texttt{NAs} & Count and percentage of missing values, color-coded: red ($\geq$50\%), orange ($\geq$20\%), grey ($>$0) \\
+\hline
+\end{tabularx}
+\end{center}
+
+**Factor vs.\ Smooth vs.\ Linear**: By default, included numeric variables get a smooth term $f(x)$. Checking **Factor** creates a categorical term (one coefficient per level). Checking **Linear** creates a simple linear term $\beta x$ instead of a smooth. Variables marked as both Factor and Linear are treated as Factor.
+
+## Data Type Detection \& Overrides
+
+mgcvUI automatically detects data types on import. Numeric, integer, logical, factor, and date columns are recognized. You can override any detection by changing the **Type** dropdown. Changing types affects how the column is treated in the model.
+
+## Special Column Types Reference
+
+In appraisal and market modes, the **Special** dropdown provides the following options:
+
+**Weighting:**
+
+- `weights` --- Observation weight column (only one allowed; rows with weight = 0 are excluded from fitting)
+
+**Date \& Time Types:**
+
+- `contract_date` --- Triggers automatic `sale_age` computation from the Effective Date
+- `listing_date` --- Used as a fallback for computing Days on Market
+- `dom` --- Identifies the Days on Market column
+
+**Monetary Types:**
+
+- `concessions` --- Identifies sale concessions (seller credits, buyer incentives, etc.)
+
+**Size \& Location Types:**
+
+- `latitude` --- Values automatically rounded to 3 decimal places
+- `longitude` --- Same rounding treatment as latitude
+- `area` --- Market area or neighborhood identifier
+- `living_area` --- Enables per-square-foot residual calculations (`residual_sf` and `cqa_sf`)
+- `lot_size` --- Site size column
+- `site_dimensions` --- Grouped with lot size
+
+**Age Types:**
+
+- `actual_age` --- Property age column
+- `effective_age` --- Effective property age
+
+**Display Types:**
+
+- `display_only` --- Column is included in Excel exports but excluded from model fitting entirely. Use this for address fields, MLS numbers, parcel IDs, or other reference data.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} Columns designated as \texttt{display\_only} remain in your dataset and appear in the Excel export, but are excluded from the predictor table entirely. Use this for ID columns, addresses, or other reference fields.}
+\end{tcolorbox}
+
+\newpage
+
+<!-- CHAPTER 7 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 7}}\\[2pt]
+{\Huge\textbf{Parameter Selection}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+Section 5 of the sidebar --- **Mgcv Call Parameters** --- provides access to all configuration options for the GAM. Each parameter has a blue help icon (**?**) with a tooltip explanation.
+
+## Parameter Presets
+
+A dropdown at the top offers two presets that configure sensible defaults for common workflows:
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.5cm}|>{\raggedright\arraybackslash}p{2.5cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Preset} & \color{white}\textbf{Basis} & \color{white}\textbf{Settings} \\
+\hline
+Standalone (discovery) & tp (thin plate) & k = auto (10), gamma = 1.2, select = TRUE \\
+\hline
+Earth Pipeline (refinement) & cr (cubic regression) & k = auto (10), gamma = 1.4, select = TRUE \\
+\hline
+\end{tabularx}
+\end{center}
+
+The **Earth Pipeline** preset is automatically selected when earthUI knots are imported. The cubic regression spline (\texttt{cr}) basis is required for earth knot integration because it allows specifying exact knot positions.
+
+## Family
+
+Choose the distribution family for your response variable:
+
+| Family | Use Case |
+|:-------|:---------|
+| **gaussian** | Continuous responses (e.g., sale price). Most common. |
+| **Gamma** | Positive continuous responses with variance proportional to the mean. |
+| **poisson** | Count data (e.g., number of sales). |
+| **binomial** | Binary outcomes. |
+| **inverse.gaussian** | Highly right-skewed positive data. |
+
+## Method
+
+The smoothing parameter estimation method:
+
+| Method | Description |
+|:-------|:------------|
+| **REML** | Restricted Maximum Likelihood (default, recommended). Most robust against overfitting. |
+| **GCV.Cp** | Generalized Cross-Validation. Tends to select slightly more complex models. |
+| **ML** | Maximum Likelihood. Similar to REML but can undersmooth. |
+| **P-REML** | Pearson REML variant. |
+| **P-ML** | Pearson ML variant. |
+| **GACV.Cp** | Generalized Approximate Cross-Validation. |
+
+## Gamma (Smoothing Multiplier)
+
+The gamma parameter multiplies the effective degrees of freedom in the smoothing criterion, encouraging smoother (less wiggly) fits. Default is 1.2.
+
+| Value | Effect |
+|:------|:-------|
+| 1.0 | Standard smoothing |
+| 1.2--1.4 | Slightly smoother than default (recommended) |
+| 2.0+ | Much smoother --- good for noisy data or small samples |
+
+Higher gamma values guard against overfitting by penalizing complexity more heavily. The Earth Pipeline preset uses 1.4 for additional smoothing when refining earth's knots.
+
+## Cross-Validation
+
+When checked (default), mgcvUI runs 10-fold cross-validation after fitting to compute a CV R-squared. This provides an honest estimate of out-of-sample predictive power.
+
+## Select (Shrinkage)
+
+When checked (default), adds an extra penalty to each smooth term that can shrink it to zero. This enables automatic variable selection --- unimportant smooth terms are effectively removed from the model. Implemented via \texttt{select = TRUE} in \texttt{gam()}.
+
+## Default Basis
+
+The spline basis function type for smooth terms:
+
+| Basis | Full Name | Description |
+|:------|:----------|:------------|
+| **tp** | Thin plate regression spline | Default. Isotropic (no knot placement needed). Good general-purpose choice. |
+| **cr** | Cubic regression spline | Allows explicit knot placement. Required for earth knot integration. |
+| **ps** | P-spline | Evenly-spaced B-spline basis with difference penalty. Computationally efficient. |
+| **bs** | B-spline | Flexible B-spline basis. |
+
+## Default k (Basis Dimension)
+
+The basis dimension $k$ controls the maximum wiggliness of each smooth. A value of 0 (the default) means "automatic" --- mgcvUI uses $k = 10$ or the number of earth knots, whichever is appropriate.
+
+- **Small k (3--5)**: Very smooth curves, nearly linear.
+- **Medium k (8--15)**: Moderate flexibility (usually sufficient).
+- **Large k (20+)**: Very flexible --- risk of overfitting without strong regularization.
+
+\begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
+\small\textit{\textbf{Tip:} The effective degrees of freedom (EDF) in the Summary tab tells you how many degrees of freedom each smooth actually uses. If EDF is close to $k - 1$, the basis may be too small --- increase k. If EDF is much less than $k$, the smooth is well-penalized.}
+\end{tcolorbox}
+
+## Tensor Type
+
+For interactions between continuous variables, two tensor product types are available:
+
+| Type | Function | Description |
+|:-----|:---------|:------------|
+| **ti** | \texttt{ti(x1, x2)} | Tensor interaction --- models only the interaction effect, with main effects handled separately by univariate \texttt{s()} terms. Preferred for interpretability. |
+| **te** | \texttt{te(x1, x2)} | Tensor product --- models the entire joint effect including main effects. Harder to decompose for RCA adjustments. |
+
+## Allowed Interactions
+
+A collapsible **Allowed Interactions** section displays an upper-triangular checkbox matrix for all included smooth (non-linear, non-factor) predictors. Each checkbox enables a tensor product smooth between the corresponding variable pair.
+
+- **Allow All** / **Clear All** --- Bulk toggle buttons.
+- **Click a variable name** --- Toggle all interactions for that variable.
+- **Right-click a variable name** --- "Block from main effect" --- marks the variable for interaction-only use (no univariate smooth).
+
+When earthUI knots are imported, earth-detected interactions are pre-checked and locked (highlighted with a yellow background). If the earth model used degree = 1 (no interactions), an informational message is shown.
+
+\begin{tcolorbox}[colback=yellow!10, colframe=nordblue, title=Warning]
+Enabling tensor interactions increases model complexity substantially. Use interactions when you have domain knowledge or earth-detected evidence supporting them. Verify that the resulting adjustments are reasonable and explainable.
+\end{tcolorbox}
+
+## Factor-by-Smooth Interactions
+
+A separate **Factor-by-Smooth Interactions** matrix appears when both factor and smooth variables are included. Each checkbox creates a \texttt{s(x, by = factor)} term --- a separate smooth curve for each factor level.
+
+## Advanced Parameters
+
+A collapsible "Advanced" section exposes additional settings:
+
+- **Optimizer** --- Algorithm for smoothing parameter estimation: `outer/newton` (default), `outer/bfgs`, or `efs` (extended Fellner-Schall).
+- **Scale** --- Scale parameter. 0 (default) = estimate from data. Set to a known value for fixed-scale models.
+- **Discrete covariate method** --- Fast discretized fitting for large datasets (\texttt{discrete = TRUE}).
+- **Threads** --- Number of parallel threads (1--32). Only effective when discrete = TRUE.
+
+\newpage
+
+<!-- CHAPTER 8 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 8}}\\[2pt]
+{\Huge\textbf{Fitting the Model}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## The Fit Button
+
+Section 6 of the sidebar contains the **Fit Mgcv GAM Model** button. Clicking it runs the model with your current configuration.
+
+## What Happens During Fitting
+
+When you click Fit, mgcvUI:
+
+1. **Validates the configuration** --- checks for at least one predictor and at least 10 complete rows. Warns if fewer than 50\% of rows are complete (listing the columns responsible for most NAs).
+2. **Prepares the data** --- subsets to model-relevant columns only, removes rows with NAs, applies weights (if designated), excludes the subject row (in appraisal mode), applies response transforms.
+3. **Builds the GAM formula** --- constructs smooth terms \texttt{s(x, bs="cr", k=10)} for numeric predictors, factor terms for categoricals, linear terms for variables marked Linear, and tensor products for selected interactions. Earth knots are embedded as explicit knot positions in \texttt{cr} basis terms.
+4. **Handles edge cases** --- drops constant variables, converts binary predictors to factors, caps $k$ to the number of unique values minus 1, augments earth knots with data quantiles when more knots are needed.
+5. **Fits the GAM** --- calls \texttt{mgcv::gam()} with the constructed formula, family, method, gamma, select, and other parameters.
+6. **Runs cross-validation** (if enabled) --- 10-fold CV computing out-of-sample R-squared.
+7. **Updates all result tabs** --- Summary, Equation, Contribution plots, Diagnostics, and all other tabs are populated.
+
+## Background Fitting \& Progress
+
+When the \texttt{callr} package is available, model fitting runs in a background process so the app remains responsive. A dark-themed terminal-style progress overlay shows:
+
+- **Timer** displaying elapsed seconds/minutes.
+- **Color-coded trace log**: blue for status, yellow for CV fold progress, red for errors, green for results.
+- An **Abort** button to kill the fitting process if needed.
+- A **Close** button that appears after completion.
+
+If \texttt{callr} is not available, fitting runs synchronously (the app freezes until fitting completes).
+
+After successful fitting, a white checkmark appears on the Fit button and a status line shows: "R-sq = X, CV R-sq = X, Dev = X\%, AIC = X, n = X."
+
+\newpage
+
+<!-- CHAPTER 9 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 9}}\\[2pt]
+{\Huge\textbf{Result Tabs}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## Data Preview
+
+Shows the imported data as an interactive DataTable with horizontal scrolling and 15 rows per page.
+
+## Equation
+
+Displays the fitted GAM model in two parts:
+
+**Model equation** (MathJax-rendered):
+
+- Left-hand side shows the response with appropriate transform (log, log10) and link function.
+- Right-hand side shows the intercept value, smooth terms as $f_i(\text{variable})$, factor terms grouped by variable with level counts, and linear terms with coefficient values.
+- Family and method are displayed above the equation.
+
+**Smooth Function Definitions** table:
+
+- Term formula string (e.g., \texttt{s(living\_sqft, bs="cr", k=8)})
+- Variable name
+- Type (s, te, ti, or linear)
+- Basis function type
+- $k$ value
+- Earth knot positions (if imported)
+
+## Summary
+
+Six metric cards displayed across the top:
+
+- **R-squared** --- proportion of deviance explained
+- **CV R-squared** --- cross-validation R-squared (if CV enabled)
+- **Dev.\ Explained \%** --- percentage of deviance explained
+- **AIC** --- Akaike Information Criterion
+- **n** --- number of observations used
+- **Smooths** --- number of smooth terms
+
+Below the cards:
+
+- **Smooth Terms table** --- Term, EDF (effective degrees of freedom), Ref.df, F statistic, p-value
+- **Parametric Terms table** --- Term, Estimate, Std Error, t-value, p-value
+
+## Variable Importance
+
+A horizontal bar chart showing the relative importance of each model term:
+
+- **Smooth terms**: Ranked by F-statistic (blue bars)
+- **Parametric terms**: Ranked by $|t|$-value (green bars)
+
+Below the chart, a DataTable shows Term, Type, EDF, Statistic, and p-value, sorted by statistic descending.
+
+## Contribution (Smooth Plots)
+
+Interactive **plotly** smooth partial effect plots, one per univariate smooth term, each displayed in a bordered card. Each plot shows:
+
+- **Blue line** with 95\% confidence ribbon
+- **Grey scatter points** showing partial residuals (for non-log-transformed models)
+- **Red dashed vertical lines** at earth knot positions (if earth imported)
+- **Hover tooltip**: Variable value, Contribution (\$), 95\% CI, Rate (slope per unit)
+
+For **log-transformed models**, the y-axis is back-transformed to dollar contributions using the formula $\bar{y} \times (e^{f(x)} - 1)$, making the curves directly interpretable in dollar terms.
+
+For **latitude/longitude** variables, the slope is shown per 0.001 degrees rather than per degree, since that is a more meaningful geographic increment.
+
+## Correlation
+
+A heatmap matrix showing Pearson correlations among all numeric predictors. Available immediately after data import --- no model fitting required.
+
+- Color gradient: blue ($-1$) $\to$ white ($0$) $\to$ red ($+1$)
+- Correlation values printed in each cell
+- Useful for identifying concurvity (the smooth analogue of multicollinearity) before fitting
+
+## Diagnostics
+
+Two sets of diagnostic visualizations:
+
+**Diagnostic panel** (via \texttt{gratia::appraise}): Four plots --- residuals vs fitted, Q-Q plot, histogram of residuals, and response vs fitted values.
+
+**Actual vs Predicted** scatter plot: Observed vs predicted values with a 45-degree dashed reference line. For log-transformed models, values are back-transformed to the original scale.
+
+## RCA Adjustments
+
+Three histogram plots displayed after RCA computation (appraisal/market mode only):
+
+- **Residual Adjustment \%** --- Distribution of residual adjustments as a percentage of sale price
+- **Net Adjustment \%** --- Distribution of net adjustments
+- **Gross Adjustment \%** --- Distribution of gross adjustments
+
+Each histogram shows mean, median, and standard deviation in the subtitle, with dashed reference lines for mean and median.
+
+## Anova
+
+A combined ANOVA table merging parametric and smooth terms from the GAM summary. Shows Term, Type (parametric or smooth), and all associated statistics.
+
+## Mgcv Output
+
+Raw text output showing:
+
+- Fitting timing
+- The GAM formula
+- Model print output
+- Full \texttt{summary(model)} output
+- Family and link function
+- Overall concurvity measures
+
+## Sign Check
+
+When earthUI knots are imported, this tab compares the direction of each variable in the earth model with its direction in the GAM:
+
+- **earth\_direction**: increasing, decreasing, or mixed (based on hinge function signs)
+- **gam\_direction**: increasing, decreasing, or mixed (estimated from smooth derivative on a 100-point grid)
+- **consistent**: TRUE/FALSE
+- **warning**: Description of any mismatch
+
+A status line shows "All directions consistent" or the number of variables with inconsistencies.
+
+## Concurvity
+
+Concurvity is the smooth analogue of multicollinearity. This tab shows:
+
+- **Overall Concurvity table**: Rows for worst/observed/estimate measures, columns for each smooth term. Color-coded: white ($<$0.5), yellow (0.5--0.8), red ($>$0.8).
+- **Pairwise Concurvity table**: Worst-case pairwise matrix with the same color coding.
+
+Values above $\sim$0.8 in the "worst" row indicate that a smooth can be well-approximated by the other smooths, suggesting redundancy.
+
+## Basis Check
+
+Output from \texttt{mgcv::gam.check()}: basis dimension adequacy tests for each smooth term. If a smooth's $k$ is too small, this test will flag it with a low p-value, suggesting you should increase $k$.
+
+\newpage
+
+<!-- CHAPTER 10 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 10}}\\[2pt]
+{\Huge\textbf{Downloading Data}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+After fitting, the **Download Output** button (sidebar section 7) exports an Excel file with predictions and diagnostics.
+
+## Output Columns
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.8cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Description} \\
+\hline
+\texttt{basis} & Back-transformed intercept value (same for all rows) \\
+\hline
+\texttt{<var>\_contribution} & Per-smooth-term contribution to prediction. For log models, proportionally allocated to dollar values. \\
+\hline
+\texttt{est\_<target>} & Model prediction (e.g., \texttt{est\_sale\_price}), back-transformed from log scale if applicable \\
+\hline
+\texttt{residual} & Actual $-$ predicted \\
+\hline
+\texttt{calc\_residual} & Verification: actual $-$ sum-of-contributions (back-transformed) \\
+\hline
+\texttt{cqa} & Competitive Quality Adjustment score (0--10 scale) \\
+\hline
+\texttt{residual\_sf} & Residual / living area (if \texttt{living\_area} designated) \\
+\hline
+\texttt{cqa\_sf} & CQA calculated from ranking via \texttt{residual\_sf} \\
+\hline
+\end{tabularx}
+\end{center}
+
+In appraisal mode, row 1 (subject) has residual/cqa/cqa\_sf set to NA. Rows are sorted by residual\_sf descending when a living\_area column is designated.
+
+A white checkmark appears on the download button after successful completion.
+
+## CQA Scores
+
+CQA ranks each row's residual against all others on a 0--10 scale:
+
+- **High CQA ($\sim$9--10)**: sold for much more than predicted --- likely superior condition/quality/appeal
+- **Low CQA ($\sim$0--1)**: sold for much less than predicted --- likely inferior condition or distressed sale
+- **CQA $\sim$5**: near the median
+
+\newpage
+
+<!-- CHAPTER 11 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 11}}\\[2pt]
+{\Huge\textbf{RCA Calculations \& Downloading}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+The RCA (Reconciliation by Comparable Adjustment) workflow is available in **Appraisal** mode only, after fitting the model.
+
+## Opening the RCA Dialog
+
+Click the **Calculate RCA Adjustments \& Download** button in sidebar section 8. A modal dialog appears with:
+
+- **Score type**: CQA or CQA per SF (if `living_area` designated). The per-SF option scales the subject's residual by living area.
+- **Subject CQA Score**: Numeric input, 0.00--9.99, default 5.00.
+
+Click **Generate** to compute and download.
+
+## CQA Score Interpolation
+
+1. Comparables' CQA scores and residuals are sorted
+2. Linear interpolation (\texttt{approx()}) maps your CQA value to a residual
+3. Subject value = model prediction + interpolated residual
+4. Weight-0 rows are treated as if they had the same residual as the subject
+
+## Output Columns
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{3.8cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Description} \\
+\hline
+\texttt{subject\_value} & Model prediction + interpolated residual \\
+\hline
+\texttt{subject\_cqa} & User-entered CQA score \\
+\hline
+\texttt{<var>\_adjustment} & Subject contribution $-$ comp contribution (in dollars) \\
+\hline
+\texttt{residual\_adjustment} & Subject residual $-$ comp residual \\
+\hline
+\texttt{net\_adjustments} & Sum of all adjustments \\
+\hline
+\texttt{gross\_adjustments} & Sum of absolute adjustments \\
+\hline
+\texttt{residual\_adj\_pct} & Residual adjustment as \% of sale price \\
+\hline
+\texttt{net\_adj\_pct} & Net adjustments as \% of sale price \\
+\hline
+\texttt{gross\_adj\_pct} & Gross adjustments as \% of sale price \\
+\hline
+\texttt{adjusted\_sale\_price} & Actual sale price + net adjustments \\
+\hline
+\end{tabularx}
+\end{center}
+
+A white checkmark appears on the button after successful computation.
+
+\newpage
+
+<!-- CHAPTER 12 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 12}}\\[2pt]
+{\Huge\textbf{Sales Comparison Grid}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+The Sales Comparison Grid is available in **Appraisal** mode only, after computing RCA adjustments. It generates a formatted Excel workbook suitable for inclusion in appraisal reports.
+
+## Comp Selection Dialog
+
+Clicking the **Generate Sales Grid \& Download** button opens a modal dialog listing all comparable sales. Comps are split into two groups:
+
+- **Recommended comps** (pre-checked): Gross adjustment $<$ 25\% of sale price, sorted by sale age (most recent first). Maximum 30 comps.
+- **Other comps** (unchecked by default): Remaining comps, sorted by sale age.
+
+Select your comps, then click **Generate Sales Grid** to create the workbook.
+
+**Required special types**: `contract_date` and `living_area` must be designated. **Recommended special types**: `latitude`, `longitude`, and `lot_size` --- the grid will work without them but some fields will be blank.
+
+## Workbook Layout
+
+The generated workbook contains multiple sheets, each holding 3 comps side by side:
+
+- **Header rows**: Subject and comp addresses, sale prices, sale dates, and Days on Market
+- **Grouped rows**: Location (latitude, longitude, area), Site Size (lot size, site dimensions), and Age (actual age, effective age) with group headers and sub-items
+- **Model variable rows**: One row per smooth term showing the subject contribution, comp contributions, and adjustment amounts
+- **Residual feature rows**: Empty, unlocked cells for appraiser input on features not captured by the model (e.g., condition, quality, view)
+- **Summary rows**: Net Adjustment \%, Gross Adjustment \%, and Adjusted Sale Price with live Excel formulas
+
+## Sheet Protection \& Residual Cells
+
+Each sheet is protected to prevent accidental edits, but the residual feature value cells are explicitly unlocked. This allows appraisers to enter values for features not in the model while preserving the formula-driven adjustment calculations.
+
+\newpage
+
+<!-- CHAPTER 13 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 13}}\\[2pt]
+{\Huge\textbf{Downloading Reports}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## Report Formats
+
+Three formats are available:
+
+- **Word (.docx)** --- Formatted document built via the \texttt{officer} package. Suitable for editing and distribution.
+- **PDF** --- Generated via \texttt{rmarkdown}. Paper size follows the locale setting (Letter or A4).
+- **HTML** --- Self-contained HTML document via \texttt{rmarkdown}. Ideal for sharing electronically.
+
+Reports are saved to the output folder specified in Section 3.
+
+## Report Contents
+
+Reports include:
+
+- Dataset description (file name, observations, response, predictors)
+- Model specification (family, method, formula, gamma, select, basis, k)
+- Results summary (R$^2$, CV R$^2$, Deviance Explained, AIC, n)
+- Smooth terms table (EDF, F, p-value per term)
+- Parametric terms table (Estimate, Std Error, t, p-value)
+- Smooth partial effect plots (static ggplot2 renders)
+- Diagnostic plots (residuals vs fitted, Q-Q, histogram, actual vs predicted)
+
+A white checkmark appears on the Download Report button after successful generation.
+
+\newpage
+
+<!-- CHAPTER 14 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 14}}\\[2pt]
+{\Huge\textbf{Exporting Model Functions}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+mgcvUI can export the fitted GAM's smooth functions as standalone code in multiple languages. Each smooth is evaluated on a 200-point grid and exported as a lookup table with linear interpolation, allowing the model to be used outside of R without any dependency on \texttt{mgcv}.
+
+The **Export Functions** section (available in the report module) offers checkboxes for R, Python, C++, and SQLite. Click **Download Functions (.zip)** to generate a zip archive.
+
+## R Functions
+
+File: \texttt{gam\_functions.R}
+
+- Header comments with response variable, R$^2$, CV R$^2$, and the formula.
+- An \texttt{INTERCEPT} constant.
+- One \texttt{approxfun()} per smooth variable with pre-computed x/y vectors.
+- Linear term coefficients as named constants.
+- Usage: sum the intercept, each \texttt{g\_var(value)}, and each \texttt{coef\_var * value}.
+
+## Python Functions
+
+File: \texttt{gam\_functions.py}
+
+- \texttt{numpy} import.
+- \texttt{INTERCEPT} constant.
+- Per-variable: \texttt{\_x\_var} and \texttt{\_fx\_var} arrays, \texttt{g\_var(x)} function using \texttt{np.interp()}.
+- Linear term coefficients as \texttt{COEF\_*} constants.
+
+## C++ Header
+
+File: \texttt{gam\_functions.hpp}
+
+- Header-only with \texttt{\#pragma once}.
+- \texttt{gam\_functions} namespace.
+- \texttt{interp()} helper using \texttt{std::lower\_bound}.
+- Per-variable: inline function with static const arrays.
+- Linear term coefficients as \texttt{constexpr double}.
+
+## SQLite Database
+
+File: \texttt{gam\_functions.sqlite}
+
+- Table \texttt{smooth\_grids}: columns (variable, x, fx) --- the 200-point lookup tables.
+- Table \texttt{model\_info}: response, r\_squared, cv\_rsq, dev\_explained, aic, n\_obs, family, method, formula.
+- Table \texttt{linear\_terms}: variable, coefficient.
+- Table \texttt{intercept}: intercept value.
+
+\newpage
+
+<!-- CHAPTER 15 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 15}}\\[2pt]
+{\Huge\textbf{Comparison with earthUI and glmnetUI}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+mgcvUI, earthUI, and glmnetUI are companion tools for regression modeling. They share the same data format, special column types, RCA workflow, and demo datasets, but use different modeling engines.
+
+## Key Differences
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Feature} & \color{white}\textbf{mgcvUI} & \color{white}\textbf{earthUI} & \color{white}\textbf{glmnetUI} \\
+\hline
+Method & GAM (mgcv) & MARS/Earth (earth) & Elastic net (glmnet) \\
+\hline
+Relationships & Smooth nonlinear & Piecewise linear & Linear \\
+\hline
+Variable selection & \texttt{select=TRUE} shrinkage & Stepwise pruning & Lasso penalty \\
+\hline
+Interactions & Tensor products (te/ti) & Hinge products (degree 2--3) & Pairwise products \\
+\hline
+Partial effects & Smooth curves with CI & g-functions (piecewise) & Linear slopes \\
+\hline
+Earth pipeline & Imports knots from earth & Source of knots & Imports hinge basis \\
+\hline
+Code export & R, Python, C++, SQLite & R, Python, C++, SQLite & --- \\
+\hline
+Report formats & Word, PDF, HTML & Word, PDF, HTML & Word, PDF, HTML \\
+\hline
+\end{tabularx}
+\end{center}
+
+## Shared Features
+
+All three tools provide:
+
+- CSV and Excel import with snake\_case column conversion
+- 30+ country locale support with CSV separator, decimal mark, and paper size
+- Special column designations (contract\_date, living\_area, area, latitude, longitude, etc.)
+- Automatic sale\_age computation from effective date
+- Dark/light mode toggle (Nord theme)
+- Settings persistence (SQLite and/or localStorage)
+- Correlation heatmap, variable importance, diagnostics
+- CQA scoring and RCA adjustment workflow
+- Sales Comparison Grid with comp selection and formatted Excel output
+- Compatible with the same demo datasets (Appraisal\_1.csv)
+
+## Recommended Workflow
+
+- **Start with earthUI** to discover the important variables, nonlinear relationships, and interactions. Earth's automatic model building provides the best starting point.
+- **Refine with mgcvUI** if you want smoother partial effects. Import earthUI's knots for a seamless transition.
+- **Use glmnetUI** when you need a purely linear model with aggressive variable selection or coefficient sign constraints.
+- **Compare all three** on the same data to assess whether the additional complexity of nonlinear models is justified.
+
+\newpage
+
+<!-- CHAPTER 16 -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{CHAPTER 16}}\\[2pt]
+{\Huge\textbf{Demo Dataset: Appraisal\_1.csv}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## Description
+
+The demo dataset is shared with earthUI and glmnetUI. It is located in the \texttt{demo\_mls/} folder of the mgcvUI source, or if earthUI is installed:
+
+```r
+demo_file <- system.file("extdata", "Appraisal_1.csv", package = "earthUI")
+```
+
+The file contains 1,502 residential sales (plus 1 subject property in row 1) from a simulated MLS export. The data represents single-family home sales in a multi-area market with a range of property sizes, ages, and locations.
+
+This is not real data, but is based on a realistic neighborhood in Northern California. All identification information has been altered or removed.
+
+## Columns
+
+\begin{center}
+\arrayrulecolor{nordblue}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|c|>{\raggedright\arraybackslash}p{2.2cm}|X|}
+\hline
+\rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Type} & \color{white}\textbf{Special Type} & \color{white}\textbf{Description} \\
+\hline
+\texttt{weight} & numeric & weight & Observation weight (0 = exclude from fitting) \\
+\hline
+\texttt{id} & numeric & \texttt{display\_only} & Internal record ID \\
+\hline
+\texttt{property\_id} & numeric & \texttt{display\_only} & MLS property identifier \\
+\hline
+\texttt{listing\_id} & character & \texttt{display\_only} & MLS listing number \\
+\hline
+\texttt{parcel\_number} & character & \texttt{display\_only} & County assessor parcel number (APN) \\
+\hline
+\texttt{street\_address} & character & \texttt{display\_only} & Property address \\
+\hline
+\texttt{city\_name} & character & \texttt{display\_only} & City \\
+\hline
+\texttt{postal\_code} & character & \texttt{display\_only} & ZIP code \\
+\hline
+\texttt{county\_name} & character & \texttt{display\_only} & County \\
+\hline
+\texttt{contract\_date} & Date & \texttt{contract\_date} & Sale contract date (computes \texttt{sale\_age}) \\
+\hline
+\texttt{sale\_age} & numeric & --- & Days from contract date to effective date \\
+\hline
+\texttt{sale\_price} & numeric & (target) & Sale price --- response variable \\
+\hline
+\texttt{living\_sqft} & numeric & \texttt{living\_area} & Gross living area in square feet \\
+\hline
+\texttt{beds\_total} & integer & --- & Number of bedrooms \\
+\hline
+\texttt{baths\_total} & numeric & --- & Total bath count (e.g., 2.5 = 2 full + 1 half) \\
+\hline
+\texttt{lot\_size} & numeric & \texttt{lot\_size} & Lot size in square feet \\
+\hline
+\texttt{area\_id} & integer & \texttt{area} & MLS area identifier \\
+\hline
+\texttt{age} & numeric & \texttt{actual\_age} & Property age in years \\
+\hline
+\texttt{latitude} & numeric & \texttt{latitude} & Latitude (rounded to 3 dp for model) \\
+\hline
+\texttt{longitude} & numeric & \texttt{longitude} & Longitude (rounded to 3 dp for model) \\
+\hline
+\texttt{garage\_spaces} & integer & --- & Number of garage bays \\
+\hline
+\texttt{days\_on\_market} & integer & \texttt{dom} & Days on market \\
+\hline
+\texttt{listing\_date} & Date & \texttt{listing\_date} & Listing date \\
+\hline
+\texttt{sale\_concessions} & numeric & \texttt{concessions} & Seller concessions \\
+\hline
+\end{tabularx}
+\end{center}
+
+## Suggested Quick Start
+
+1. Launch mgcvUI: `mgcvUI::mgcvUI()`
+2. Import `Appraisal_1.csv` via the file upload
+3. Set Purpose to **For Appraisal**
+4. Select `sale_price` as the target
+5. Optionally set Response Transform to **Log (natural)** for proportional adjustments
+6. Assign special types as shown in the table above
+7. Include predictors: `sale_age`, `living_sqft`, `baths_total`, `lot_size`, `area_id` (as factor), `age`, `latitude`, `longitude`, `garage_spaces`
+8. Keep defaults: REML, gamma = 1.2, tp basis, k = auto, select = TRUE
+9. Click **Fit Mgcv GAM Model**
+10. Review Summary, Contribution (smooth plots), and Diagnostics tabs
+11. Download output (Step 7), review the CQA ranking
+12. Compute RCA adjustments (Step 8) with a CQA score of ~5.00
+13. Generate a Sales Comparison Grid (Step 9) with recommended comps

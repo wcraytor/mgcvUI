@@ -132,7 +132,9 @@ mod_model_results_ui <- function(id) {
 #' @param data_r A reactive returning the data frame.
 #' @param var_config_r A reactive returning the variable configuration.
 #' @param earth_knots_r A reactive returning earth knots (or `NULL`).
-#' @return A reactive containing the `mgcvUI_result`, or `NULL`.
+#' @param dark_mode_r A reactive returning `TRUE` when dark mode is active.
+#' @return A list with `result` (reactive containing the `mgcvUI_result` or
+#'   `NULL`) and `reset` (function to clear model state).
 #' @export
 mod_model_server <- function(id, data_r, var_config_r,
                              earth_knots_r = reactive(NULL),
@@ -1024,6 +1026,13 @@ mod_model_server <- function(id, data_r, var_config_r,
       )
     })
 
-    reactive(result())
+    list(
+      result = reactive(result()),
+      reset  = function() {
+        result(NULL)
+        rv$bg_proc <- NULL
+        rv$fitting <- FALSE
+      }
+    )
   })
 }

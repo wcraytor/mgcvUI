@@ -1,0 +1,175 @@
+---
+title: "Getting Started with mgcvUI for Real Estate Appraisers"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with mgcvUI for Real Estate Appraisers}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## What is mgcvUI?
+
+mgcvUI is an interactive tool for building **Generalized Additive Models
+(GAMs)** -- flexible regression models that can capture nonlinear
+relationships in your data without requiring you to specify the exact
+shape of each curve.
+
+If you are a real estate appraiser, you already know that the
+relationship between sale price and living area is not a straight line:
+the per-square-foot value often changes as homes get larger. A GAM can
+learn these curves directly from your data, producing a transparent,
+defensible model.
+
+## Quick Start
+
+### 1. Launch the app
+
+```{r eval=FALSE}
+library(mgcvUI)
+mgcvUI()
+```
+
+This opens mgcvUI in your web browser.
+
+### 2. Import your data
+
+Click **Browse** to select a CSV or Excel file containing your
+comparable sales. Files are read directly from disk (no upload size
+limits). mgcvUI remembers the last-used file and auto-loads it on
+next launch.
+
+### 3. Choose your variables
+
+In the **Predictor Settings** table:
+
+- **Response** -- select your sale price column.
+- **Inc** -- check the predictors you want in the model.
+- **Factor** -- check categorical variables (e.g., neighborhood, condition).
+- **Linear** -- check variables that should enter linearly (no smooth curve).
+- **Special** -- assign column roles like `living_area`, `lot_size`,
+  `area`, `weights`, `latitude`, `longitude`, etc.
+
+mgcvUI automatically configures a smooth curve for each included numeric
+predictor. Categorical variables enter the model as linear terms.
+
+### 4. Choose your parameter preset
+
+The **Parameter Preset** selector at the top of Mgcv Call Parameters
+offers two options:
+
+- **Standalone (discovery)** -- for GAMs without earth input. Uses `tp`
+  basis, k=auto(10), gamma=1.2. mgcv discovers the nonlinearities.
+- **Earth Pipeline (refinement)** -- auto-selected when an earthUI
+  result is imported. Uses `cr` basis, k=5, gamma=1.4. mgcv refines
+  earth's breakpoints.
+
+See the [mgcvUI User Guide](mgcvUI-user-guide.html) for full parameter
+details.
+
+### 5. Fit the model
+
+Click **Fit Model**. mgcvUI fits a GAM using `mgcv::gam()` with your
+chosen parameters and shows a notification with the fitting time.
+
+### 6. Review the results
+
+The results panel has tabs for:
+
+- **Summary** -- R-squared, CV R-squared, AIC, and significance of each term.
+- **Contribution** -- interactive smooth plots for each predictor, with
+  confidence bands showing statistical uncertainty.
+- **Concurvity** -- checks for near-concurvity (smooth multicollinearity).
+  Values above 0.8 warrant investigation.
+- **Diagnostics** -- residual plots and Q-Q plots to check model
+  assumptions.
+- **Basis Check** -- verifies that the model has enough flexibility.
+
+### 7. Generate a report
+
+Use the download buttons to export estimated sale prices, residuals,
+and formatted reports (HTML, Word, or PDF) for your appraisal workfile.
+
+## Understanding the Smooth Plots
+
+Each smooth plot shows the estimated partial effect of one predictor on
+the sale price, holding all other predictors constant:
+- The **blue line** is the estimated curve.
+- The **blue band** is the 95% confidence interval.
+- The **grey dots** are partial residuals (data points adjusted for the
+  effects of other predictors).
+
+A flat curve means the predictor has little effect. A steep curve means
+the predictor is influential.
+
+## Understanding Concurvity
+
+Concurvity is the smooth analog of multicollinearity. If two predictors
+are highly correlated (e.g., living area and number of rooms), their
+smooth terms can become nearly interchangeable, making individual effects
+unreliable.
+
+The **Concurvity** tab shows overall and pairwise concurvity values.
+Cells are color-coded: white (< 0.5, OK), yellow (0.5--0.8, moderate),
+red (> 0.8, high). High values mean you should consider dropping or
+combining correlated terms.
+
+## Adjusting Mgcv Call Parameters
+
+Most users can use the preset defaults. Power users may want to adjust:
+
+- **Basis type** -- `tp` (thin plate, the default for standalone) is an
+  excellent all-rounder. `cr` (cubic regression spline) is faster and
+  works well when you have earth knot positions.
+- **k** -- the basis dimension controls maximum wiggliness. Higher
+  values allow more complex curves. Too high risks overfitting on small
+  comp sets.
+- **Gamma** -- values greater than 1 produce smoother curves. 1.4 is the
+  Wood & Fasiolo recommendation for parsimony.
+- **Select** -- when enabled (recommended), terms that contribute little
+  are shrunk toward zero. This is the `select` argument to `mgcv::gam()`.
+- **Method** -- REML is strongly preferred over GCV.Cp for correlated
+  predictors and modest sample sizes.
+
+## Interactions
+
+### Tensor Interactions (continuous x continuous)
+
+Under "Allowed Interactions", the matrix shows pairs of smooth predictors.
+Check a cell to add a `ti()` tensor interaction.
+
+### Factor-by-Smooth Interactions
+
+The "Factor-by-Smooth" grid lets you fit separate smooth curves per
+factor level. For example, checking `lot_size` x `area_id` generates
+`s(lot_size, by=area_id)` -- a different lot size curve for each neighborhood.
+
+## Programmatic Use
+
+You do not need the Shiny app. The core functions work in plain R:
+
+```{r}
+library(mgcvUI)
+
+specs <- list(
+  list(vars = "wt", type = "s", bs = "tp", k = NULL),
+  list(vars = "hp", type = "s", bs = "tp", k = NULL)
+)
+
+result <- fit_gam(mtcars, "mpg", specs)
+format_gam_summary(result)
+```
+
+```{r fig.width=7, fig.height=4}
+plot_smooths(result)
+```
+
+```{r fig.width=6, fig.height=5}
+plot_actual_vs_predicted(result)
+```

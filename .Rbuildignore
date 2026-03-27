@@ -9,3 +9,7 @@
 ^Output$
 ^demo_mls$
 ^\.Rhistory$
+^\.github$
+^CLAUDE\.md$
+^docs$
+^mgcvUI\.Rcheck$
