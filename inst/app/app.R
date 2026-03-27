@@ -421,6 +421,21 @@ ui <- fluidPage(
         document.body.setAttribute('data-mgcv-theme', 'light');
         Shiny.setInputValue('dark_mode', 'light', {priority: 'event'});
       }
+
+      // Restore last-used purpose
+      var lastPurpose = null;
+      try { lastPurpose = localStorage.getItem('mgcvUI_last_purpose'); } catch(e) {}
+      if (lastPurpose) {
+        var radio = $(\"input[name='purpose'][value='\" + lastPurpose + \"']\");
+        if (radio.length) {
+          radio.prop('checked', true).trigger('change');
+        }
+      }
+    });
+
+    // Save purpose whenever it changes
+    $(document).on('change', \"input[name='purpose']\", function() {
+      try { localStorage.setItem('mgcvUI_last_purpose', $(this).val()); } catch(e) {}
     });
 
     // Initialize Bootstrap 5 popovers for param help icons
