@@ -42,7 +42,7 @@ mod_earth_import_ui <- function(id) {
                        class = "btn-sm btn-outline-secondary",
                        style = "flex:1;"),
         actionButton(ns("clear_earth"), "Clear",
-                     class = "btn-sm btn-outline-danger",
+                     class = "btn-sm btn-outline-secondary",
                      style = "flex:0 0 auto;")
       )
     )

@@ -11,7 +11,7 @@ mod_model_fit_ui <- function(id) {
   ns <- NS(id)
   tagList(
     actionButton(ns("fit"), "Fit Model",
-                 class = "btn-success btn-lg",
+                 class = "btn-primary btn-lg",
                  style = "width: 100%;"),
     textOutput(ns("fit_status"))
   )

@@ -166,10 +166,10 @@ mod_variables_params_ui <- function(id) {
                    style = "font-weight: bold; font-size: 0.85em;"),
         fluidRow(
           column(6, actionButton(ns("allow_all_int"), "Allow All",
-                                 class = "btn-sm btn-outline-success",
+                                 class = "btn-sm btn-outline-primary",
                                  style = "width:100%;")),
           column(6, actionButton(ns("clear_all_int"), "Clear All",
-                                 class = "btn-sm btn-outline-danger",
+                                 class = "btn-sm btn-outline-secondary",
                                  style = "width:100%;"))
         ),
         br(),

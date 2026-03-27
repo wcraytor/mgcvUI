@@ -163,7 +163,7 @@ ui <- fluidPage(
       cursor: not-allowed;
       opacity: 0.8;
     }
-    [data-bs-theme='dark'] .mgcv-int-earth-cell {
+    [data-mgcv-theme='dark'] .mgcv-int-earth-cell {
       background-color: rgba(235, 203, 139, 0.2);
     }
 
@@ -189,19 +189,19 @@ ui <- fluidPage(
     #mgcv-theme-toggle:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.25); }
 
     /* --- Dark mode --- */
-    [data-bs-theme='dark'] .mgcv-var-header { background: #3b4252; }
-    [data-bs-theme='dark'] .mgcv-var-row { border-color: #434c5e; }
-    [data-bs-theme='dark'] .mgcv-var-row select {
+    [data-mgcv-theme='dark'] .mgcv-var-header { background: #3b4252; }
+    [data-mgcv-theme='dark'] .mgcv-var-row { border-color: #434c5e; }
+    [data-mgcv-theme='dark'] .mgcv-var-row select {
       background: #3b4252 !important; color: #d8dee9 !important;
       border-color: #434c5e !important;
     }
-    [data-bs-theme='dark'] details > summary { color: #d8dee9 !important; }
-    [data-bs-theme='dark'] .nav-tabs .nav-link.active {
+    [data-mgcv-theme='dark'] details > summary { color: #d8dee9 !important; }
+    [data-mgcv-theme='dark'] .nav-tabs .nav-link.active {
       color: #d8dee9 !important; background-color: #2e3440 !important;
       border-color: #434c5e #434c5e #2e3440 !important;
     }
-    [data-bs-theme='dark'] .nav-tabs .nav-link { color: #81a1c1; }
-    [data-bs-theme='dark'] .nav-tabs .nav-link:hover {
+    [data-mgcv-theme='dark'] .nav-tabs .nav-link { color: #81a1c1; }
+    [data-mgcv-theme='dark'] .nav-tabs .nav-link:hover {
       color: #d8dee9; border-color: #434c5e;
     }
 
@@ -280,6 +280,7 @@ ui <- fluidPage(
 
     function mgcvToggleTheme() {
       mgcvCurrentMode = (mgcvCurrentMode === 'dark') ? 'light' : 'dark';
+      document.body.setAttribute('data-mgcv-theme', mgcvCurrentMode);
       Shiny.setInputValue('dark_mode', mgcvCurrentMode, {priority: 'event'});
       var btn = document.getElementById('mgcv-theme-toggle');
       if (btn) btn.innerHTML = (mgcvCurrentMode === 'dark') ? '\\u2600' : '\\u263E';
@@ -412,10 +413,12 @@ ui <- fluidPage(
       try { saved = localStorage.getItem('mgcvUI_theme'); } catch(e) {}
       if (saved === 'dark') {
         mgcvCurrentMode = 'dark';
+        document.body.setAttribute('data-mgcv-theme', 'dark');
         var btn = document.getElementById('mgcv-theme-toggle');
         if (btn) btn.innerHTML = '\\u2600';
         Shiny.setInputValue('dark_mode', 'dark', {priority: 'event'});
       } else {
+        document.body.setAttribute('data-mgcv-theme', 'light');
         Shiny.setInputValue('dark_mode', 'light', {priority: 'event'});
       }
     });
@@ -574,7 +577,7 @@ ui <- fluidPage(
           tags$details(class = "mgcv-section",
             tags$summary(uiOutput("download_heading", inline = TRUE)),
             actionButton("export_data", "Download Output (Excel)",
-                         class = "btn-success",
+                         class = "btn-primary",
                          style = "width: 100%;")
           )
         ),
@@ -588,7 +591,7 @@ ui <- fluidPage(
                             style = "display:inline;")),
             actionButton("rca_output_btn",
                          "Calculate RCA Adjustments & Download",
-                         class = "btn-success",
+                         class = "btn-primary",
                          style = "width: 100%;")
           )
         ),
@@ -605,7 +608,7 @@ ui <- fluidPage(
                    style = "font-size: 0.85em; color: var(--bs-secondary-color);"),
             actionButton("sales_grid_btn",
                          "Generate Sales Grid & Download",
-                         class = "btn-success",
+                         class = "btn-primary",
                          style = "width: 100%;")
           )
         ),
@@ -621,7 +624,7 @@ ui <- fluidPage(
                                     "Word" = "docx",
                                     "PDF" = "pdf")),
             actionButton("export_report_btn", "Download Report",
-                         class = "btn-success",
+                         class = "btn-primary",
                          style = "width: 100%;")
           )
         )
@@ -1125,7 +1128,7 @@ server <- function(input, output, session) {
                    value = 5.00, min = 0, max = 9.99, step = 0.01),
       footer = tagList(
         modalButton("Cancel"),
-        actionButton("export_rca", "Generate", class = "btn-success")
+        actionButton("export_rca", "Generate", class = "btn-primary")
       ),
       easyClose = TRUE
     ))
@@ -1621,7 +1624,7 @@ server <- function(input, output, session) {
       footer = tagList(
         modalButton("Cancel"),
         actionButton("sg_confirm", "Generate Sales Grid",
-                     class = "btn-success")
+                     class = "btn-primary")
       )
     ))
   })
