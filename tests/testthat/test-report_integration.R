@@ -54,7 +54,7 @@ test_that("report template exists and has expected section headings", {
   expect_true(grepl("ANOVA", text))
   expect_true(grepl("Concurvity", text))
   expect_true(grepl("Basis Dimension Check", text))
-  expect_true(grepl("Smooth Term Plots", text))
+  expect_true(grepl("Contribution Plots|Smooth Term", text))
   expect_true(grepl("Model Overview", text))
   expect_true(grepl("Diagnostics", text))
   expect_true(grepl("Actual vs Predicted", text))

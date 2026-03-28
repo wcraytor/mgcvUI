@@ -1,8 +1,8 @@
 Package: mgcvUI
 Title: Interactive GAM Builder for Real Estate Appraisers
 Version: 0.2.0
-Authors@R:
-      person("William", "Craytor", , "bcraytor@proton.me", role = c("aut", "cre"))
+Authors@R: person("William", "Craytor", email = "bcraytor@proton.me",
+    role = c("aut", "cre"))
 Description: A Shiny application for building, diagnosing, and reporting
     Generalized Additive Models (GAMs) via 'mgcv'. Designed for real estate
     appraisers who need transparent, defensible nonlinear models. Optionally
@@ -11,6 +11,7 @@ Description: A Shiny application for building, diagnosing, and reporting
 License: AGPL (>= 3)
 URL: https://github.com/wcraytor/mgcvUI
 BugReports: https://github.com/wcraytor/mgcvUI/issues
+Depends: R (>= 4.1.0)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
@@ -47,6 +48,7 @@ Suggests:
     knitr,
     sysfonts,
     showtext,
-    thematic
+    thematic,
+    tinytex
 Config/testthat/edition: 3
 VignetteBuilder: knitr
