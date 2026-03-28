@@ -690,7 +690,7 @@ When a log transform is selected, values $\leq 0$ in the response are automatica
 
 ## The Predictor Table
 
-Below the target selector, a scrollable table lists every remaining column with the following fields:
+Below the target selector, a scrollable table lists every remaining column. Checkbox columns use rotated vertical headers for compactness. The column order is:
 
 \begin{center}
 \arrayrulecolor{nordblue}
@@ -698,19 +698,19 @@ Below the target selector, a scrollable table lists every remaining column with 
 \hline
 \rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Description} \\
 \hline
-\texttt{Variable} & Column name (monospace font, truncated with ellipsis) \\
+\texttt{Variable} & Column name (monospace font, truncated with ellipsis). Bordered cell. \\
 \hline
-\texttt{Type} & Data type dropdown: numeric, integer, character, factor, logical, Date, POSIXct \\
+\texttt{Type} & Data type dropdown: numeric, integer, character, factor, logical, Date, POSIXct. Bordered dropdown. \\
 \hline
-\texttt{Inc} & Checkbox --- include this column as a predictor in the model \\
+\texttt{Include} & Checkbox --- include this column as a predictor in the model. Vertical header. \\
 \hline
-\texttt{Special} & Dropdown (appraisal/market only) --- see Special Column Types Reference below \\
+\texttt{Factor} & Checkbox --- treat as a categorical factor (creates a separate coefficient per level). Vertical header. \\
 \hline
-\texttt{Factor} & Checkbox --- treat as a categorical factor (creates a separate coefficient per level) \\
+\texttt{Linear} & Checkbox --- force a linear relationship (no smooth, just $\beta x$). Vertical header. \\
 \hline
-\texttt{Linear} & Checkbox --- force a linear relationship (no smooth, just $\beta x$) \\
+\texttt{Special} & Dropdown (appraisal/market only) --- see Special Column Types Reference below. Bordered dropdown. \\
 \hline
-\texttt{NAs} & Count and percentage of missing values, color-coded: red ($\geq$50\%), orange ($\geq$20\%), grey ($>$0) \\
+\texttt{NAs} & Count and percentage of missing values, color-coded: red ($\geq$50\%), orange ($\geq$20\%), grey ($>$0). Bordered cell. \\
 \hline
 \end{tabularx}
 \end{center}
@@ -999,9 +999,11 @@ A horizontal bar chart showing the relative importance of each model term:
 
 Below the chart, a DataTable shows Term, Type, EDF, Statistic, and p-value, sorted by statistic descending.
 
-## Contribution (Smooth Plots)
+## Contribution Plots
 
-Interactive **plotly** smooth partial effect plots, one per univariate smooth term, each displayed in a bordered card. Each plot shows:
+Every model term that contributes to the predicted value has an interactive **plotly** contribution plot, displayed in a bordered card. The tab shows plots for all term types:
+
+### Univariate Smooth Terms --- $s(x)$
 
 - **Blue line** with 95\% confidence ribbon
 - **Grey scatter points** showing partial residuals (for non-log-transformed models)
@@ -1011,6 +1013,19 @@ Interactive **plotly** smooth partial effect plots, one per univariate smooth te
 For **log-transformed models**, the y-axis is back-transformed to dollar contributions using the formula $\bar{y} \times (e^{f(x)} - 1)$, making the curves directly interpretable in dollar terms.
 
 For **latitude/longitude** variables, the slope is shown per 0.001 degrees rather than per degree, since that is a more meaningful geographic increment.
+
+### Factor-by-Smooth Terms --- $s(x, \text{by}=\text{factor})$
+
+One colored line per factor level, overlaid on a single plot. Useful for seeing how a predictor's effect varies across groups (e.g., different neighborhoods).
+
+### Interaction Terms --- $ti(x_1, x_2)$ and $te(x_1, x_2)$
+
+**Heatmap** showing the 2D contribution surface. Color scale: red (negative) $\to$ white (zero) $\to$ blue (positive). Hover shows both variable values and the contribution amount.
+
+### Parametric Terms --- Linear and Factor
+
+- **Numeric linear terms**: scatter plot of data points with the fitted line overlaid
+- **Factor terms**: bar chart showing mean contribution per factor level
 
 ## Correlation
 
@@ -1248,9 +1263,9 @@ Each sheet is protected to prevent accidental edits, but the residual feature va
 
 Three formats are available:
 
-- **Word (.docx)** --- Formatted document built via the \texttt{officer} package. Suitable for editing and distribution.
-- **PDF** --- Generated via \texttt{rmarkdown}. Paper size follows the locale setting (Letter or A4).
-- **HTML** --- Self-contained HTML document via \texttt{rmarkdown}. Ideal for sharing electronically.
+- **HTML** --- Self-contained HTML document via \texttt{rmarkdown}. Works on all platforms with no extra software. Recommended default.
+- **Word (.docx)** --- Formatted document built via the \texttt{officer} package. Suitable for editing and distribution. Works on all platforms.
+- **PDF** --- Generated via \texttt{rmarkdown} + LaTeX. Paper size follows the locale setting (Letter or A4). **Requires a LaTeX installation** (see System Requirements below). If no LaTeX is detected, the PDF option is automatically hidden from the format dropdown.
 
 Reports are saved to the output folder specified in Section 3.
 
@@ -1258,13 +1273,23 @@ Reports are saved to the output folder specified in Section 3.
 
 Reports include:
 
-- Dataset description (file name, observations, response, predictors)
-- Model specification (family, method, formula, gamma, select, basis, k)
-- Results summary (R$^2$, CV R$^2$, Deviance Explained, AIC, n)
-- Smooth terms table (EDF, F, p-value per term)
-- Parametric terms table (Estimate, Std Error, t, p-value)
-- Smooth partial effect plots (static ggplot2 renders)
-- Diagnostic plots (residuals vs fitted, Q-Q, histogram, actual vs predicted)
+- **Equation**: Model equation with $f_i$ notation for smooth terms and explicit coefficients for linear terms, smooth function definitions table (term, basis, k, knots), and family/method info. Long equations wrap across multiple lines in PDF.
+- **Model overview**: R$^2$, CV R$^2$, Deviance Explained, AIC, BIC, n, family, method, fitting time
+- **Summary tables**: Smooth terms (EDF, F, p-value) and parametric terms (Estimate, Std Error, t, p-value)
+- **Variable importance**: Bar chart ranked by F-statistic (smooths) or $|t|$ (parametric)
+- **Contribution plots** (all term types):
+  - Univariate smooth plots (static ggplot2 versions of the interactive plots)
+  - Factor-by-smooth multi-line plots
+  - Interaction heatmaps ($ti$ and $te$ terms)
+  - Parametric term plots (scatter for numeric, bar chart for factor)
+- **Correlation matrix** heatmap
+- **Diagnostics**: 4-panel residual diagnostics (with `gam.check` fallback if `gratia::appraise` fails) and actual vs predicted scatter
+- **ANOVA**: Separate parametric and smooth term tables
+- **Concurvity**: Overall (transposed for readability) and pairwise worst case
+- **Earth sign consistency** (when earth knots imported)
+- **Basis dimension check** and full mgcv output
+
+Each section is independently error-protected --- if one section fails, it shows an inline error message and the rest of the report generates normally.
 
 A white checkmark appears on the Download Report button after successful generation.
 
@@ -1483,3 +1508,172 @@ This is not real data, but is based on a realistic neighborhood in Northern Cali
 11. Download output (Step 7), review the CQA ranking
 12. Compute RCA adjustments (Step 8) with a CQA score of ~5.00
 13. Generate a Sales Comparison Grid (Step 9) with recommended comps
+
+\newpage
+
+<!-- APPENDIX: SYSTEM REQUIREMENTS -->
+\begin{flushleft}
+{\color{nordblue}\small\textbf{APPENDIX}}\\[2pt]
+{\Huge\textbf{System Requirements \& Troubleshooting}}
+\end{flushleft}
+
+\noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
+
+\bigskip
+
+## Supported Platforms
+
+mgcvUI runs on **macOS**, **Windows**, and **Linux**. The application is developed and primarily tested on macOS with RStudio. Platform-specific notes are provided below.
+
+## R Version
+
+R $\geq$ 4.1.0 is required. RStudio Desktop (2023.06 or later) is strongly recommended --- it bundles **pandoc** (needed for HTML/PDF reports) and provides a convenient environment for launching the app.
+
+## Required R Packages
+
+The following packages are installed automatically as dependencies:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{nordtableheader}\textcolor{white}{\textbf{Package}} & \textcolor{white}{\textbf{Purpose}} \\
+\hline
+shiny, bslib & Web application framework and Bootstrap 5 theming \\
+\hline
+mgcv & GAM model fitting \\
+\hline
+ggplot2, plotly & Static and interactive contribution plots \\
+\hline
+gratia & Smooth term extraction and diagnostics \\
+\hline
+DT & Interactive data tables \\
+\hline
+officer & Word (.docx) report generation \\
+\hline
+rmarkdown & HTML and PDF report generation \\
+\hline
+readr, readxl & CSV and Excel file import \\
+\hline
+openxlsx & Excel output (predictions, RCA, sales grid) \\
+\hline
+RSQLite, DBI & Settings persistence (SQLite database) \\
+\hline
+jsonlite & Variable state serialization \\
+\hline
+\end{tabularx}
+\end{center}
+
+## Optional Dependencies
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{nordtableheader}\textcolor{white}{\textbf{Component}} & \textcolor{white}{\textbf{When Needed}} \\
+\hline
+\textbf{LaTeX} (TinyTeX, MiKTeX, or MacTeX) & PDF report generation only. If no LaTeX installation is detected, the PDF option is automatically hidden from the format dropdown. Install with: \texttt{tinytex::install\_tinytex()} \\
+\hline
+\textbf{sysfonts + showtext} & Roboto Condensed font for ggplot2 plots. If unavailable or offline, the app falls back to the system sans-serif font automatically. \\
+\hline
+\textbf{earth} ($\geq$ 5.3.0) & Only needed for the earthUI import pipeline. Not required for standalone use. \\
+\hline
+\end{tabularx}
+\end{center}
+
+## Platform-Specific Notes
+
+### macOS
+
+Fewest issues. Homebrew is recommended for system libraries. If PDF reports are needed:
+
+```
+# In R:
+install.packages("tinytex")
+tinytex::install_tinytex()
+```
+
+### Windows
+
+Works well with RStudio Desktop. Key notes:
+
+- **Corporate/locked-down machines**: If the temp directory or user data directory is restricted, settings persistence and report generation may fail. The app will display a warning in the R console but continue operating without persistence.
+- **LaTeX**: Install TinyTeX from R (same command as macOS above) or install MiKTeX from \texttt{miktex.org}.
+- **Long file paths**: Windows has a 260-character path limit. Keep your working directory path short.
+
+### Linux
+
+Most variable across distributions. Ubuntu/Debian users may need system libraries before R packages will compile:
+
+```bash
+sudo apt install libcurl4-openssl-dev libssl-dev \
+  libxml2-dev libsqlite3-dev libfontconfig1-dev
+```
+
+For PDF reports: `tinytex::install_tinytex()` or install \texttt{texlive-full} from the system package manager.
+
+For headless servers (no display), plotly interactive plots render as static fallbacks in reports. The Shiny app itself requires a web browser connection.
+
+## Graceful Degradation
+
+mgcvUI is designed to work even when optional components are missing:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{nordtableheader}\textcolor{white}{\textbf{Missing Component}} & \textcolor{white}{\textbf{Behavior}} \\
+\hline
+No LaTeX & PDF option hidden from report format dropdown. HTML and Word still available. \\
+\hline
+No internet / fonts fail & Roboto Condensed font replaced by system sans-serif. Console message logged. \\
+\hline
+No RSQLite / read-only filesystem & Settings do not persist between sessions. Console warning displayed. App runs normally otherwise. \\
+\hline
+gratia::appraise fails & Diagnostics tab and reports show a placeholder message. Use \texttt{mgcv::gam.check()} in the console as an alternative. \\
+\hline
+Temp directory not writable & Report generation fails with a clear error message. Resolve by setting \texttt{TMPDIR} environment variable to a writable location. \\
+\hline
+\end{tabularx}
+\end{center}
+
+## Troubleshooting
+
+### "PDF option is not available"
+
+No LaTeX installation detected. Run in R:
+
+```r
+install.packages("tinytex")
+tinytex::install_tinytex()
+```
+
+Then restart the app. The PDF option will appear.
+
+### "Settings will not persist"
+
+The SQLite database directory cannot be created or written to. Check permissions on:
+
+- **macOS/Linux**: `~/Library/Application Support/R/mgcvUI/` or `~/.local/share/R/mgcvUI/`
+- **Windows**: `%APPDATA%/R/data/mgcvUI/`
+
+### "Diagnostics plot unavailable"
+
+The \texttt{gratia::appraise()} function occasionally fails on complex models (many tensor interactions, non-standard families). This is a known upstream issue. Workaround: run \texttt{mgcv::gam.check(model)} in the R console to see the diagnostic plots directly.
+
+### "Report error: number of items to replace..."
+
+This was a known issue in earlier versions related to the \texttt{gratia} package. Ensure you have the latest version of mgcvUI installed. The current version catches this error and produces the report with a placeholder for the diagnostics section.
+
+### Port 7880 already in use
+
+If the app fails to start because port 7880 is occupied (from a previous session), run:
+
+```bash
+# macOS/Linux:
+lsof -ti:7880 | xargs kill
+
+# Windows (PowerShell):
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 7880).OwningProcess
+```
+
+### Package installation fails on Linux
+
+Missing system libraries. Install the development headers listed in the Linux section above, then retry \texttt{install.packages()}.

@@ -25,7 +25,7 @@ mod_variables_ui <- function(id) {
            style = "font-size: 0.75em; color: #888; margin-top: -8px; margin-bottom: 6px; display: none;"),
     tags$label("Predictor Settings", class = "control-label",
                style = "font-weight: bold; margin-bottom: 2px;"),
-    tags$p("Type = data type. Inc = include. Special = column role. Factor = treat as factor. Linear = force linear.",
+    tags$p("Type = data type. Include = include in model. Factor = treat as factor. Linear = force linear. Special = column role.",
            style = "font-size: 0.8em; color: #888; margin-bottom: 4px;"),
     div(style = paste("max-height: 400px; overflow-y: auto;",
                       "border: 1px solid #ddd; border-radius: 4px;",
@@ -205,6 +205,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
     ns <- session$ns
 
     var_state <- reactiveVal(list())
+    restoring_ <- reactiveVal(FALSE)
 
     # --- Parameter presets ---
     apply_preset_ <- function(preset) {
@@ -255,6 +256,8 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
 
       if (!is.null(saved) && !is.null(saved$response) &&
             saved$response %in% num_vars) {
+        restoring_(TRUE)
+        session$onFlushed(function() restoring_(FALSE), once = TRUE)
         updateSelectInput(session, "response", choices = num_vars,
                           selected = saved$response)
         if (!is.null(saved$response_transform)) {
@@ -420,12 +423,6 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                         " data-var='", var, "'",
                         inc_chk, ">"))
           ),
-          if (appraiser) tags$div(
-            class = "mgcv-cell mgcv-cell-special",
-            HTML(paste0("<select class='mgcv-special'",
-                        " data-var='", var, "'>",
-                        special_opts, "</select>"))
-          ),
           tags$div(
             class = "mgcv-cell mgcv-cell-factor",
             HTML(paste0("<input type='checkbox'",
@@ -440,18 +437,25 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                         " data-var='", var, "'",
                         lin_chk, ">"))
           ),
+          if (appraiser) tags$div(
+            class = "mgcv-cell mgcv-cell-special",
+            HTML(paste0("<select class='mgcv-special'",
+                        " data-var='", var, "'>",
+                        special_opts, "</select>"))
+          ),
           tags$div(class = "mgcv-cell mgcv-cell-na", HTML(na_html))
         )
       })
 
+      angled <- "text-align:center; writing-mode:vertical-lr; transform:rotate(180deg); height:60px; line-height:1;"
       header <- tags$div(
         class = "mgcv-var-row mgcv-var-header",
         tags$div(class = "mgcv-cell mgcv-cell-name", "Variable"),
         tags$div(class = "mgcv-cell mgcv-cell-type", "Type"),
-        tags$div(class = "mgcv-cell mgcv-cell-inc", "Inc"),
+        tags$div(class = "mgcv-cell mgcv-cell-inc", style = angled, "Include"),
+        tags$div(class = "mgcv-cell mgcv-cell-factor", style = angled, "Factor"),
+        tags$div(class = "mgcv-cell mgcv-cell-linear", style = angled, "Linear"),
         if (appraiser) tags$div(class = "mgcv-cell mgcv-cell-special", "Special"),
-        tags$div(class = "mgcv-cell mgcv-cell-factor", "Factor"),
-        tags$div(class = "mgcv-cell mgcv-cell-linear", "Linear"),
         tags$div(class = "mgcv-cell mgcv-cell-na", "NAs")
       )
 
@@ -838,6 +842,8 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       input$scale
       input$discrete
       input$nthreads
+      # Don't overwrite saved settings during restoration
+      if (isTRUE(isolate(restoring_()))) return()
       fname <- isolate(filename_r())
       st <- isolate(var_state())
       if (!is.null(fname) && length(st) > 0L) {

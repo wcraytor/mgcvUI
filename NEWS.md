@@ -1,5 +1,97 @@
 # mgcvUI 0.2.0
 
+## Contribution plots for all term types
+
+- Interactive plotly contribution plots now generated for all model
+  terms that contribute to predictions, not just univariate smooths:
+  - **Interaction heatmaps** for `ti()` and `te()` tensor product terms
+  - **Factor-by-smooth line plots** for `s(x, by=factor)` terms with
+    one colored line per factor level
+  - **Parametric term plots** for linear numeric terms (scatter + line)
+    and factor terms (bar chart)
+- New exported functions: `plot_interaction_interactive()`,
+  `plot_by_smooth_interactive()`, `plot_parametric_interactive()` (plotly),
+  and `plot_interaction_single()`, `plot_by_smooth_single()`,
+  `plot_parametric_single()` (static ggplot2 for reports).
+
+## Predictor Settings table improvements
+
+- Checkbox columns (Include, Factor, Linear) grouped together after
+  the Type column with rotated vertical header labels matching glmnetUI.
+- "Inc" label renamed to "Include".
+- Visible borders around Variable name, Type dropdown, Special dropdown,
+  and NAs cells.
+
+## Report generation overhaul
+
+- **Equation section** added to all report formats (HTML, PDF, Word):
+  model equation with f_i notation for smooth terms, explicit
+  coefficients for linear terms, smooth function definitions table.
+- **All contribution plots** included in reports: univariate smooths,
+  interaction heatmaps, factor-by-smooth plots, and parametric term
+  plots.
+- **PDF equation wrapping**: long equations use LaTeX `aligned`
+  environment with line breaks every 3 terms.
+- **LaTeX underscore escaping** prevents PDF compilation failure from
+  variable names containing underscores.
+- **Word report Equation section** includes family/method, equation
+  text, smooth definitions list, and smooth specs table.
+- **Diagnostics fallback**: `gratia::appraise()` failure caught in all
+  report formats with `gam.check()` fallback (PDF/HTML) or placeholder
+  (Word).
+- **ANOVA table** split into separate Parametric and Smooth tables.
+- **Concurvity** overall table transposed for readability; pairwise
+  table uses shortened labels.
+- **Correlation heatmap** legend moved to bottom to prevent truncation.
+- All report figures centered with `fig.align = "center"`, reduced
+  widths to prevent right-side clipping.
+- Every Rmd chunk wrapped in `tryCatch` so individual section failures
+  produce inline error text instead of aborting the report.
+
+## Settings persistence expanded
+
+- `response_transform`, `cv`, `default_basis`, `default_k`,
+  `tensor_type`, `optimizer`, `scale`, `discrete`, and `nthreads` now
+  persisted in SQLite database. Previously only saved to UI state.
+- Log10/Log transform selection remembered across sessions.
+
+## Cross-platform robustness
+
+- **R version check**: launch functions require R >= 4.1.0 with clear
+  error message.
+- **LaTeX detection**: PDF report option automatically hidden when no
+  LaTeX installation found (`has_latex_()` helper).
+- **Pandoc detection**: HTML report option hidden when pandoc not
+  available. Word (officer) always available.
+- **Font fallback**: `font_add_google("Roboto Condensed")` wrapped in
+  `tryCatch`; offline machines fall back to system sans-serif.
+- **CSS font stacks**: replaced `monospace` fallback with
+  `'Arial Narrow', Helvetica, Arial, sans-serif`.
+- **SQLite resilience**: database connection and directory creation
+  wrapped in `tryCatch`; read-only filesystems get console warning,
+  app continues without persistence.
+- **Temp directory check**: report generation verifies `tempdir()` is
+  writable before proceeding.
+- **Upload limit**: `shiny.maxRequestSize` set to 3 GB.
+- **`plot_diagnostics()` self-healing**: `gratia::appraise()` failure
+  caught inside the function itself, returns placeholder ggplot.
+
+## UI improvements
+
+- White checkmarks on buttons cleared when switching purpose mode.
+- Unescaped double quote in JavaScript (`input[type="file"]`) fixed,
+  preventing app startup crash.
+
+## Documentation
+
+- **User Guide**: new "System Requirements & Troubleshooting" appendix
+  covering platform notes, optional dependencies, graceful degradation
+  table, and troubleshooting FAQ.
+- **README.md**: System Requirements section added.
+- **Getting Started vignette**: Prerequisites section added.
+- **CLAUDE.md**: R `tryCatch` scoping bug and Shiny scoping traps
+  documented in Common Pitfalls.
+
 ## NA handling and data safety
 
 - Variable table now shows NA count and percentage per column,

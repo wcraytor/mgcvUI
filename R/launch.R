@@ -12,6 +12,10 @@
 #'   mgcvUI()
 #' }
 mgcvUI <- function(port = 7880L, ...) {
+  if (getRversion() < "4.1.0") {
+    stop("mgcvUI requires R >= 4.1.0 (you have ", getRversion(), "). ",
+         "Please update R from https://cran.r-project.org/", call. = FALSE)
+  }
   app_dir <- system.file("app", package = "mgcvUI")
   if (!nzchar(app_dir)) {
     stop("Could not find the mgcvUI app directory. ",

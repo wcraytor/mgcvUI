@@ -57,6 +57,20 @@ estate appraisers who need transparent, defensible nonlinear models.
   persistence.
 - **Dark mode** -- toggle between Nord Light and Nord Dark themes.
 
+## System Requirements
+
+- **R** >= 4.1.0 (RStudio Desktop recommended)
+- **All platforms**: HTML and Word reports work out of the box
+- **PDF reports**: require a LaTeX installation. If not detected, the
+  PDF option is automatically hidden. Install with:
+  `tinytex::install_tinytex()`
+- **Linux**: may need system libraries before package installation:
+  `sudo apt install libcurl4-openssl-dev libssl-dev libxml2-dev
+  libsqlite3-dev libfontconfig1-dev`
+
+See the **System Requirements & Troubleshooting** appendix in the
+[User Guide](docs/mgcvUI-User-Guide.pdf) for full platform details.
+
 ## Installation
 
 ```r

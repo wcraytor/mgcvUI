@@ -230,7 +230,7 @@ of the terms before treating the model as defensible.
 | **Equation** | LaTeX-rendered model equation with smooth function definitions |
 | **Summary** | R-squared, CV R-squared, deviance explained, AIC, smooth and parametric term tables |
 | **Variable Importance** | Bar chart and table ranked by F-statistic (smooth) or |t|-statistic (parametric) |
-| **Contribution** | Interactive smooth plots (plotly) for each predictor showing partial effects with confidence bands |
+| **Contribution** | Interactive plots for every model term: smooth curves, interaction heatmaps, factor-by-smooth multi-line plots, and parametric scatter/bar plots |
 | **Correlation** | Heatmap of pairwise correlations among numeric predictors |
 | **Diagnostics** | Residual plots, Q-Q plot, and actual vs. predicted scatter |
 | **RCA Adjustments** | Residual, net, and gross percentage adjustment plots |

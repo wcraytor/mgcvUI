@@ -1,13 +1,27 @@
 library(mgcvUI)
 
+# Allow uploads up to 3 GB
+options(shiny.maxRequestSize = 3 * 1024^3)
+
 # Load Roboto Condensed for R graphics (ggplot2 + base R)
-if (requireNamespace("sysfonts", quietly = TRUE) &&
-    requireNamespace("showtext", quietly = TRUE)) {
-  sysfonts::font_add_google("Roboto Condensed", "Roboto Condensed")
-  showtext::showtext_auto()
-  ggplot2::theme_set(
-    ggplot2::theme_minimal(base_family = "Roboto Condensed")
-  )
+# Wrapped in tryCatch: font_add_google needs network access and can fail
+# on offline machines, firewalled servers, or minimal Docker containers.
+font_loaded <- tryCatch({
+  if (requireNamespace("sysfonts", quietly = TRUE) &&
+      requireNamespace("showtext", quietly = TRUE)) {
+    sysfonts::font_add_google("Roboto Condensed", "Roboto Condensed")
+    showtext::showtext_auto()
+    TRUE
+  } else {
+    FALSE
+  }
+}, error = function(e) {
+  message("mgcvUI: could not load Roboto Condensed font: ", e$message,
+          ". Using system sans-serif.")
+  FALSE
+})
+if (font_loaded) {
+  ggplot2::theme_set(ggplot2::theme_minimal(base_family = "Roboto Condensed"))
 } else {
   ggplot2::theme_set(ggplot2::theme_minimal(base_family = "sans"))
 }
@@ -83,25 +97,31 @@ ui <- fluidPage(
       background: var(--bs-tertiary-bg); padding: 6px 0;
       position: sticky; top: 0; z-index: 2;
     }
-    .mgcv-cell-inc    { width: 35px; text-align: center; }
     .mgcv-cell-name   { flex: 1; min-width: 80px; overflow: hidden;
                         text-overflow: ellipsis; white-space: nowrap;
                         padding: 0 6px;
-                        font-family: 'Roboto Condensed', monospace;
-                        font-size: 0.85em; }
+                        font-family: 'Roboto Condensed', 'Arial Narrow', Helvetica, Arial, sans-serif;
+                        font-size: 0.85em;
+                        border: 1px solid var(--bs-border-color); border-radius: 3px;
+                        margin-right: 2px; }
     .mgcv-cell-type   { width: 85px; }
-    .mgcv-cell-na     { width: 75px; text-align: right; padding-right: 4px;
-                        font-size: 0.75em; white-space: nowrap;
-                        font-family: 'Roboto Condensed', monospace; }
-    .mgcv-cell-factor { width: 45px; text-align: center; padding-right: 12px; }
-    .mgcv-cell-linear { width: 45px; text-align: center; padding-right: 0; }
+    .mgcv-cell-inc    { width: 20px; text-align: center; }
+    .mgcv-cell-factor { width: 20px; text-align: center; }
+    .mgcv-cell-linear { width: 20px; text-align: center; }
     .mgcv-cell-special { width: 110px; }
+    .mgcv-cell-na     { width: 75px; text-align: right; padding: 0 4px;
+                        font-size: 0.75em; white-space: nowrap;
+                        font-family: 'Roboto Condensed', 'Arial Narrow', Helvetica, Arial, sans-serif;
+                        border: 1px solid var(--bs-border-color); border-radius: 3px;
+                        margin-left: 2px; }
     .mgcv-var-row select {
       width: 100%; padding: 1px 2px; font-size: 0.8em;
       border: 1px solid var(--bs-border-color); border-radius: 3px;
       appearance: auto; -webkit-appearance: auto;
       background-color: var(--bs-body-bg); color: var(--bs-body-color);
     }
+    .mgcv-var-header .mgcv-cell-name,
+    .mgcv-var-header .mgcv-cell-na { border-color: transparent; }
     .mgcv-var-row input[type='checkbox'] {
       width: 15px; height: 15px; cursor: pointer;
     }
@@ -145,8 +165,17 @@ ui <- fluidPage(
     }
 
     /* --- Collapsible sections --- */
-    .mgcv-section > summary { cursor: pointer; list-style: none; }
+    .mgcv-section > summary { cursor: pointer; list-style: none; position: relative; padding-right: 28px; }
     .mgcv-section > summary::-webkit-details-marker { display: none; }
+    .mgcv-section-info {
+      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #88c0d0; color: #fff;
+      font-size: 11px; font-weight: bold; line-height: 18px;
+      cursor: pointer;
+    }
+    .mgcv-section-info:hover { background: #5e81ac; }
     .mgcv-section > summary h4::before {
       content: '\\25B6\\00a0\\00a0\\00a0';
       font-size: 0.7em;
@@ -296,6 +325,20 @@ ui <- fluidPage(
     });
     Shiny.addCustomMessageHandler('download_check', function(msg) {
       mgcvAddCheck(msg.id);
+    });
+    Shiny.addCustomMessageHandler('mgcv_clear_checks', function(msg) {
+      document.querySelectorAll('.mgcv-check').forEach(function(el) { el.remove(); });
+    });
+
+    // Reset a fileInput widget to its initial state
+    Shiny.addCustomMessageHandler('mgcv_reset_file_input', function(msg) {
+      var el = document.getElementById(msg.id);
+      if (el) {
+        var input = el.querySelector('input[type=\"file\"]');
+        if (input) input.value = '';
+        var label = el.querySelector('.form-control');
+        if (label) label.textContent = 'No file chosen';
+      }
     });
 
     // --- Fitting progress modal (matches earthUI) ---
@@ -461,18 +504,12 @@ ui <- fluidPage(
 
       # --- 1. Import Data ---
       tags$details(class = "mgcv-section", open = NA,
-        tags$summary(
-          h4(style = "display:inline;",
-            "1. Import Data",
-            tags$span(
-              style = "display:inline-block; width:18px; height:18px; border-radius:50%; background:#88c0d0; color:#fff; font-size:11px; font-weight:bold; text-align:center; line-height:18px; cursor:pointer; margin-left:8px; vertical-align:middle;",
-              `data-bs-toggle` = "popover",
-              `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "right",
-              `data-bs-content` = "Import the CSV or Excel file containing your sales data. Each row is an observation (comparable sale) and each column is a variable (sale price, living area, age, etc.). The data will be used to fit a GAM model via mgcv.",
-              "?")
-          )
-        ),
+        tags$summary(h4("1. Import Data"),
+          tags$span(class = "mgcv-section-info",
+            `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+            `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+            `data-bs-content` = "Import the CSV or Excel file containing your sales data. Each row is an observation (comparable sale) and each column is a variable (sale price, living area, age, etc.). The data will be used to fit a GAM model via mgcv.",
+            "?")),
         mod_data_ui("data")
       ),
       hr(),
@@ -481,16 +518,12 @@ ui <- fluidPage(
       tags$details(class = "mgcv-section", open = NA,
         tags$summary(
           h4(style = "display:inline;",
-            "2. Import from earthUI (optional)",
-            tags$span(
-              style = "display:inline-block; width:18px; height:18px; border-radius:50%; background:#88c0d0; color:#fff; font-size:11px; font-weight:bold; text-align:center; line-height:18px; cursor:pointer; margin-left:8px; vertical-align:middle;",
-              `data-bs-toggle` = "popover",
-              `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "right",
-              `data-bs-content` = "Optionally import an earthUI result (.rds file) to seed the GAM with knot positions discovered by MARS. Earth finds data-driven change points (hinges) that become anchor knots for the GAM splines, giving the model a head start. Also imports variable selections, interaction structure, and linear/factor designations from the earth model.",
-              "?")
-          )
-        ),
+            "2. Import from earthUI (optional)"),
+          tags$span(class = "mgcv-section-info",
+            `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+            `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+            `data-bs-content` = "Optionally import an earthUI result (.rds file) to seed the GAM with knot positions discovered by MARS. Earth finds data-driven change points (hinges) that become anchor knots for the GAM splines, giving the model a head start. Also imports variable selections, interaction structure, and linear/factor designations from the earth model.",
+            "?")),
         div(style = "padding-top: 6px;",
           mod_earth_import_ui("earth")
         )
@@ -504,16 +537,12 @@ ui <- fluidPage(
 
         # --- 3. Project Output Folder ---
         tags$details(class = "mgcv-section",
-          tags$summary(h4(style = "display:inline;",
-            "3. Project Output Folder",
-            tags$span(
-              style = "display:inline-block; width:18px; height:18px; border-radius:50%; background:#88c0d0; color:#fff; font-size:11px; font-weight:bold; text-align:center; line-height:18px; cursor:pointer; margin-left:8px; vertical-align:middle;",
-              `data-bs-toggle` = "popover",
-              `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "right",
+          tags$summary(h4("3. Project Output Folder"),
+            tags$span(class = "mgcv-section-info",
+              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
               `data-bs-content` = "Set the folder where all output files are saved: Excel exports (estimated prices, adjustments), sales grids, and reports. Defaults to ~/Downloads.",
-              "?")
-          )),
+              "?")),
           textInput("output_folder", NULL,
                     value = path.expand("~/Downloads"))
         ),
@@ -521,16 +550,12 @@ ui <- fluidPage(
 
         # --- 4. Variable Configuration ---
         tags$details(class = "mgcv-section",
-          tags$summary(h4(style = "display:inline;",
-            "4. Variable Configuration",
-            tags$span(
-              style = "display:inline-block; width:18px; height:18px; border-radius:50%; background:#88c0d0; color:#fff; font-size:11px; font-weight:bold; text-align:center; line-height:18px; cursor:pointer; margin-left:8px; vertical-align:middle;",
-              `data-bs-toggle` = "popover",
-              `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "right",
+          tags$summary(h4("4. Variable Configuration"),
+            tags$span(class = "mgcv-section-info",
+              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
               `data-bs-content` = "Select the target (response) variable and configure predictors. Inc = include in model. Factor = treat as categorical. Linear = force a straight-line relationship (no smooth). Special = assign a column role (e.g. contract_date, weights, living_area) for appraisal-specific features.",
-              "?")
-          )),
+              "?")),
           conditionalPanel(
             condition = "input.purpose !== 'general'",
             dateInput("effective_date", "Effective Date",
@@ -542,32 +567,24 @@ ui <- fluidPage(
 
         # --- 5. Mgcv Call Parameters ---
         tags$details(class = "mgcv-section", open = NA,
-          tags$summary(h4(style = "display:inline;",
-            "5. Mgcv Call Parameters",
-            tags$span(
-              style = "display:inline-block; width:18px; height:18px; border-radius:50%; background:#88c0d0; color:#fff; font-size:11px; font-weight:bold; text-align:center; line-height:18px; cursor:pointer; margin-left:8px; vertical-align:middle;",
-              `data-bs-toggle` = "popover",
-              `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "right",
+          tags$summary(h4("5. Mgcv Call Parameters"),
+            tags$span(class = "mgcv-section-info",
+              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
               `data-bs-content` = "Configure the mgcv::gam() call: distribution family, smoothing method, penalty strength (gamma), basis type for splines, basis dimension (k), variable selection, and interaction structure. These control how flexible and regularized the fitted model will be.",
-              "?")
-          )),
+              "?")),
           mod_variables_params_ui("vars")
         ),
         hr(),
 
         # --- 6. Fit Mgcv GAM Model ---
         tags$details(class = "mgcv-section", open = NA,
-          tags$summary(h4(style = "display:inline;",
-            "6. Fit Mgcv GAM Model",
-            tags$span(
-              style = "display:inline-block; width:18px; height:18px; border-radius:50%; background:#88c0d0; color:#fff; font-size:11px; font-weight:bold; text-align:center; line-height:18px; cursor:pointer; margin-left:8px; vertical-align:middle;",
-              `data-bs-toggle` = "popover",
-              `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "right",
+          tags$summary(h4("6. Fit Mgcv GAM Model"),
+            tags$span(class = "mgcv-section-info",
+              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
               `data-bs-content` = "Fit the Generalized Additive Model using mgcv. The model estimates smooth nonlinear relationships between each predictor and the response. Results appear in the tabs on the right: summary statistics, contribution plots, diagnostics, and more.",
-              "?")
-          )),
+              "?")),
           mod_model_fit_ui("model")
         ),
 
@@ -578,7 +595,12 @@ ui <- fluidPage(
           style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
-            tags$summary(uiOutput("download_heading", inline = TRUE)),
+            tags$summary(uiOutput("download_heading", inline = TRUE),
+              tags$span(class = "mgcv-section-info",
+                `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+                `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+                `data-bs-content` = "Downloads an Excel file with model predictions, residuals, CQA scores, per-variable contributions, and basis values appended to your data.",
+                "?")),
             actionButton("export_data", "Download Output (Excel)",
                          class = "btn-primary",
                          style = "width: 100%;")
@@ -592,8 +614,12 @@ ui <- fluidPage(
           style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
-            tags$summary(h4("8. Calculate RCA Adjustments & Download",
-                            style = "display:inline;")),
+            tags$summary(h4("8. Calculate RCA Adjustments & Download"),
+              tags$span(class = "mgcv-section-info",
+                `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+                `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+                `data-bs-content` = "Calculates Reconciliation by Comparable Adjustment (RCA). Choose CQA or CQA per SF (if living area is designated), enter the subject's score to interpolate its residual, then computes per-variable and net/gross adjustments for each comparable sale.",
+                "?")),
             actionButton("rca_output_btn",
                          "Calculate RCA Adjustments & Download",
                          class = "btn-primary",
@@ -608,8 +634,12 @@ ui <- fluidPage(
           style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
-            tags$summary(h4("9. Generate Sales Grid & Download",
-                            style = "display:inline;")),
+            tags$summary(h4("9. Generate Sales Grid & Download"),
+              tags$span(class = "mgcv-section-info",
+                `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+                `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+                `data-bs-content` = "Generates a formatted Excel sales comparison grid. Recommends comps with gross adjustments under 25%, sorted by sale age. Each sheet shows the subject and up to 3 comps with contributions and adjustments.",
+                "?")),
             tags$p("Recommends comps with gross adjustment < 25%, ",
                    "sorted by sale age. You can add or remove comps.",
                    style = "font-size: 0.85em; color: var(--bs-secondary-color);"),
@@ -627,11 +657,23 @@ ui <- fluidPage(
           style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
-            tags$summary(uiOutput("report_heading", inline = TRUE)),
+            tags$summary(uiOutput("report_heading", inline = TRUE),
+              tags$span(class = "mgcv-section-info",
+                `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+                `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+                `data-bs-content` = "Generates a report (HTML, Word, or PDF) with model summary, smooth plots, diagnostics, variable importance, correlation matrix, ANOVA, and concurvity analysis.",
+                "?")),
             selectInput("export_format", "Format",
-                        choices = c("HTML" = "html",
-                                    "Word" = "docx",
-                                    "PDF" = "pdf")),
+                        choices = {
+                          has_pandoc <- tryCatch(rmarkdown::pandoc_available(),
+                                                error = function(e) FALSE)
+                          fmts <- c("Word" = "docx")
+                          if (has_pandoc) fmts <- c("HTML" = "html", fmts)
+                          if (has_pandoc && mgcvUI:::has_latex_()) {
+                            fmts <- c(fmts, "PDF" = "pdf")
+                          }
+                          fmts
+                        }),
             actionButton("export_report_btn", "Download Report",
                          class = "btn-primary",
                          style = "width: 100%;")
@@ -690,6 +732,16 @@ server <- function(input, output, session) {
       }
     )
   })
+
+  # --- Helper: reveal file in Finder on macOS ---
+  reveal_in_finder_ <- function(path) {
+    if (Sys.info()[["sysname"]] == "Darwin" && file.exists(path)) {
+      tryCatch(
+        system2("open", c("-R", shQuote(path)), wait = FALSE),
+        error = function(e) NULL
+      )
+    }
+  }
 
   # --- Settings locale ---
   # Guard flag: suppress DB writes until startup restoration is complete
@@ -856,6 +908,7 @@ server <- function(input, output, session) {
       restoring_settings_(FALSE)
       return()
     }
+    message("mgcvUI: purpose changed to '", input$purpose, "' — resetting all state")
     data_mod$reset()
     earth_mod$reset()
     model_mod$reset()
@@ -863,6 +916,11 @@ server <- function(input, output, session) {
     rv_rca$rca_df         <- NULL
     rv_rca$sg_recommended <- NULL
     rv_rca$sg_others      <- NULL
+    # Reset the file input widget so the UI reflects the cleared state
+    session$sendCustomMessage("mgcv_reset_file_input",
+                              list(id = "data-file_input"))
+    # Remove all white checkmarks from buttons
+    session$sendCustomMessage("mgcv_clear_checks", list())
   }, ignoreInit = TRUE)
 
   # Variable selection - returns config list
@@ -1122,6 +1180,7 @@ server <- function(input, output, session) {
       session$sendCustomMessage("download_check", list(id = "export_data"))
       showNotification(paste0("Output saved to: ", out_path),
                        type = "message", duration = 8)
+      reveal_in_finder_(out_path)
     }, error = function(e) {
       showNotification(paste("Export error:", e$message),
                        type = "error", duration = 10)
@@ -1782,10 +1841,15 @@ server <- function(input, output, session) {
       model <- res$model
       message("mgcvUI: generating ", fmt, " report to ", out_path)
 
+      summ <- format_gam_summary(res)
+
       if (fmt == "docx") {
         # Word document via officer
         font_fam <- mgcv_font_family_()
         tmpdir <- tempdir()
+        if (file.access(tmpdir, mode = 2) != 0L) {
+          stop("Temporary directory is not writable: ", tmpdir)
+        }
 
         # Smooth plots (only univariate s() terms)
         plotted <- character(0)
@@ -1876,11 +1940,13 @@ server <- function(input, output, session) {
         }
 
         # Diagnostics
-        p_diag <- tryCatch(plot_diagnostics(res), error = function(e) NULL)
-        if (!is.null(p_diag)) {
+        tryCatch({
+          p_diag <- plot_diagnostics(res)
           ggplot2::ggsave(file.path(tmpdir, "diagnostics.png"), p_diag,
                           width = 8, height = 6, dpi = 150)
-        }
+        }, error = function(e) {
+          message("  diagnostics plot failed: ", e$message)
+        })
 
         # Actual vs predicted
         p_avp <- tryCatch(plot_actual_vs_predicted(res), error = function(e) NULL)
@@ -1889,7 +1955,106 @@ server <- function(input, output, session) {
                           width = 7, height = 5, dpi = 150)
         }
 
-        # Build Word document
+        # --- Pre-build equation text (no officer calls, pure string work) ---
+        fam <- model$family
+        link_name <- fam$link
+        xform <- res$response_transform %||% "none"
+        resp_name <- res$response
+
+        family_line <- paste0("Family: ", fam$family,
+                              "(link = \"", link_name, "\")  Method: ", model$method)
+
+        lhs <- if (xform == "log10") paste0("log10(", resp_name, ")")
+               else if (xform == "log") paste0("ln(", resp_name, ")")
+               else if (link_name != "identity") paste0(link_name, "(", resp_name, ")")
+               else resp_name
+
+        intercept <- stats::coef(model)[["(Intercept)"]]
+        eq_text <- paste0(lhs, " = ", round(intercept, 4))
+
+        smooth_def_lines <- character(0)
+        for (idx in seq_along(model$smooth)) {
+          sm <- model$smooth[[idx]]
+          var_str <- paste(sm$term, collapse = ", ")
+          eq_text <- paste0(eq_text, " + f", idx, "(", var_str, ")")
+          sm_class <- class(sm)[1L]
+          bs_type <- if (grepl("tp", sm_class)) "thin plate regression spline"
+                     else if (grepl("cr", sm_class)) "cubic regression spline"
+                     else if (grepl("tensor", sm_class)) "tensor product smooth"
+                     else sm_class
+          k_str <- if (length(sm$bs.dim) == 1L) paste0("k = ", sm$bs.dim)
+                   else if (length(sm$margin) > 0L)
+                     paste0("k = ", paste(vapply(sm$margin,
+                       function(mg) mg$bs.dim, numeric(1)), collapse = " x "))
+                   else ""
+          smooth_def_lines <- c(smooth_def_lines,
+            paste0("f", idx, " -> ", sm$label, " -- ", bs_type, ", ", k_str))
+        }
+
+        sm_obj <- summary(model)
+        if (!is.null(sm_obj$p.table) && nrow(sm_obj$p.table) > 1L) {
+          param_names <- rownames(sm_obj$p.table)
+          param_names <- param_names[param_names != "(Intercept)"]
+          all_coefs <- stats::coef(model)
+          mf_eq <- stats::model.frame(model)
+          factor_vars <- names(mf_eq)[vapply(mf_eq, is.factor, logical(1))]
+          factors_shown <- character(0)
+          for (pn in param_names) {
+            matched_factor <- NULL
+            for (fv in factor_vars) {
+              if (startsWith(pn, fv)) { matched_factor <- fv; break }
+            }
+            if (!is.null(matched_factor)) {
+              if (matched_factor %in% factors_shown) next
+              factors_shown <- c(factors_shown, matched_factor)
+              n_levels <- nlevels(mf_eq[[matched_factor]])
+              eq_text <- paste0(eq_text, " + B_", matched_factor,
+                                " (", n_levels, " levels)")
+            } else {
+              coef_val <- all_coefs[[pn]]
+              if (coef_val >= 0) {
+                eq_text <- paste0(eq_text, " + ", round(coef_val, 4),
+                                  " * ", pn)
+              } else {
+                eq_text <- paste0(eq_text, " - ",
+                                  round(abs(coef_val), 4), " * ", pn)
+              }
+            }
+          }
+        }
+
+        # Specs table data
+        spec_rows <- lapply(res$smooth_specs, function(sp) {
+          var_name <- paste(sp$vars, collapse = ", ")
+          term_type <- sp$type
+          bs <- if (!is.null(sp$bs)) sp$bs else "tp"
+          k_val <- if (!is.null(sp$k)) as.character(sp$k) else "default"
+          knots <- ""
+          if (!is.null(res$earth_knots) &&
+              sp$vars[1] %in% names(res$earth_knots$knots)) {
+            kv <- res$earth_knots$knots[[sp$vars[1]]]
+            knots <- paste(round(kv, 4), collapse = ", ")
+          }
+          if (term_type == "linear") {
+            formula_term <- var_name
+          } else {
+            args <- var_name
+            if (bs != "tp") args <- paste0(args, ", bs=\"", bs, "\"")
+            if (k_val != "default") args <- paste0(args, ", k=", k_val)
+            formula_term <- paste0(term_type, "(", args, ")")
+          }
+          data.frame(Term = formula_term, Variable = var_name,
+                     Type = term_type,
+                     Basis = if (term_type == "linear") "-" else bs,
+                     k = k_val,
+                     Knots = if (nzchar(knots)) knots else "-",
+                     stringsAsFactors = FALSE)
+        })
+        spec_df <- do.call(rbind, spec_rows)
+
+        message("  docx equation built: ", substr(eq_text, 1, 60), "...")
+
+        # --- Now build the Word document (all simple doc <- calls) ---
         doc <- officer::read_docx()
         doc <- officer::body_add_par(doc, "mgcvUI GAM Report",
                                      style = "heading 1")
@@ -1897,7 +2062,23 @@ server <- function(input, output, session) {
                                      format(Sys.time(), "%Y-%m-%d %H:%M")))
         doc <- officer::body_add_par(doc, "")
 
-        # Model summary
+        # ---- EQUATION (first section) ----
+        doc <- officer::body_add_par(doc, "Equation", style = "heading 2")
+        doc <- officer::body_add_par(doc, family_line)
+        doc <- officer::body_add_par(doc, "")
+        doc <- officer::body_add_par(doc, eq_text)
+        doc <- officer::body_add_par(doc, "")
+        doc <- officer::body_add_par(doc, "Smooth function definitions:")
+        for (sline in smooth_def_lines) {
+          doc <- officer::body_add_par(doc, sline)
+        }
+        doc <- officer::body_add_par(doc, "")
+        doc <- officer::body_add_par(doc, "Smooth Function Definitions",
+                                     style = "heading 3")
+        doc <- officer::body_add_table(doc, value = spec_df,
+                                       style = "table_template")
+
+        # ---- MODEL SUMMARY ----
         doc <- officer::body_add_par(doc, "Model Summary", style = "heading 2")
         doc <- officer::body_add_par(doc, paste("R-squared:",
                                      round(summ$r_squared, 4)))
@@ -1911,8 +2092,6 @@ server <- function(input, output, session) {
         }
         doc <- officer::body_add_par(doc, paste("Family:", summ$family))
         doc <- officer::body_add_par(doc, paste("Method:", summ$method))
-        doc <- officer::body_add_par(doc, paste("Formula:",
-                                     deparse(res$formula, width.cutoff = 500)))
 
         # Smooth terms table
         if (nrow(summ$smooth_table) > 0) {
@@ -1949,13 +2128,75 @@ server <- function(input, output, session) {
         }
 
         # Smooth plots
-        doc <- officer::body_add_par(doc, "Smooth Plots", style = "heading 2")
+        doc <- officer::body_add_par(doc, "Contribution Plots",
+                                     style = "heading 2")
         for (var in plotted) {
           fp <- file.path(tmpdir, paste0("smooth_", var, ".png"))
           if (file.exists(fp)) {
             doc <- officer::body_add_img(doc, src = fp, width = 6, height = 3.5)
             doc <- officer::body_add_par(doc, "")
           }
+        }
+
+        # Interaction heatmaps — generate PNGs first, add to doc after
+        int_pngs <- character(0)
+        for (spec in res$smooth_specs) {
+          if (!spec$type %in% c("ti", "te") || length(spec$vars) != 2L) next
+          key <- paste(sort(spec$vars), collapse = ",")
+          fn <- file.path(tmpdir, paste0("int_", gsub(",", "_", key), ".png"))
+          if (fn %in% int_pngs) next
+          p <- tryCatch(plot_interaction_single(res, spec$vars, type = spec$type),
+                        error = function(e) { message("  int plot err: ", e$message); NULL })
+          if (!is.null(p)) {
+            tryCatch(ggplot2::ggsave(fn, p, width = 6, height = 5, dpi = 150),
+                     error = function(e) NULL)
+            if (file.exists(fn)) int_pngs <- c(int_pngs, fn)
+          }
+        }
+        for (fn in int_pngs) {
+          doc <- officer::body_add_img(doc, src = fn, width = 6, height = 5)
+          doc <- officer::body_add_par(doc, "")
+        }
+
+        # Factor-by-smooth plots
+        by_pngs <- character(0)
+        for (spec in res$smooth_specs) {
+          if (spec$type != "s" || length(spec$vars) != 1L) next
+          if (is.null(spec$by) || !nzchar(spec$by)) next
+          fn <- file.path(tmpdir, paste0("by_", spec$vars, "_", spec$by, ".png"))
+          if (fn %in% by_pngs) next
+          p <- tryCatch(plot_by_smooth_single(res, spec$vars, by_var = spec$by),
+                        error = function(e) { message("  by plot err: ", e$message); NULL })
+          if (!is.null(p)) {
+            tryCatch(ggplot2::ggsave(fn, p, width = 6, height = 3.5, dpi = 150),
+                     error = function(e) NULL)
+            if (file.exists(fn)) by_pngs <- c(by_pngs, fn)
+          }
+        }
+        for (fn in by_pngs) {
+          doc <- officer::body_add_img(doc, src = fn, width = 6, height = 3.5)
+          doc <- officer::body_add_par(doc, "")
+        }
+
+        # Parametric term plots
+        param_pngs <- character(0)
+        pred_cols <- tryCatch(colnames(predict(model, type = "terms")),
+                              error = function(e) character(0))
+        smooth_labels <- vapply(model$smooth, function(sm) sm$label, character(1))
+        param_terms <- setdiff(pred_cols, smooth_labels)
+        for (term in param_terms) {
+          fn <- file.path(tmpdir, paste0("param_", gsub("[^a-zA-Z0-9]", "_", term), ".png"))
+          p <- tryCatch(plot_parametric_single(res, term),
+                        error = function(e) { message("  param plot err: ", e$message); NULL })
+          if (!is.null(p)) {
+            tryCatch(ggplot2::ggsave(fn, p, width = 6, height = 3.5, dpi = 150),
+                     error = function(e) NULL)
+            if (file.exists(fn)) param_pngs <- c(param_pngs, fn)
+          }
+        }
+        for (fn in param_pngs) {
+          doc <- officer::body_add_img(doc, src = fn, width = 6, height = 3.5)
+          doc <- officer::body_add_par(doc, "")
         }
 
         # Correlation

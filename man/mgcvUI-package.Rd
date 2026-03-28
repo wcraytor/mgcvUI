@@ -16,7 +16,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: mgcvUI Developers \email{dev@example.com}
+\strong{Maintainer}: William Craytor \email{bcraytor@proton.me}
 
 }
 \keyword{internal}

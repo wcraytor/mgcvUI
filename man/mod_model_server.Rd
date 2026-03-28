@@ -24,7 +24,8 @@ mod_model_server(
 \item{dark_mode_r}{A reactive returning \code{TRUE} when dark mode is active.}
 }
 \value{
-A reactive containing the \code{mgcvUI_result}, or \code{NULL}.
+A list with \code{result} (reactive containing the \code{mgcvUI_result} or
+\code{NULL}) and \code{reset} (function to clear model state).
 }
 \description{
 Model Module -- Server (shared by fit button and results)

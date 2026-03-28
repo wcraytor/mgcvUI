@@ -307,6 +307,470 @@ plot_smooth_interactive <- function(
 }
 
 
+#' Interactive Factor-by-Smooth Contribution Plot
+#'
+#' Creates a plotly line plot for a factor-by-smooth term,
+#' showing one contribution curve per factor level.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param variable Character name of the continuous variable.
+#' @param by_var Character name of the factor variable.
+#' @param dark_mode Logical; use dark theme styling. Default `FALSE`.
+#' @return A plotly htmlwidget.
+#' @export
+plot_by_smooth_interactive <- function(
+    gam_result, variable, by_var, dark_mode = FALSE) {
+  model <- gam_result$model
+  resp <- gam_result$response
+  xform <- gam_result$response_transform %||% "none"
+
+  # Find all smooth indices for this variable with by levels
+  smooth_indices <- integer(0)
+  for (i in seq_along(model$smooth)) {
+    sm <- model$smooth[[i]]
+    sm_vars <- if (!is.null(sm$term)) sm$term else sm$vn
+    if (variable %in% sm_vars && sm$dim == 1L && !is.null(sm$by.level)) {
+      smooth_indices <- c(smooth_indices, i)
+    }
+  }
+  if (length(smooth_indices) == 0L) {
+    stop("No factor-by-smooth terms found for variable: ", variable,
+         ", by: ", by_var, call. = FALSE)
+  }
+
+  # Nord frost palette for factor levels
+  level_colors <- c("#5e81ac", "#88c0d0", "#81a1c1", "#8fbcbb",
+                    "#a3be8c", "#ebcb8b", "#d08770", "#bf616a")
+
+  font_color <- if (dark_mode) "#d8dee9" else "#2e3440"
+  grid_color <- if (dark_mode) "rgba(67,76,94,0.6)" else "rgba(0,0,0,0.1)"
+
+  fig <- plotly::plot_ly()
+
+  for (j in seq_along(smooth_indices)) {
+    idx <- smooth_indices[j]
+    sm <- model$smooth[[idx]]
+    sm_data <- gratia::smooth_estimates(model, select = sm$label)
+    x <- sm_data[[variable]]
+    y <- sm_data$.estimate
+    se_val <- sm_data$.se
+    level_label <- sm$by.level
+
+    # Back-transform
+    if (xform == "log10") {
+      mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+      mean_price <- 10^mean_resp
+      y_display <- mean_price * (10^y - 1)
+    } else if (xform == "log") {
+      mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+      mean_price <- exp(mean_resp)
+      y_display <- mean_price * (exp(y) - 1)
+    } else {
+      y_display <- y
+    }
+
+    color <- level_colors[((j - 1L) %% length(level_colors)) + 1L]
+
+    fig <- fig |>
+      plotly::add_lines(
+        x = x, y = y_display,
+        line = list(color = color, width = 2),
+        name = paste0(by_var, "=", level_label),
+        showlegend = TRUE,
+        hovertemplate = paste0(
+          variable, ": %{x:.2f}<br>",
+          "Contribution: %{y:,.0f}<br>",
+          by_var, "=", level_label,
+          "<extra></extra>"
+        )
+      )
+  }
+
+  if (xform %in% c("log", "log10")) {
+    y_title <- paste0("$ Contribution to ", resp)
+    y_tickfmt <- "$,.0f"
+  } else {
+    y_title <- paste0("Contribution to ", resp)
+    y_tickfmt <- ",.0f"
+  }
+
+  title_text <- paste0("s(", variable, ", by=", by_var, ")")
+
+  fig |>
+    plotly::layout(
+      title = list(text = title_text,
+                   font = list(size = 16, color = font_color)),
+      xaxis = list(title = variable,
+                   color = font_color, gridcolor = grid_color),
+      yaxis = list(title = y_title, tickformat = y_tickfmt,
+                   color = font_color, gridcolor = grid_color),
+      font = list(color = font_color),
+      legend = list(font = list(color = font_color)),
+      hovermode = "x unified",
+      margin = list(t = 50, b = 50),
+      plot_bgcolor = "rgba(0,0,0,0)",
+      paper_bgcolor = "rgba(0,0,0,0)"
+    )
+}
+
+
+#' Interactive Interaction Contribution Plot
+#'
+#' Creates a plotly heatmap for a 2D interaction smooth (ti or te term),
+#' showing the contribution surface over a grid of the two variables.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param vars Character vector of length 2 giving the variable names.
+#' @param type Character; the smooth type (`"ti"` or `"te"`).
+#' @param dark_mode Logical; use dark theme styling. Default `FALSE`.
+#' @return A plotly htmlwidget.
+#' @export
+plot_interaction_interactive <- function(
+    gam_result, vars, type = "ti", dark_mode = FALSE) {
+  model <- gam_result$model
+  resp <- gam_result$response
+  xform <- gam_result$response_transform %||% "none"
+
+  # Find the matching smooth
+  smooth_idx <- NULL
+  for (i in seq_along(model$smooth)) {
+    sm <- model$smooth[[i]]
+    sm_vars <- if (!is.null(sm$term)) sm$term else sm$vn
+    if (sm$dim == 2L && setequal(sm_vars, vars)) {
+      smooth_idx <- i
+      break
+    }
+  }
+  if (is.null(smooth_idx)) {
+    stop("No 2D smooth found for variables: ",
+         paste(vars, collapse = ", "), call. = FALSE)
+  }
+
+  sm_sel <- model$smooth[[smooth_idx]]$label
+  sm_data <- gratia::smooth_estimates(model, select = sm_sel, n = 50)
+
+  x1 <- sm_data[[vars[1]]]
+  x2 <- sm_data[[vars[2]]]
+  z  <- sm_data$.estimate
+
+  # Back-transform to dollar scale when log transform is used
+  if (xform == "log10") {
+    mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+    mean_price <- 10^mean_resp
+    z_display <- mean_price * (10^z - 1)
+    z_title <- paste0("$ Contribution to ", resp)
+  } else if (xform == "log") {
+    mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+    mean_price <- exp(mean_resp)
+    z_display <- mean_price * (exp(z) - 1)
+    z_title <- paste0("$ Contribution to ", resp)
+  } else {
+    z_display <- z
+    z_title <- paste0("Contribution to ", resp)
+  }
+
+  # Pivot to matrix for heatmap
+  x1_vals <- sort(unique(x1))
+  x2_vals <- sort(unique(x2))
+  z_mat <- matrix(NA_real_, nrow = length(x2_vals), ncol = length(x1_vals))
+  for (k in seq_along(x1)) {
+    ci <- match(x1[k], x1_vals)
+    ri <- match(x2[k], x2_vals)
+    z_mat[ri, ci] <- z_display[k]
+  }
+
+  font_color <- if (dark_mode) "#d8dee9" else "#2e3440"
+  title_text <- paste0(type, "(", paste(vars, collapse = ", "), ")")
+
+  plotly::plot_ly(
+    x = x1_vals, y = x2_vals, z = z_mat,
+    type = "heatmap",
+    colorscale = "RdBu", reversescale = TRUE,
+    colorbar = list(title = list(text = z_title,
+                                 font = list(color = font_color)),
+                    tickfont = list(color = font_color)),
+    hovertemplate = paste0(
+      vars[1], ": %{x:.2f}<br>",
+      vars[2], ": %{y:.2f}<br>",
+      "Contribution: %{z:,.0f}<extra></extra>"
+    )
+  ) |>
+    plotly::layout(
+      title = list(text = title_text,
+                   font = list(size = 16, color = font_color)),
+      xaxis = list(title = vars[1],
+                   color = font_color,
+                   gridcolor = if (dark_mode) "rgba(67,76,94,0.6)"
+                               else "rgba(0,0,0,0.1)"),
+      yaxis = list(title = vars[2],
+                   color = font_color,
+                   gridcolor = if (dark_mode) "rgba(67,76,94,0.6)"
+                               else "rgba(0,0,0,0.1)"),
+      font = list(color = font_color),
+      margin = list(t = 50, b = 50),
+      plot_bgcolor = "rgba(0,0,0,0)",
+      paper_bgcolor = "rgba(0,0,0,0)"
+    )
+}
+
+
+#' Interactive Parametric Contribution Plot
+#'
+#' Creates a plotly plot for a parametric (linear or factor) model term,
+#' showing its contribution to the predicted value. Numeric terms get a
+#' scatter/line plot; factor terms get a bar chart.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param term Character; the parametric term name as it appears in
+#'   `predict(type = "terms")` column names.
+#' @param dark_mode Logical; use dark theme styling. Default `FALSE`.
+#' @return A plotly htmlwidget.
+#' @export
+plot_parametric_interactive <- function(
+    gam_result, term, dark_mode = FALSE) {
+  model <- gam_result$model
+  resp <- gam_result$response
+  xform <- gam_result$response_transform %||% "none"
+
+  preds <- predict(model, type = "terms")
+  if (!term %in% colnames(preds)) {
+    stop("Term '", term, "' not found in model predictions.", call. = FALSE)
+  }
+
+  contrib <- as.numeric(preds[, term])
+  mf <- model$model
+
+  # Back-transform to dollar scale
+  if (xform == "log10") {
+    mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+    mean_price <- 10^mean_resp
+    contrib_display <- mean_price * (10^contrib - 1)
+    y_title <- paste0("$ Contribution to ", resp)
+    y_tickfmt <- "$,.0f"
+  } else if (xform == "log") {
+    mean_resp <- mean(model$fitted.values, na.rm = TRUE)
+    mean_price <- exp(mean_resp)
+    contrib_display <- mean_price * (exp(contrib) - 1)
+    y_title <- paste0("$ Contribution to ", resp)
+    y_tickfmt <- "$,.0f"
+  } else {
+    contrib_display <- contrib
+    y_title <- paste0("Contribution to ", resp)
+    y_tickfmt <- ",.0f"
+  }
+
+  font_color <- if (dark_mode) "#d8dee9" else "#2e3440"
+  grid_color <- if (dark_mode) "rgba(67,76,94,0.6)" else "rgba(0,0,0,0.1)"
+
+  # Determine if term is numeric or factor
+  is_factor <- term %in% names(mf) && is.factor(mf[[term]])
+
+  if (is_factor) {
+    # Bar chart: mean contribution per level
+    lvls <- levels(mf[[term]])
+    level_means <- vapply(lvls, function(lv) {
+      mean(contrib_display[mf[[term]] == lv], na.rm = TRUE)
+    }, numeric(1))
+
+    fig <- plotly::plot_ly(
+      x = lvls, y = level_means, type = "bar",
+      marker = list(color = "#5e81ac"),
+      hovertemplate = paste0(
+        term, ": %{x}<br>",
+        "Contribution: %{y:,.0f}<extra></extra>"
+      )
+    )
+    x_title <- term
+  } else {
+    # Scatter plot: data points with linear fit line
+    x_vals <- if (term %in% names(mf)) mf[[term]] else seq_along(contrib)
+
+    # Sort for line
+    ord <- order(x_vals)
+    x_sorted <- x_vals[ord]
+    y_sorted <- contrib_display[ord]
+
+    fig <- plotly::plot_ly() |>
+      plotly::add_markers(
+        x = x_vals, y = contrib_display,
+        marker = list(color = "#5e81ac", opacity = 0.5, size = 5),
+        showlegend = FALSE,
+        hovertemplate = paste0(
+          term, ": %{x:.2f}<br>",
+          "Contribution: %{y:,.0f}<extra></extra>"
+        )
+      ) |>
+      plotly::add_lines(
+        x = x_sorted, y = y_sorted,
+        line = list(color = "#bf616a", width = 2),
+        showlegend = FALSE,
+        hoverinfo = "skip"
+      )
+    x_title <- term
+  }
+
+  fig |>
+    plotly::layout(
+      title = list(text = paste0(term, " (linear)"),
+                   font = list(size = 16, color = font_color)),
+      xaxis = list(title = x_title,
+                   color = font_color, gridcolor = grid_color),
+      yaxis = list(title = y_title, tickformat = y_tickfmt,
+                   color = font_color, gridcolor = grid_color),
+      font = list(color = font_color),
+      margin = list(t = 50, b = 50),
+      plot_bgcolor = "rgba(0,0,0,0)",
+      paper_bgcolor = "rgba(0,0,0,0)"
+    )
+}
+
+
+#' Static Interaction Contribution Plot
+#'
+#' Creates a ggplot heatmap for a 2D interaction smooth (ti or te term).
+#' Suitable for PDF/Word reports.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param vars Character vector of length 2 giving the variable names.
+#' @param type Character; the smooth type (`"ti"` or `"te"`).
+#' @return A ggplot object.
+#' @export
+plot_interaction_single <- function(gam_result, vars, type = "ti") {
+  model <- gam_result$model
+
+  smooth_idx <- NULL
+  for (i in seq_along(model$smooth)) {
+    sm <- model$smooth[[i]]
+    sm_vars <- if (!is.null(sm$term)) sm$term else sm$vn
+    if (sm$dim == 2L && setequal(sm_vars, vars)) {
+      smooth_idx <- i
+      break
+    }
+  }
+  if (is.null(smooth_idx)) {
+    stop("No 2D smooth found for variables: ",
+         paste(vars, collapse = ", "), call. = FALSE)
+  }
+
+  sm_sel <- model$smooth[[smooth_idx]]$label
+  sm_data <- gratia::smooth_estimates(model, select = sm_sel, n = 50)
+
+  title_text <- paste0(type, "(", paste(vars, collapse = ", "), ")")
+
+  ggplot2::ggplot(sm_data,
+    ggplot2::aes(x = .data[[vars[1]]], y = .data[[vars[2]]],
+                 fill = .data$.estimate)) +
+    ggplot2::geom_tile() +
+    ggplot2::scale_fill_gradient2(
+      low = "#2166AC", mid = "white", high = "#B2182B",
+      midpoint = 0, name = "Contribution") +
+    ggplot2::labs(title = title_text, x = vars[1], y = vars[2]) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold", size = 14),
+      legend.position = "bottom",
+      legend.key.width = ggplot2::unit(1.5, "cm")
+    )
+}
+
+
+#' Static Factor-by-Smooth Contribution Plot
+#'
+#' Creates a ggplot line plot for a factor-by-smooth term,
+#' showing one curve per factor level.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param variable Character name of the continuous variable.
+#' @param by_var Character name of the factor variable.
+#' @return A ggplot object.
+#' @export
+plot_by_smooth_single <- function(gam_result, variable, by_var) {
+  model <- gam_result$model
+
+  smooth_indices <- integer(0)
+  for (i in seq_along(model$smooth)) {
+    sm <- model$smooth[[i]]
+    sm_vars <- if (!is.null(sm$term)) sm$term else sm$vn
+    if (variable %in% sm_vars && sm$dim == 1L && !is.null(sm$by.level)) {
+      smooth_indices <- c(smooth_indices, i)
+    }
+  }
+  if (length(smooth_indices) == 0L) {
+    stop("No factor-by-smooth terms found for: ", variable, call. = FALSE)
+  }
+
+  all_data <- do.call(rbind, lapply(smooth_indices, function(idx) {
+    sm <- model$smooth[[idx]]
+    sm_data <- gratia::smooth_estimates(model, select = sm$label)
+    sm_data$level <- sm$by.level
+    sm_data
+  }))
+
+  title_text <- paste0("s(", variable, ", by=", by_var, ")")
+
+  ggplot2::ggplot(all_data,
+    ggplot2::aes(x = .data[[variable]], y = .data$.estimate,
+                 color = .data$level)) +
+    ggplot2::geom_line(linewidth = 1) +
+    ggplot2::labs(title = title_text, x = variable,
+                  y = paste0("Contribution to ", gam_result$response),
+                  color = by_var) +
+    ggplot2::theme_minimal(base_size = 14) +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(face = "bold", size = 16)
+    )
+}
+
+
+#' Static Parametric Contribution Plot
+#'
+#' Creates a ggplot for a parametric model term. Numeric terms get a
+#' scatter plot; factor terms get a bar chart.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param term Character; the parametric term name.
+#' @return A ggplot object.
+#' @export
+plot_parametric_single <- function(gam_result, term) {
+  model <- gam_result$model
+  resp <- gam_result$response
+
+  preds <- predict(model, type = "terms")
+  if (!term %in% colnames(preds)) {
+    stop("Term '", term, "' not found in model predictions.", call. = FALSE)
+  }
+
+  contrib <- as.numeric(preds[, term])
+  mf <- model$model
+  is_factor <- term %in% names(mf) && is.factor(mf[[term]])
+
+  if (is_factor) {
+    lvls <- levels(mf[[term]])
+    level_means <- vapply(lvls, function(lv) {
+      mean(contrib[mf[[term]] == lv], na.rm = TRUE)
+    }, numeric(1))
+    df <- data.frame(level = factor(lvls, levels = lvls), contrib = level_means)
+    ggplot2::ggplot(df, ggplot2::aes(x = .data$level, y = .data$contrib)) +
+      ggplot2::geom_col(fill = "#5e81ac", alpha = 0.85) +
+      ggplot2::labs(title = paste0(term, " (factor)"),
+                    x = term, y = paste0("Contribution to ", resp)) +
+      ggplot2::theme_minimal(base_size = 14) +
+      ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = 16))
+  } else {
+    x_vals <- if (term %in% names(mf)) mf[[term]] else seq_along(contrib)
+    df <- data.frame(x = x_vals, contrib = contrib)
+    ord <- order(df$x)
+    ggplot2::ggplot(df, ggplot2::aes(x = .data$x, y = .data$contrib)) +
+      ggplot2::geom_point(color = "#5e81ac", alpha = 0.5, size = 1.5) +
+      ggplot2::geom_line(data = df[ord, ], color = "#bf616a", linewidth = 1) +
+      ggplot2::labs(title = paste0(term, " (linear)"),
+                    x = term, y = paste0("Contribution to ", resp)) +
+      ggplot2::theme_minimal(base_size = 14) +
+      ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = 16))
+  }
+}
+
+
 #' Plot GAM Residual Diagnostics
 #'
 #' Produces a 2x2 panel of diagnostic plots: residuals vs fitted,
@@ -321,8 +785,20 @@ plot_smooth_interactive <- function(
 #' res <- fit_gam(mtcars, "mpg", specs)
 #' plot_diagnostics(res)
 plot_diagnostics <- function(gam_result) {
-  gratia::appraise(gam_result$model) +
-    ggplot2::theme_minimal(base_size = 11)
+  tryCatch(
+    gratia::appraise(gam_result$model) +
+      ggplot2::theme_minimal(base_size = 11),
+    error = function(e) {
+      message("gratia::appraise failed: ", e$message,
+              "; returning placeholder")
+      ggplot2::ggplot() +
+        ggplot2::annotate("text", x = 0.5, y = 0.5,
+          label = paste0("Diagnostics plot unavailable:\n", e$message,
+                         "\n\nUse mgcv::gam.check() in the console."),
+          size = 4, hjust = 0.5) +
+        ggplot2::theme_void()
+    }
+  )
 }
 
 

@@ -1,6 +1,6 @@
 Package: mgcvUI
 Title: Interactive GAM Builder for Real Estate Appraisers
-Version: 0.1.0
+Version: 0.2.0
 Authors@R:
       person("William", "Craytor", , "bcraytor@proton.me", role = c("aut", "cre"))
 Description: A Shiny application for building, diagnosing, and reporting

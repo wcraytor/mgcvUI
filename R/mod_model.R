@@ -620,26 +620,98 @@ mod_model_server <- function(id, data_r, var_config_r,
     smooth_vars_r <- reactive({
       res <- result()
       req(res)
-      # Only univariate s() terms -- tensor terms need different visualization
+      # Only univariate s() terms
       sv <- vapply(res$smooth_specs, function(s) {
         if (s$type == "s" && length(s$vars) == 1L) s$vars[1] else NA_character_
       }, character(1))
       unique(sv[!is.na(sv)])
     })
 
+    interaction_terms_r <- reactive({
+      res <- result()
+      req(res)
+      # 2D interaction terms: ti() and te() with exactly 2 variables
+      its <- Filter(function(s) {
+        s$type %in% c("ti", "te") && length(s$vars) == 2L
+      }, res$smooth_specs)
+      # Deduplicate by variable pair
+      seen <- character(0)
+      unique_its <- list()
+      for (s in its) {
+        key <- paste(sort(s$vars), collapse = ",")
+        if (!key %in% seen) {
+          seen <- c(seen, key)
+          unique_its <- c(unique_its, list(s))
+        }
+      }
+      unique_its
+    })
+
+    by_smooth_terms_r <- reactive({
+      res <- result()
+      req(res)
+      # Factor-by-smooth terms: s(var, by=factor)
+      bys <- Filter(function(s) {
+        s$type == "s" && length(s$vars) == 1L && !is.null(s$by) && nzchar(s$by)
+      }, res$smooth_specs)
+      # Deduplicate by var+by pair
+      seen <- character(0)
+      unique_bys <- list()
+      for (s in bys) {
+        key <- paste0(s$vars, ":by:", s$by)
+        if (!key %in% seen) {
+          seen <- c(seen, key)
+          unique_bys <- c(unique_bys, list(s))
+        }
+      }
+      unique_bys
+    })
+
+    parametric_terms_r <- reactive({
+      res <- result()
+      req(res)
+      model <- res$model
+      # Get term names from predict(type="terms") that are NOT smooth terms
+      pred_cols <- colnames(predict(model, type = "terms"))
+      smooth_labels <- vapply(model$smooth, function(sm) sm$label,
+                              character(1))
+      setdiff(pred_cols, smooth_labels)
+    })
+
     output$smooth_plots_container <- renderUI({
       sv <- smooth_vars_r()
-      if (length(sv) == 0L) return(tags$p("No smooth terms."))
+      its <- interaction_terms_r()
+      bys <- by_smooth_terms_r()
+      pts <- parametric_terms_r()
+      if (length(sv) == 0L && length(its) == 0L &&
+          length(bys) == 0L && length(pts) == 0L) {
+        return(tags$p("No model terms to plot."))
+      }
+      border_style <- paste("border: 2px solid var(--bs-border-color);",
+                            "border-radius: 6px; padding: 8px;",
+                            "margin-bottom: 24px;")
       plot_outputs <- lapply(sv, function(var) {
         id <- ns(paste0("plotly_", var))
-        tags$div(
-          style = paste("border: 2px solid var(--bs-border-color);",
-                        "border-radius: 6px; padding: 8px;",
-                        "margin-bottom: 24px;"),
-          plotly::plotlyOutput(id, height = "400px")
-        )
+        tags$div(style = border_style,
+                 plotly::plotlyOutput(id, height = "400px"))
       })
-      do.call(tagList, plot_outputs)
+      by_outputs <- lapply(seq_along(bys), function(j) {
+        id <- ns(paste0("plotly_by_", j))
+        tags$div(style = border_style,
+                 plotly::plotlyOutput(id, height = "400px"))
+      })
+      int_outputs <- lapply(seq_along(its), function(j) {
+        id <- ns(paste0("plotly_int_", j))
+        tags$div(style = border_style,
+                 plotly::plotlyOutput(id, height = "450px"))
+      })
+      param_outputs <- lapply(pts, function(term) {
+        safe_id <- gsub("[^a-zA-Z0-9_]", "_", term)
+        id <- ns(paste0("plotly_param_", safe_id))
+        tags$div(style = border_style,
+                 plotly::plotlyOutput(id, height = "400px"))
+      })
+      do.call(tagList, c(plot_outputs, by_outputs, int_outputs, param_outputs))
     })
 
     observe({
@@ -665,6 +737,98 @@ mod_model_server <- function(id, data_r, var_config_r,
                   plotly::layout(
                     title = paste("Error:", e$message),
                     xaxis = list(title = v),
+                    yaxis = list(title = "")
+                  )
+              }
+            )
+          })
+        })
+      })
+    })
+
+    observe({
+      res <- result()
+      req(res)
+      bys <- by_smooth_terms_r()
+      lapply(seq_along(bys), function(j) {
+        local({
+          idx <- j
+          spec <- bys[[idx]]
+          my_res <- res
+          output[[paste0("plotly_by_", idx)]] <- plotly::renderPlotly({
+            is_dark <- dark_mode_r()
+            tryCatch(
+              plot_by_smooth_interactive(
+                my_res, spec$vars, by_var = spec$by, dark_mode = is_dark),
+              error = function(e) {
+                message("mgcvUI: by-smooth plot error for '",
+                        spec$vars, " by ", spec$by, "': ", e$message)
+                plotly::plot_ly(type = "scatter", mode = "lines",
+                                x = 0, y = 0) |>
+                  plotly::layout(
+                    title = paste("Error:", e$message),
+                    xaxis = list(title = spec$vars),
+                    yaxis = list(title = "")
+                  )
+              }
+            )
+          })
+        })
+      })
+    })
+
+    observe({
+      res <- result()
+      req(res)
+      its <- interaction_terms_r()
+      lapply(seq_along(its), function(j) {
+        local({
+          idx <- j
+          spec <- its[[idx]]
+          my_res <- res
+          output[[paste0("plotly_int_", idx)]] <- plotly::renderPlotly({
+            is_dark <- dark_mode_r()
+            tryCatch(
+              plot_interaction_interactive(
+                my_res, spec$vars, type = spec$type, dark_mode = is_dark),
+              error = function(e) {
+                message("mgcvUI: interaction plot error for '",
+                        paste(spec$vars, collapse = ","), "': ", e$message)
+                plotly::plot_ly(type = "scatter", mode = "lines",
+                                x = 0, y = 0) |>
+                  plotly::layout(
+                    title = paste("Error:", e$message),
+                    xaxis = list(title = paste(spec$vars, collapse = ", ")),
+                    yaxis = list(title = "")
+                  )
+              }
+            )
+          })
+        })
+      })
+    })
+
+    observe({
+      res <- result()
+      req(res)
+      pts <- parametric_terms_r()
+      lapply(pts, function(term) {
+        local({
+          my_term <- term
+          my_res <- res
+          safe_id <- gsub("[^a-zA-Z0-9_]", "_", my_term)
+          output[[paste0("plotly_param_", safe_id)]] <- plotly::renderPlotly({
+            is_dark <- dark_mode_r()
+            tryCatch(
+              plot_parametric_interactive(my_res, my_term, dark_mode = is_dark),
+              error = function(e) {
+                message("mgcvUI: parametric plot error for '",
+                        my_term, "': ", e$message)
+                plotly::plot_ly(type = "scatter", mode = "lines",
+                                x = 0, y = 0) |>
+                  plotly::layout(
+                    title = paste("Error:", e$message),
+                    xaxis = list(title = my_term),
                     yaxis = list(title = "")
                   )
               }
