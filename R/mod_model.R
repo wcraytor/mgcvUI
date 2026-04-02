@@ -838,17 +838,15 @@ mod_model_server <- function(id, data_r, var_config_r,
       })
     })
 
-    d_ <- plot_dims_(session, "diagnostics_plot")
     output$diagnostics_plot <- renderPlot({
       req(result())
       plot_diagnostics(result())
-    }, width = d_$width, height = d_$height, res = 96)
+    })
 
-    d_ <- plot_dims_(session, "avp_plot")
     output$avp_plot <- renderPlot({
       req(result())
       plot_actual_vs_predicted(result())
-    }, width = d_$width, height = d_$height, res = 96)
+    })
 
     output$sign_table <- DT::renderDT({
       req(result())
@@ -941,7 +939,6 @@ mod_model_server <- function(id, data_r, var_config_r,
     })
 
     # --- Variable Importance tab ---
-    d_ <- plot_dims_(session, "importance_plot")
     output$importance_plot <- renderPlot({
       res <- result()
       req(res)
@@ -990,7 +987,7 @@ mod_model_server <- function(id, data_r, var_config_r,
         ggplot2::labs(title = "Variable Importance (F / |t| statistic)",
                       x = "Statistic", y = NULL) +
         ggplot2::theme_minimal(base_size = 13)
-    }, width = d_$width, height = d_$height, res = 96)
+    })
 
     output$importance_table <- DT::renderDT({
       res <- result()
@@ -1048,7 +1045,6 @@ mod_model_server <- function(id, data_r, var_config_r,
       plotOutput(ns("correlation_plot"), height = "700px", width = "700px")
     })
 
-    d_ <- plot_dims_(session, "correlation_plot")
     output$correlation_plot <- renderPlot({
       res <- result()
       req(res)
@@ -1100,7 +1096,7 @@ mod_model_server <- function(id, data_r, var_config_r,
           axis.text.x = ggplot2::element_text(angle = 45, hjust = 1),
           panel.grid = ggplot2::element_blank()
         )
-    }, width = d_$width, height = d_$height, res = 96)
+    }, res = 120)
 
     # --- Anova tab ---
     output$anova_table <- DT::renderDT({

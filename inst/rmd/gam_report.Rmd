@@ -22,21 +22,6 @@ library(ggplot2)
 gam_result <- readRDS(params$result_path)
 model <- gam_result$model
 summ <- format_gam_summary(gam_result)
-
-# Helper: emit headings that work in both HTML and LaTeX PDF.
-# In results='asis' chunks, markdown ## headings pass # as literal
-# characters in LaTeX. Use \subsection{} for PDF instead.
-heading <- function(text, level = 2L) {
-  if (knitr::is_latex_output()) {
-    cmd <- switch(as.character(level),
-      "2" = "\\subsection", "3" = "\\subsection",
-      "4" = "\\subsubsection", "\\paragraph")
-    safe <- gsub("_", "\\_", text, fixed = TRUE)
-    cat(paste0("\n", cmd, "{", safe, "}\n\n"))
-  } else {
-    cat(paste0("\n", paste(rep("#", level), collapse = ""), " ", text, "\n\n"))
-  }
-}
 ```
 
 ## Model Overview
@@ -281,7 +266,7 @@ for (spec in gam_result$smooth_specs) {
     error = function(e) NULL
   )
   if (!is.null(p)) {
-    heading(var, 4L)
+    cat("\n####", var, "\n\n")
     print(p)
     cat("\n")
     plotted_smooths <- c(plotted_smooths, var)
@@ -303,7 +288,7 @@ for (spec in gam_result$smooth_specs) {
     error = function(e) NULL
   )
   if (!is.null(p)) {
-    heading(paste0("s(", spec$vars, ", by=", spec$by, ")"), 4L)
+    cat("\n####", paste0("s(", spec$vars, ", by=", spec$by, ")"), "\n\n")
     print(p)
     cat("\n")
     plotted_by <- c(plotted_by, key)
@@ -324,7 +309,7 @@ for (spec in gam_result$smooth_specs) {
     error = function(e) NULL
   )
   if (!is.null(p)) {
-    heading(paste0(spec$type, "(", paste(spec$vars, collapse=", "), ")"), 4L)
+    cat("\n####", paste0(spec$type, "(", paste(spec$vars, collapse=", "), ")"), "\n\n")
     print(p)
     cat("\n")
     plotted_int <- c(plotted_int, key)
@@ -345,7 +330,7 @@ tryCatch({
       error = function(e) NULL
     )
     if (!is.null(p)) {
-      heading(term, 4L)
+      cat("\n####", term, "\n\n")
       print(p)
       cat("\n")
     }
@@ -431,7 +416,7 @@ tryCatch({
     rownames(pt) <- NULL
     pcol <- grep("Pr\\(", names(pt), value = TRUE)
     for (pc in pcol) pt[[pc]] <- format.pval(pt[[pc]], digits = 3)
-    heading("Parametric Terms", 3L)
+    cat("### Parametric Terms\n\n")
     print(knitr::kable(pt, digits = 4, format = "pipe"))
     cat("\n")
   }
@@ -442,7 +427,7 @@ tryCatch({
     rownames(st) <- NULL
     pcol <- grep("p-value", names(st), value = TRUE)
     for (pc in pcol) st[[pc]] <- format.pval(st[[pc]], digits = 3)
-    heading("Smooth Terms", 3L)
+    cat("\n### Smooth Terms\n\n")
     print(knitr::kable(st, digits = 4, format = "pipe"))
     cat("\n")
   }
@@ -492,7 +477,7 @@ tryCatch({
 tryCatch({
   signs <- check_sign_consistency(gam_result)
   if (!is.null(signs)) {
-    heading("Earth vs GAM Sign Consistency", 2L)
+    cat("\n## Earth vs GAM Sign Consistency\n\n")
     knitr::kable(signs[, c("variable", "earth_direction",
                            "gam_direction", "consistent")])
   }

@@ -84,18 +84,6 @@ These conventions apply consistently across all three sibling apps:
   Each app uses its own key so they persist independently.
 - **sales_grid.R exception**: Excel export colors follow third-party
   conventions, not the Nord palette.
-- **renderPlot normalization**: All `renderPlot()` calls use
-  `plot_dims_(session, id)` helper + fixed `res = 96`. The helper reads
-  `session$clientData` width/height (which already includes
-  `devicePixelRatio`), so plots self-correct across macOS, Windows,
-  and Linux. Defined in `R/plot_results.R`; also locally in
-  `inst/app/app.R` for non-module context. Pattern:
-  ```r
-  d_ <- plot_dims_(session, "output_id")
-  output$output_id <- renderPlot({ ... },
-    width = d_$width, height = d_$height, res = 96)
-  ```
-  Never set `res` to anything other than 96. Never omit width/height.
 
 ## Common Pitfalls
 

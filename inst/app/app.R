@@ -414,20 +414,22 @@ ui <- fluidPage(
       if (hasError) {
         clearInterval(window.mgcvTimerInterval);
         $('#mgcv-fitting-close').show();
-        $('#mgcv-fitting-backdrop').fadeOut(300, function(){ $(this).remove(); });
       } else {
-        clearInterval(window.mgcvTimerInterval);
-        window.mgcvTimerInterval = null;
-        // Show close button and remove backdrop immediately — tabs render on demand
-        $('#mgcv-fitting-close').show();
-        $('#mgcv-fitting-backdrop').fadeOut(300, function(){ $(this).remove(); });
-        // Auto-dismiss modal once all outputs finish rendering
-        var dismissPoll = setInterval(function() {
-          if ($('.recalculating').length === 0) {
-            clearInterval(dismissPoll);
-            setTimeout(function() {
-              $('#mgcv-fitting-modal, #mgcv-fitting-backdrop').fadeOut(300, function(){ $(this).remove(); });
-            }, 500);
+        $log.append($('<div style=\\\"color:#88c0d0;margin-top:2px;\\\">').text('Now completing the tabs.'));
+        $log.scrollTop($log[0].scrollHeight);
+        var tabPollCount = 0;
+        window.mgcvFittingTabsPoll = setInterval(function() {
+          tabPollCount++;
+          var still = $('.recalculating').length;
+          if (still === 0 || tabPollCount > 100) {
+            clearInterval(window.mgcvFittingTabsPoll);
+            window.mgcvFittingTabsPoll = null;
+            clearInterval(window.mgcvTimerInterval);
+            window.mgcvTimerInterval = null;
+            var elapsed = $('#mgcv-timer').text();
+            $log.append($('<div style=\\\"color:#a3be8c;font-weight:bold;margin-top:2px;\\\">').text('Tabs complete. (' + elapsed + ')'));
+            $log.scrollTop($log[0].scrollHeight);
+            $('#mgcv-fitting-close').show();
           }
         }, 300);
       }
@@ -717,17 +719,6 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  # --- Plot dimension helper (clientData width/height, fixed res=96) ---
-  plot_dims_ <- function(session, id) {
-    full_id <- if (!is.null(session$ns)) session$ns(id) else id
-    w_key <- paste0("output_", full_id, "_width")
-    h_key <- paste0("output_", full_id, "_height")
-    list(
-      width  = function() session$clientData[[w_key]],
-      height = function() session$clientData[[h_key]]
-    )
-  }
-
   # --- Nord theme switching ---
   observe({
     mode <- input$dark_mode
@@ -1544,29 +1535,26 @@ server <- function(input, output, session) {
       )
   }
 
-  d_ <- plot_dims_(session, "rca_resid_pct_plot")
   output$rca_resid_pct_plot <- renderPlot({
     req(rv_rca$pct_data)
     rca_pct_histogram_(rv_rca$pct_data$residual_adj_pct,
                        "Residual Adjustment %",
                        "Residual Adj. %", "#88c0d0")
-  }, width = d_$width, height = d_$height, res = 96)
+  })
 
-  d_ <- plot_dims_(session, "rca_net_pct_plot")
   output$rca_net_pct_plot <- renderPlot({
     req(rv_rca$pct_data)
     rca_pct_histogram_(rv_rca$pct_data$net_adj_pct,
                        "Net Adjustment %",
                        "Net Adj. %", "#5e81ac")
-  }, width = d_$width, height = d_$height, res = 96)
+  })
 
-  d_ <- plot_dims_(session, "rca_gross_pct_plot")
   output$rca_gross_pct_plot <- renderPlot({
     req(rv_rca$pct_data)
     rca_pct_histogram_(rv_rca$pct_data$gross_adj_pct,
                        "Gross Adjustment %",
                        "Gross Adj. %", "#a3be8c")
-  }, width = d_$width, height = d_$height, res = 96)
+  })
 
   # --- 9. Generate Sales Grid & Download ---
   # Step 1: Button click shows modal with recommended comps
