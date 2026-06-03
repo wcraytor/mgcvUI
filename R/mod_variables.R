@@ -31,7 +31,10 @@ mod_variables_ui <- function(id) {
                       "border: 1px solid #ddd; border-radius: 4px;",
                       "padding: 4px;"),
       uiOutput(ns("var_table"))
-    )
+    ),
+    actionButton(ns("save_varconfig"), "Save current settings as default",
+                 class = "btn-outline-primary btn-sm",
+                 style = "width:100%; margin-top:8px;")
   )
 }
 
@@ -181,7 +184,10 @@ mod_variables_params_ui <- function(id) {
                style = "font-size: 0.75em; color: #888; margin-bottom: 4px;"),
         uiOutput(ns("factor_by_smooth_ui"))
       )
-    )
+    ),
+    actionButton(ns("save_params"), "Save current settings as default",
+                 class = "btn-outline-primary btn-sm",
+                 style = "width:100%; margin-top:8px;")
   )
 }
 
@@ -195,17 +201,59 @@ mod_variables_params_ui <- function(id) {
 #'   object (or `NULL`).
 #' @param purpose_r A reactive returning the purpose mode string
 #'   (`"general"`, `"appraisal"`, or `"market"`).
+#' @param active_project_r A reactive returning the active regProj project
+#'   (a one-row data frame with `project_path`/`purpose`) or `NULL`. Used to
+#'   save/restore per-(project, purpose) settings via the "Save current
+#'   settings as default" buttons.
 #' @return A reactive list with components: `response`, `predictors`,
 #'   `smooth_specs`, `family`, `method`, `select`, `gamma`.
 #' @export
 mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
                                  earth_knots_r = reactive(NULL),
-                                 purpose_r = reactive("general")) {
+                                 purpose_r = reactive("general"),
+                                 active_project_r = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     var_state <- reactiveVal(list())
     restoring_ <- reactiveVal(FALSE)
+
+    # --- Per-project settings (shared projects.sqlite, method = "mgcv") ---
+    # Settings follow the active project + purpose, saved explicitly via the
+    # "Save current settings as default" buttons (matching earthUI).
+    proj_purpose_ <- function() {
+      p <- active_project_r()
+      if (!is.null(p) && !is.null(p$purpose)) {
+        switch(p$purpose, gen = "general", appr = "appraisal",
+               mktarea = "market", "general")
+      } else {
+        purpose_r() %||% "general"
+      }
+    }
+
+    # Read saved config for the active project, merged into the flat structure
+    # the restore code below expects (response/params + per-column variables).
+    read_saved_ <- function() {
+      p <- active_project_r()
+      if (is.null(p)) return(NULL)
+      got <- tryCatch(
+        get_project_settings(p$project_path, method = "mgcv",
+                             purpose = proj_purpose_()),
+        error = function(e) NULL)
+      if (is.null(got)) return(NULL)
+      saved <- list()
+      if (!is.null(got$variables)) {
+        v <- tryCatch(jsonlite::fromJSON(got$variables, simplifyVector = FALSE),
+                      error = function(e) NULL)
+        if (is.list(v)) saved <- utils::modifyList(saved, v)
+      }
+      if (!is.null(got$settings)) {
+        s <- tryCatch(jsonlite::fromJSON(got$settings, simplifyVector = FALSE),
+                      error = function(e) NULL)
+        if (is.list(s)) saved <- utils::modifyList(saved, s)
+      }
+      if (length(saved) == 0L) NULL else saved
+    }
 
     # --- Parameter presets ---
     apply_preset_ <- function(preset) {
@@ -252,7 +300,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       req(df)
       num_vars <- names(df)[vapply(df, is.numeric, logical(1))]
       fname <- filename_r()
-      saved <- if (!is.null(fname)) settings_db_read_(fname) else NULL
+      saved <- read_saved_()
 
       if (!is.null(saved) && !is.null(saved$response) &&
             saved$response %in% num_vars) {
@@ -320,20 +368,22 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       detected <- detected[cols]
 
       fname <- filename_r()
-      saved <- if (!is.null(fname)) settings_db_read_(fname) else NULL
+      saved <- read_saved_()
       ek <- earth_knots_r()
 
       type_choices <- c("numeric", "integer", "character", "factor",
                         "logical", "Date", "POSIXct")
       appraiser <- purpose_r() %in% c("appraisal", "market")
+      # Keep this list identical to earthUI's special-column options so the
+      # three sibling apps share the same designations.
       special_choices <- if (appraiser) {
         c("no", "actual_age", "area", "concessions",
           "contract_date", "display_only", "dom",
           "effective_age", "latitude", "listing_date",
           "living_area", "longitude", "lot_size",
-          "sale_age", "site_dimensions", "weights")
+          "sale_age", "sale_type", "site_dimensions", "weight")
       } else {
-        c("no", "weights")
+        c("no", "weight")
       }
 
       rows <- lapply(seq_along(cols), function(i) {
@@ -796,59 +846,59 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       )
     })
 
-    # Save settings (merge with existing to preserve app-level fields)
-    save_settings_ <- function(fname, st) {
-      existing <- settings_db_read_(fname)
-      config <- if (!is.null(existing)) existing else list()
-      config$response      <- input$response
-      config$response_transform <- input$response_transform
-      config$variables     <- st
-      config$family        <- input$family
-      config$method        <- input$method
-      config$select        <- input$select
-      config$gamma         <- input$gamma
-      config$cv            <- input$cv
-      config$default_basis <- input$default_basis
-      config$default_k     <- input$default_k
-      config$tensor_type   <- input$tensor_type
-      config$optimizer     <- input$optimizer
-      config$scale         <- input$scale
-      config$discrete      <- input$discrete
-      config$nthreads      <- input$nthreads
-      config$weights_col   <- ""
-      settings_db_write_(fname, config)
-    }
-
+    # Track the per-column variable state pushed from the client.
     observeEvent(input$var_state, {
       var_state(input$var_state)
-      fname <- filename_r()
-      if (!is.null(fname)) {
-        save_settings_(fname, input$var_state)
-      }
     })
 
-    observe({
-      input$response
-      input$response_transform
-      input$family
-      input$method
-      input$select
-      input$gamma
-      input$cv
-      input$default_basis
-      input$default_k
-      input$tensor_type
-      input$optimizer
-      input$scale
-      input$discrete
-      input$nthreads
-      # Don't overwrite saved settings during restoration
-      if (isTRUE(isolate(restoring_()))) return()
-      fname <- isolate(filename_r())
-      st <- isolate(var_state())
-      if (!is.null(fname) && length(st) > 0L) {
-        save_settings_(fname, st)
+    # --- "Save current settings as default" buttons ---
+    # Persist to the shared projects.sqlite under the mgcv columns, keyed by
+    # (project, purpose). Variable configuration and parameters are saved
+    # independently (two buttons, two columns), matching earthUI.
+    observeEvent(input$save_varconfig, {
+      p <- active_project_r()
+      if (is.null(p)) {
+        showNotification("Open a project first.", type = "error", duration = 5)
+        return()
       }
+      vars_blob <- list(
+        response           = input$response %||% "",
+        response_transform = input$response_transform %||% "none",
+        variables          = input$var_state %||% list()
+      )
+      tryCatch({
+        set_project_settings(p$project_path,
+          variables = jsonlite::toJSON(vars_blob, auto_unbox = TRUE, null = "null"),
+          method = "mgcv", purpose = proj_purpose_())
+        showNotification("Variable configuration saved as the project default.",
+                         type = "message", duration = 4)
+      }, error = function(e)
+        showNotification(paste("Save error:", e$message), type = "error",
+                         duration = 8))
+    })
+
+    observeEvent(input$save_params, {
+      p <- active_project_r()
+      if (is.null(p)) {
+        showNotification("Open a project first.", type = "error", duration = 5)
+        return()
+      }
+      params_blob <- list(
+        family = input$family, method = input$method, select = input$select,
+        gamma = input$gamma, cv = input$cv, default_basis = input$default_basis,
+        default_k = input$default_k, tensor_type = input$tensor_type,
+        optimizer = input$optimizer, scale = input$scale,
+        discrete = input$discrete, nthreads = input$nthreads
+      )
+      tryCatch({
+        set_project_settings(p$project_path,
+          settings = jsonlite::toJSON(params_blob, auto_unbox = TRUE, null = "null"),
+          method = "mgcv", purpose = proj_purpose_())
+        showNotification("Parameters saved as the project default.",
+                         type = "message", duration = 4)
+      }, error = function(e)
+        showNotification(paste("Save error:", e$message), type = "error",
+                         duration = 8))
     })
 
     # Return configuration
@@ -894,7 +944,13 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         is_numeric <- typ %in% c("numeric", "integer", "Date", "POSIXct")
 
         if (isTRUE(s$factor) || !is_numeric || isTRUE(s$linear)) {
-          list(vars = var, type = "linear", bs = NULL, k = NULL)
+          # Parametric term. Dummy-code it as a factor when the user checked
+          # Factor, or when the column is a non-numeric categorical type. A
+          # plain numeric "Linear" term stays numeric (a single slope).
+          is_factor <- isTRUE(s$factor) ||
+            typ %in% c("character", "factor", "logical")
+          list(vars = var, type = "linear", bs = NULL, k = NULL,
+               factor = is_factor)
         } else {
           # Use earth knots basis if available
           has_knots <- !is.null(ek) && var %in% names(ek$knots)
@@ -954,7 +1010,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       }
 
       # Derive weights column from specials
-      wt_col <- names(which(specials == "weights"))
+      wt_col <- names(which(specials == "weight"))
       if (length(wt_col) == 0L) wt_col <- NULL else wt_col <- wt_col[1L]
 
       list(

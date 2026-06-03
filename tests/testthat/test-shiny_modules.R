@@ -75,7 +75,8 @@ test_that("mod_variables_params_ui contains namespaced id", {
 test_that("mod_data_server is a function with correct formals", {
   expect_true(is.function(mod_data_server))
   fmls <- names(formals(mod_data_server))
-  expect_equal(fmls, "id")
+  expect_true("id" %in% fmls)
+  expect_true("active_project_r" %in% fmls)
 })
 
 test_that("mod_earth_import_server is a function with correct formals", {
@@ -114,9 +115,10 @@ test_that("mod_variables_server is a function with correct formals", {
 
 # --- UI output includes expected widgets ---
 
-test_that("mod_data_ui includes file input widget", {
+test_that("mod_data_ui includes the project file picker", {
   ui <- as.character(mod_data_ui("d"))
-  expect_true(grepl("d-file_input", ui))
+  expect_true(grepl("d-file_picker", ui))
+  expect_true(grepl("d-files_refresh", ui))
 })
 
 test_that("mod_model_fit_ui includes fit button", {

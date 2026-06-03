@@ -80,7 +80,18 @@ ui <- fluidPage(
   withMathJax(),
   tags$head(
     tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
+    # Declare a color-scheme so Chrome's "Auto Dark Mode for Web Contents"
+    # stops force-darkening this app (it leaves pages that declare a scheme
+    # alone). The app manages its own light/dark theming.
+    tags$meta(name = "color-scheme", content = "light dark"),
     tags$style(HTML("
+    /* color-scheme follows the app's own theme so native form controls match.
+       The `only` keyword forbids the user agent from overriding the page's
+       scheme, which is the strongest opt-out from Chrome's Auto Dark Mode
+       (chrome://flags/#enable-force-dark) force-darkening the page. */
+    :root, body[data-mgcv-theme='light'] { color-scheme: only light; }
+    body[data-mgcv-theme='dark'] { color-scheme: only dark; }
+
     /* --- Full-width container (match earthUI) --- */
     .container-fluid { max-width: 100% !important; padding: 0 15px; }
 
@@ -234,6 +245,37 @@ ui <- fluidPage(
       color: #d8dee9; border-color: #434c5e;
     }
 
+    /* --- DataTables (DT) row colours follow the active bslib theme --- */
+    /* DT paints the row colour on the CELLS (inset box-shadow), so we set the
+       cell background and clear the shadow. Using bslib theme variables makes
+       this correct in BOTH light and dark mode automatically (bslib swaps the
+       variables when the theme changes). Selected rows are left untouched so
+       DT's blue highlight still works. */
+    table.dataTable > tbody > tr:not(.selected) > * {
+      background-color: var(--bs-body-bg, #fff) !important;
+      box-shadow: none !important;
+      color: var(--bs-body-color, #2e3440) !important;
+    }
+    /* Zebra + hover as a NEUTRAL translucent overlay (not the themed
+       --bs-secondary-bg, which is tinted by the Frost `secondary` colour and
+       made even rows look like bright bars). Neutral gray darkens slightly in
+       light mode and lightens slightly in dark mode — subtle in both. */
+    table.dataTable.stripe > tbody > tr.odd:not(.selected) > *,
+    table.dataTable.display > tbody > tr.odd:not(.selected) > * {
+      box-shadow: inset 0 0 0 9999px rgba(128, 128, 128, 0.10) !important;
+    }
+    table.dataTable.hover > tbody > tr:hover:not(.selected) > *,
+    table.dataTable.display > tbody > tr:hover:not(.selected) > * {
+      box-shadow: inset 0 0 0 9999px rgba(128, 128, 128, 0.18) !important;
+    }
+    table.dataTable thead th, table.dataTable thead td {
+      color: var(--bs-emphasis-color, inherit) !important;
+      border-color: var(--bs-border-color) !important;
+    }
+    table.dataTable tbody td, table.dataTable tbody th {
+      border-color: var(--bs-border-color) !important;
+    }
+
     /* --- Parameter help icons (match earthUI) --- */
     .mgcv-param-help {
       position: absolute; top: 0; right: 0;
@@ -270,7 +312,21 @@ ui <- fluidPage(
                     choices = c("Letter" = "letter", "A4" = "a4"),
                     selected = "letter", width = "100%"),
         actionLink("locale_save_default", "Save as my default",
-                   style = "font-size: 0.85em; color: #5e81ac; display: block; margin-top: 4px;")
+                   style = "font-size: 0.85em; color: #5e81ac; display: block; margin-top: 4px;"),
+        tags$hr(style = "margin: 10px 0;"),
+        tags$label(class = "control-label", "regProj root folder"),
+        tags$div(style = "display:flex; gap:6px; align-items:flex-end;",
+          tags$div(style = "flex:1;",
+            textInput("regproj_root", NULL, value = "", width = "100%")),
+          shinyFiles::shinyDirButton("regproj_root_browse", "Browse…",
+                                     "Choose the regProj root folder",
+                                     class = "btn btn-outline-secondary btn-sm",
+                                     style = "margin-bottom:0;")
+        ),
+        actionLink("regproj_root_save", "Save root",
+                   style = "font-size: 0.85em; color: #5e81ac; display: block; margin-top: 4px;"),
+        tags$p(style = "font-size: 0.75em; color: var(--bs-secondary-color); margin-top: 4px;",
+               "Shared with earthUI / glmnetUI. Projects, input files, and outputs live here.")
       )
     ),
     tags$div(class = "mgcv-spacer"),
@@ -428,6 +484,10 @@ ui <- fluidPage(
             window.mgcvTimerInterval = null;
             var elapsed = $('#mgcv-timer').text();
             $log.append($('<div style=\\\"color:#a3be8c;font-weight:bold;margin-top:2px;\\\">').text('Tabs complete. (' + elapsed + ')'));
+            $log.append($('<div style=\\\"color:#a3be8c;font-weight:bold;margin-top:8px;\\\">').text('Done - all sections processed. Nothing else is coming; you can close this window.'));
+            var $doneBtn = $('<button type=\\\"button\\\" style=\\\"margin-top:8px;background:#5e81ac;color:#eceff4;border:none;border-radius:4px;padding:6px 18px;cursor:pointer;font-family:inherit;font-size:0.9em;\\\">Close</button>');
+            $doneBtn.on('click', function(){ $('#mgcv-fitting-close').click(); });
+            $log.append($doneBtn);
             $log.scrollTop($log[0].scrollHeight);
             $('#mgcv-fitting-close').show();
           }
@@ -491,62 +551,68 @@ ui <- fluidPage(
     sidebarPanel(
       width = 4,
 
-      # --- Purpose Mode ---
-      tags$div(
-        style = "font-weight:bold;",
+      # --- Purpose Mode (hidden — driven by the active project; kept in the
+      # DOM so existing input$purpose-based logic continues to work) ---
+      conditionalPanel(condition = "false",
         radioButtons("purpose", "Purpose:",
                      choices = c("General" = "general",
                                  "For Appraisal" = "appraisal",
                                  "Market Area Analysis" = "market"),
                      selected = "general", inline = TRUE)
       ),
-      hr(),
 
-      # --- 1. Import Data ---
+      # --- 1. Project ---
       tags$details(class = "mgcv-section", open = NA,
-        tags$summary(h4("1. Import Data"),
+        tags$summary(h4("1. Project"),
           tags$span(class = "mgcv-section-info",
             `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
             `data-bs-placement` = "left", onclick = "event.stopPropagation();",
-            `data-bs-content` = "Import the CSV or Excel file containing your sales data. Each row is an observation (comparable sale) and each column is a variable (sale price, living area, age, etc.). The data will be used to fit a GAM model via mgcv.",
+            `data-bs-content` = "Active project sets the location (purpose, country, state, county, city) and the input/output folders. Pick an existing project or create a new one. Projects are shared with earthUI and glmnetUI. Click Close Project to switch.",
             "?")),
-        mod_data_ui("data")
+        uiOutput("regproj_project_ui")
       ),
       hr(),
 
-      # --- 2. Import from earthUI (optional) ---
-      tags$details(class = "mgcv-section", open = NA,
-        tags$summary(
-          h4(style = "display:inline;",
-            "2. Import from earthUI (optional)"),
-          tags$span(class = "mgcv-section-info",
-            `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
-            `data-bs-placement` = "left", onclick = "event.stopPropagation();",
-            `data-bs-content` = "Optionally import an earthUI result (.rds file) to seed the GAM with knot positions discovered by MARS. Earth finds data-driven change points (hinges) that become anchor knots for the GAM splines, giving the model a head start. Also imports variable selections, interaction structure, and linear/factor designations from the earth model.",
-            "?")),
-        div(style = "padding-top: 6px;",
-          mod_earth_import_ui("earth")
-        )
+      conditionalPanel(condition = "output.has_active_project",
+        # --- 2. Import Data (from the project's in/ folder) ---
+        tags$details(class = "mgcv-section", open = NA,
+          tags$summary(h4("2. Import Data"),
+            tags$span(class = "mgcv-section-info",
+              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+              `data-bs-content` = "Pick a CSV or Excel file from the active project's in/ folder. Each row is an observation (comparable sale) and each column is a variable (sale price, living area, age, etc.). Add files to the project's <os>_in/ folder via Finder/Explorer, then click Refresh.",
+              "?")),
+          mod_data_ui("data")
+        ),
+        hr(),
+
+        # --- 3. Import from earthUI (optional) ---
+        tags$details(class = "mgcv-section", open = NA,
+          tags$summary(
+            h4(style = "display:inline;",
+              "3. Import from earthUI (optional)"),
+            tags$span(class = "mgcv-section-info",
+              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+              `data-bs-content` = "Optionally import an earthUI result (.rds file) to seed the GAM with knot positions discovered by MARS. Earth finds data-driven change points (hinges) that become anchor knots for the GAM splines, giving the model a head start. Also imports variable selections, interaction structure, and linear/factor designations from the earth model.",
+              "?")),
+          div(style = "padding-top: 6px;",
+            mod_earth_import_ui("earth")
+          )
+        ),
+        hr()
       ),
-      hr(),
 
       div(class = "shiny-panel-conditional",
         `data-display-if` = "output.data_imported",
         `data-ns-prefix` = "",
         style = "display:none;",
 
-        # --- 3. Project Output Folder ---
-        tags$details(class = "mgcv-section",
-          tags$summary(h4("3. Project Output Folder"),
-            tags$span(class = "mgcv-section-info",
-              `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
-              `data-bs-placement` = "left", onclick = "event.stopPropagation();",
-              `data-bs-content` = "Set the folder where all output files are saved: Excel exports (estimated prices, adjustments), sales grids, and reports. Defaults to ~/Downloads.",
-              "?")),
-          textInput("output_folder", NULL,
-                    value = path.expand("~/Downloads"))
+        # output_folder is derived from the active project (hidden in the DOM
+        # so existing input$output_folder readers keep working).
+        conditionalPanel(condition = "false",
+          textInput("output_folder", NULL, value = "")
         ),
-        hr(),
 
         # --- 4. Variable Configuration ---
         tags$details(class = "mgcv-section",
@@ -554,7 +620,7 @@ ui <- fluidPage(
             tags$span(class = "mgcv-section-info",
               `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
               `data-bs-placement` = "left", onclick = "event.stopPropagation();",
-              `data-bs-content` = "Select the target (response) variable and configure predictors. Inc = include in model. Factor = treat as categorical. Linear = force a straight-line relationship (no smooth). Special = assign a column role (e.g. contract_date, weights, living_area) for appraisal-specific features.",
+              `data-bs-content` = "Select the target (response) variable and configure predictors. Inc = include in model. Factor = treat as categorical. Linear = force a straight-line relationship (no smooth). Special = assign a column role (e.g. contract_date, weight, living_area) for appraisal-specific features.",
               "?")),
           conditionalPanel(
             condition = "input.purpose !== 'general'",
@@ -650,31 +716,54 @@ ui <- fluidPage(
           )
         ),
 
-        # --- 10. Download Report ---
+        # --- 10. Generate Quarto Report (writes .qmd bundle + assets) ---
         div(class = "shiny-panel-conditional",
           `data-display-if` = "output.model_fitted",
           `data-ns-prefix` = "",
           style = "display:none;",
           hr(),
           tags$details(class = "mgcv-section",
-            tags$summary(uiOutput("report_heading", inline = TRUE),
+            tags$summary(uiOutput("generate_qmd_heading", inline = TRUE),
               tags$span(class = "mgcv-section-info",
                 `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
                 `data-bs-placement` = "left", onclick = "event.stopPropagation();",
-                `data-bs-content` = "Generates a report (HTML, Word, or PDF) with model summary, smooth plots, diagnostics, variable importance, correlation matrix, ANOVA, and concurvity analysis.",
+                `data-bs-content` = "Writes a self-contained Quarto report bundle (.qmd source + plots + data + reference.docx) to the project's mgcv output folder. The bundle can be edited or combined with other Quarto sources before being rendered in the next section.",
                 "?")),
-            selectInput("export_format", "Format",
-                        choices = {
-                          has_pandoc <- tryCatch(rmarkdown::pandoc_available(),
-                                                error = function(e) FALSE)
-                          fmts <- c("Word" = "docx")
-                          if (has_pandoc) fmts <- c("HTML" = "html", fmts)
-                          if (has_pandoc && mgcvUI:::has_latex_()) {
-                            fmts <- c(fmts, "PDF" = "pdf")
-                          }
-                          fmts
-                        }),
-            actionButton("export_report_btn", "Download Report",
+            actionButton("generate_qmd_btn", "Generate Quarto Report",
+                         class = "btn-primary",
+                         style = "width: 100%;")
+          )
+        ),
+
+        # --- 11. Convert Quarto Report (any .qmd) -> HTML/Word/PDF ---
+        conditionalPanel(condition = "output.has_active_project",
+          hr(),
+          tags$details(class = "mgcv-section",
+            tags$summary(uiOutput("convert_qmd_heading", inline = TRUE),
+              tags$span(class = "mgcv-section-info",
+                `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+                `data-bs-placement` = "left", onclick = "event.stopPropagation();",
+                `data-bs-content` = "Renders any Quarto .qmd file to HTML / Word / PDF. Defaults to the most recently generated bundle, but you can browse to any .qmd.",
+                "?")),
+            tags$div(style = "display:flex; gap:6px; align-items:flex-end;",
+              tags$div(style = "flex:1;",
+                textInput("convert_qmd_path", "Quarto source (.qmd)", value = "")),
+              shinyFiles::shinyFilesButton("convert_qmd_browse", "Browse…",
+                                           "Choose a Quarto file", multiple = FALSE,
+                                           class = "btn btn-outline-secondary btn-sm",
+                                           style = "margin-bottom:15px;")
+            ),
+            checkboxGroupInput("convert_formats", "Output formats",
+                               choices = {
+                                 fmts <- c("HTML" = "html", "Word" = "docx")
+                                 if (mgcvUI:::has_latex_()) fmts <- c(fmts, "PDF" = "pdf")
+                                 fmts
+                               },
+                               selected = "html", inline = TRUE),
+            if (!mgcvUI:::has_latex_())
+              tags$p(style = "font-size: 0.78em; color: #81A1C1; margin-top: -8px;",
+                     "PDF requires LaTeX: ", tags$code("tinytex::install_tinytex()")),
+            actionButton("convert_qmd_btn", "Convert",
                          class = "btn-primary",
                          style = "width: 100%;")
           )
@@ -757,13 +846,11 @@ server <- function(input, output, session) {
       updateSelectInput(session, "locale_paper", selected = ld$locale_paper)
     if (!is.null(ld$locale_import))
       updateSelectInput(session, "data-locale_import", selected = ld$locale_import)
-    if (!is.null(ld$output_folder) && nzchar(ld$output_folder))
-      updateTextInput(session, "output_folder", value = ld$output_folder)
     if (!is.null(ld$effective_date) && nzchar(ld$effective_date))
       updateDateInput(session, "effective_date",
                       value = as.Date(ld$effective_date))
-    if (!is.null(ld$purpose) && nzchar(ld$purpose))
-      updateRadioButtons(session, "purpose", selected = ld$purpose)
+    # output_folder and purpose are now derived from the active regProj
+    # project, not restored from locale defaults.
     message("mgcvUI: restored locale defaults from SQLite")
   }
 
@@ -830,16 +917,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # Persist output folder and effective date to global defaults
-  observeEvent(input$output_folder, {
-    if (!isTRUE(locale_ready())) return()
-    folder <- input$output_folder
-    if (is.null(folder) || !nzchar(folder)) return()
-    ld <- mgcvUI:::settings_db_read_locale_() %||% list()
-    ld$output_folder <- folder
-    mgcvUI:::settings_db_write_locale_(ld)
-  })
-
+  # Persist effective date to global defaults
   observeEvent(input$effective_date, {
     if (!isTRUE(locale_ready())) return()
     ed <- input$effective_date
@@ -849,66 +927,50 @@ server <- function(input, output, session) {
     mgcvUI:::settings_db_write_locale_(ld)
   })
 
-  # Data import - returns list(data, filename)
-  data_mod <- mod_data_server("data")
+  # ===== regProj project state (shared root + DBs with earthUI/glmnetUI) =====
+  rv_proj <- reactiveValues(
+    active_project        = NULL,   # one-row data.frame or NULL
+    project_sort          = "recent",
+    project_refresh_token = 0L
+  )
+  active_project_r <- reactive(rv_proj$active_project)
+
+  # Per-session DB connections.
+  geo_con_      <- tryCatch(mgcvUI::regproj_geo_db_connect(),
+                            error = function(e) NULL)
+  projects_con_ <- tryCatch(mgcvUI::regproj_projects_db_connect(),
+                            error = function(e) NULL)
+  session$onSessionEnded(function() {
+    if (!is.null(geo_con_))      try(DBI::dbDisconnect(geo_con_),      silent = TRUE)
+    if (!is.null(projects_con_)) try(DBI::dbDisconnect(projects_con_), silent = TRUE)
+  })
+
+  output$has_active_project <- reactive(!is.null(rv_proj$active_project))
+  outputOptions(output, "has_active_project", suspendWhenHidden = FALSE)
+
+  # Data import - reads files from the active project's in/ folder
+  data_mod <- mod_data_server("data", active_project_r)
 
   # --- Data imported flag ---
   output$data_imported <- reactive(!is.null(data_mod$data()))
   outputOptions(output, "data_imported", suspendWhenHidden = FALSE)
 
-  # --- Restore app-level settings when data file changes ---
-  # Flag survives across flush cycles so the purpose observer can skip
-  # the reset triggered by restoring the saved purpose radio button.
-  restoring_settings_ <- reactiveVal(FALSE)
-  observeEvent(data_mod$filename(), {
-    fname <- data_mod$filename()
-    if (is.null(fname)) return()
-    saved <- mgcvUI:::settings_db_read_(fname)
-    if (is.null(saved)) return()
-    if (!is.null(saved$purpose)) {
-      restoring_settings_(TRUE)
-      updateRadioButtons(session, "purpose", selected = saved$purpose)
-      # Clear flag after flush in case the value didn't actually change
-      # (no change = no observer fire = flag stuck TRUE)
-      session$onFlushed(function() restoring_settings_(FALSE), once = TRUE)
-    }
-    if (!is.null(saved$output_folder)) {
-      updateTextInput(session, "output_folder", value = saved$output_folder)
-    }
-    if (!is.null(saved$effective_date)) {
-      updateDateInput(session, "effective_date",
-                      value = as.Date(saved$effective_date))
-    }
-  })
-
-  # --- Save app-level settings when they change ---
-  observe({
-    fname <- data_mod$filename()
-    req(fname)
-    input$purpose
-    input$output_folder
-    input$effective_date
-    isolate({
-      saved <- mgcvUI:::settings_db_read_(fname)
-      config <- if (!is.null(saved)) saved else list()
-      config$output_folder  <- input$output_folder %||% ""
-      config$effective_date <- as.character(input$effective_date %||% "")
-      config$purpose        <- input$purpose %||% "general"
-      mgcvUI:::settings_db_write_(fname, config)
-    })
-  })
-
   # Optional earth import
   earth_mod <- mod_earth_import_server("earth")
   earth_knots_r <- earth_mod$knots
 
-  # Reset ALL state when purpose changes (user action only)
-  observeEvent(input$purpose, {
-    if (restoring_settings_()) {
-      restoring_settings_(FALSE)
-      return()
-    }
-    message("mgcvUI: purpose changed to '", input$purpose, "' — resetting all state")
+  # When the active project changes (open / close / switch): set the hidden
+  # Purpose radio + the derived output folder (<os>_out_mgcv) and reset all
+  # per-file state. mod_data picks up the project's last-used file and loads
+  # it. Forward references to model_mod / rv_rca are fine — this observer
+  # fires during flush, after the server function has finished defining them.
+  observeEvent(rv_proj$active_project, ignoreNULL = FALSE, {
+    p <- rv_proj$active_project
+    pur <- if (is.null(p)) "general" else
+      switch(p$purpose, gen = "general", appr = "appraisal",
+             mktarea = "market", "general")
+    updateRadioButtons(session, "purpose", selected = pur)
+
     data_mod$reset()
     earth_mod$reset()
     model_mod$reset()
@@ -916,19 +978,403 @@ server <- function(input, output, session) {
     rv_rca$rca_df         <- NULL
     rv_rca$sg_recommended <- NULL
     rv_rca$sg_others      <- NULL
-    # Reset the file input widget so the UI reflects the cleared state
-    session$sendCustomMessage("mgcv_reset_file_input",
-                              list(id = "data-file_input"))
-    # Remove all white checkmarks from buttons
     session$sendCustomMessage("mgcv_clear_checks", list())
+
+    if (is.null(p)) {
+      updateTextInput(session, "output_folder", value = "")
+    } else {
+      parsed <- mgcvUI::regproj_parse_flat(basename(p$project_path))
+      out_dir <- tryCatch(
+        mgcvUI::regproj_path(p$purpose, parsed$country, parsed$levels,
+                             parsed$project_name, in_or_out = "out",
+                             method = "mgcv", create = TRUE),
+        error = function(e)
+          file.path(p$project_path,
+                    paste0(mgcvUI::os_detect(), "_out_mgcv")))
+      if (!dir.exists(out_dir))
+        dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+      updateTextInput(session, "output_folder", value = out_dir)
+      # Keep the projects DB row fresh (shared with earthUI/glmnetUI).
+      tryCatch(
+        mgcvUI::register_project(p$project_path, p$purpose, parsed$country,
+                                 parsed$levels, parsed$project_name),
+        error = function(e) NULL)
+    }
+  })
+
+  # ===== Project section (Section 1) =====
+
+  # Drive browser (shared by regProj root + any folder pickers).
+  volumes <- c(Home = path.expand("~"), shinyFiles::getVolumes()())
+  if (.Platform$OS.type == "unix" && dir.exists("/Volumes"))
+    volumes <- c(volumes, Volumes = "/Volumes")
+  if (.Platform$OS.type == "unix" && dir.exists("/media"))
+    volumes <- c(volumes, Media = "/media")
+  if (.Platform$OS.type == "unix" && dir.exists("/mnt"))
+    volumes <- c(volumes, Mounts = "/mnt")
+
+  # Populate the regProj root field once at session start.
+  observe({
+    isolate({
+      if (is.null(input$regproj_root) || !nzchar(input$regproj_root %||% ""))
+        updateTextInput(session, "regproj_root", value = default_regproj_root())
+    })
+  })
+
+  shinyFiles::shinyDirChoose(input, "regproj_root_browse", roots = volumes,
+                             session = session,
+                             restrictions = system.file(package = "base"))
+  observeEvent(input$regproj_root_browse, {
+    d <- shinyFiles::parseDirPath(volumes, input$regproj_root_browse)
+    if (length(d) > 0 && nzchar(d))
+      updateTextInput(session, "regproj_root", value = as.character(d))
+  })
+
+  observeEvent(input$regproj_root_save, {
+    p <- trimws(input$regproj_root %||% "")
+    if (!nzchar(p)) {
+      showNotification("regProj root folder is empty.",
+                       type = "error", duration = 5); return()
+    }
+    p <- path.expand(p)
+    if (!dir.exists(p)) {
+      ok <- tryCatch({ dir.create(p, recursive = TRUE); TRUE },
+                     error = function(e) FALSE, warning = function(w) FALSE)
+      if (!ok || !dir.exists(p)) {
+        showNotification(sprintf("Cannot create or access: %s", p),
+                         type = "error", duration = 6); return()
+      }
+    }
+    prefs <- mgcvui_prefs_read()
+    prefs$regproj_root <- p
+    mgcvui_prefs_write(prefs)
+    rv_proj$project_refresh_token <- rv_proj$project_refresh_token + 1L
+    showNotification(sprintf("regProj root saved: %s", p),
+                     type = "message", duration = 5)
+  })
+
+  # Pending location prefill for the New Project modal.
+  np_prefill_ <- reactiveVal(NULL)
+
+  level_has_shipped_ <- function(country, level_idx) {
+    country == "us" && level_idx %in% c(1L, 2L)
+  }
+
+  # Choices for a level dropdown: "Full Name (code)" -> code.
+  build_level_choices_ <- function(country, parent_codes, level_idx) {
+    if (is.null(geo_con_)) return(character(0))
+    parent_path <- paste(parent_codes, collapse = "/")
+    res <- DBI::dbGetQuery(geo_con_,
+      "SELECT code, name FROM admin_entries
+        WHERE country = ? AND level = ? AND parent_codes = ?
+        ORDER BY name",
+      params = list(country, as.integer(level_idx), parent_path))
+    if (nrow(res) == 0L) return(character(0))
+    stats::setNames(res$code, paste0(res$name, " (", res$code, ")"))
+  }
+
+  projects_df_ <- reactive({
+    rv_proj$project_refresh_token
+    regproj_list_projects(sort_by = rv_proj$project_sort)
+  })
+
+  output$regproj_project_ui <- renderUI({
+    df <- projects_df_()
+    active <- rv_proj$active_project
+    if (!is.null(active)) {
+      pur_label <- switch(active$purpose, gen = "General", appr = "Appraisal",
+                          mktarea = "Market Area", active$purpose)
+      loc_friendly <- paste(pur_label, "·", toupper(active$country), "·",
+                            toupper(active$state), "·", active$county, "·",
+                            active$city)
+      return(tagList(
+        tags$div(style = "margin-bottom:4px;", strong(active$project_name)),
+        tags$div(class = "small text-muted",
+                 style = "margin-bottom:8px; word-break: break-all;",
+                 loc_friendly),
+        tags$div(style = "display:flex; gap:6px; flex-wrap: wrap;",
+          actionButton("regproj_project_close", "Close Project",
+                       class = "btn btn-outline-secondary btn-sm"),
+          actionButton("regproj_project_info", "Info",
+                       class = "btn btn-outline-secondary btn-sm"),
+          actionButton("regproj_project_new", "+ New…",
+                       class = "btn btn-outline-primary btn-sm"))
+      ))
+    }
+    if (nrow(df) == 0L) {
+      return(tagList(
+        tags$div(class = "small text-muted", style = "margin-bottom:8px;",
+                 "(no projects yet — click + New to create one)"),
+        actionButton("regproj_project_new", "+ New…",
+                     class = "btn btn-outline-primary btn-sm")))
+    }
+    labels <- paste0(df$project_name, "  —  ", df$purpose, " / ", df$country,
+                     " / ", df$state, " / ", df$county, " / ", df$city)
+    choices <- stats::setNames(df$project_path, labels)
+    tagList(
+      selectizeInput("regproj_project_pick", NULL,
+                     choices = c("(select a project)" = "", choices),
+                     selected = "", width = "100%"),
+      tags$div(style = "display:flex; gap:6px; align-items:center;",
+        radioButtons("regproj_project_sort", NULL,
+                     choices = c("Recent" = "recent", "A-Z" = "alpha"),
+                     selected = rv_proj$project_sort, inline = TRUE),
+        actionButton("regproj_project_new", "+ New…",
+                     class = "btn btn-outline-primary btn-sm"))
+    )
+  })
+
+  observeEvent(input$regproj_project_sort, {
+    rv_proj$project_sort <- input$regproj_project_sort
   }, ignoreInit = TRUE)
+
+  observeEvent(input$regproj_project_pick, {
+    p <- input$regproj_project_pick
+    if (is.null(p) || !nzchar(p)) return()
+    df <- projects_df_()
+    row <- df[df$project_path == p, , drop = FALSE]
+    if (nrow(row) == 1L) rv_proj$active_project <- row
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$regproj_project_close, {
+    rv_proj$active_project <- NULL
+  })
+
+  observeEvent(input$regproj_project_new, {
+    src <- rv_proj$active_project
+    if (is.null(src)) {
+      recent <- tryCatch(regproj_list_projects(sort_by = "recent"),
+                         error = function(e) NULL)
+      if (!is.null(recent) && nrow(recent) > 0L)
+        src <- recent[1L, , drop = FALSE]
+    }
+    parsed <- if (!is.null(src))
+                regproj_parse_flat(basename(src$project_path)) else NULL
+    pf_country <- if (!is.null(parsed)) parsed$country else "us"
+    pf_levels  <- if (!is.null(parsed)) as.character(parsed$levels) else character(0)
+    np_prefill_(if (length(pf_levels) > 0L)
+                  list(country = pf_country, levels = pf_levels) else NULL)
+    showModal(modalDialog(
+      title = "Create New Project", size = "l", easyClose = FALSE,
+      footer = tagList(modalButton("Cancel"),
+        actionButton("np_create", "Create Project", class = "btn-primary")),
+      tags$div(class = "small text-muted", style = "margin-bottom: 12px;",
+        "Country, State, County, City, and Purpose are locked once the project is created."),
+      textInput("np_project_name", "Project Name *",
+                placeholder = "letters, digits, _ and -, max 24 chars",
+                width = "100%"),
+      radioButtons("np_purpose", "Purpose *",
+                   choices = c("General" = "gen", "For Appraisal" = "appr",
+                               "Market Area Analysis" = "mktarea"),
+                   selected = "appr", inline = TRUE),
+      hr(), tags$h5("Project Location"),
+      uiOutput("np_country_ui"), uiOutput("np_levels_ui"),
+      hr(), tags$h5("Initial Data File", style = "margin-bottom:4px;"),
+      tags$div(class = "small text-muted", style = "margin-bottom:8px;",
+        "Optional — copied into the project's in/ folder; the name is preserved."),
+      fileInput("np_data_file", NULL, accept = c(".csv", ".xlsx", ".xls"),
+                width = "100%")
+    ))
+  })
+
+  output$np_country_ui <- renderUI({
+    ref <- regproj_reference()
+    labels <- paste0(unlist(ref$countries), " (", names(ref$countries), ")")
+    choices <- stats::setNames(names(ref$countries), labels)
+    pf <- np_prefill_()
+    sel_cc <- if (!is.null(pf) && nzchar(pf$country %||% "")) pf$country else "us"
+    selectInput("np_country", "Country *", choices = choices,
+                selected = sel_cc, width = "100%")
+  })
+
+  output$np_levels_ui <- renderUI({
+    cc <- input$np_country %||% "us"
+    schema <- country_schema(cc)
+    if (length(schema) == 0L)
+      return(tags$div(class = "small text-muted",
+                      "(no admin levels for this country)"))
+    pf <- np_prefill_()
+    pf_levels <- if (!is.null(pf) && identical(pf$country, cc))
+                   pf$levels else character(0)
+    last_idx <- length(schema)
+    parent_codes <- character(0)
+    inputs <- lapply(seq_along(schema), function(i) {
+      lbl <- tools::toTitleCase(gsub("_", " ", schema[i]))
+      if (i < last_idx) {
+        sel_val <- input[[paste0("np_level_", i)]]
+        if ((is.null(sel_val) || !nzchar(sel_val)) &&
+            length(pf_levels) >= i && nzchar(pf_levels[i]))
+          sel_val <- pf_levels[i]
+        if (!is.null(sel_val) && nzchar(sel_val)) parent_codes[i] <<- sel_val
+        sel <- if (!is.null(sel_val) && nzchar(sel_val)) sel_val else NULL
+      } else {
+        sel <- NULL
+        if (length(pf_levels) >= i && nzchar(pf_levels[i]) &&
+            (i == 1L || isTRUE(all(parent_codes[seq_len(i - 1L)] ==
+                                   pf_levels[seq_len(i - 1L)]))))
+          sel <- pf_levels[i]
+      }
+      ch <- build_level_choices_(cc, parent_codes[seq_len(i - 1L)], i)
+      if (level_has_shipped_(cc, i)) {
+        selectInput(paste0("np_level_", i), paste0(lbl, " *"),
+                    choices = c("(pick…)" = "", ch), selected = sel,
+                    width = "100%")
+      } else if (i == last_idx) {
+        ch_pairs <- ch
+        names_only <- character(0)
+        choices <- if (length(ch_pairs) == 0L) {
+          c("(pick a city or type new)" = "")
+        } else {
+          labels <- names(ch_pairs)
+          names_only <- sub(" \\([^)]*\\)$", "", labels)
+          c("(pick a city or type new)" = "", stats::setNames(names_only, labels))
+        }
+        sel_city <- ""
+        if (!is.null(sel) && nzchar(sel) && length(ch_pairs) > 0L) {
+          midx <- match(sel, unname(ch_pairs))
+          if (!is.na(midx)) sel_city <- names_only[midx]
+        }
+        selectizeInput(paste0("np_level_", i), paste0(lbl, " *"),
+                       choices = choices, selected = sel_city,
+                       options = list(create = TRUE,
+                         placeholder = "Pick existing or type a new full name"),
+                       width = "100%")
+      } else {
+        selectizeInput(paste0("np_level_", i), paste0(lbl, " *"),
+                       choices = ch, selected = sel,
+                       options = list(create = TRUE,
+                         placeholder = "Pick existing or type a new name"),
+                       width = "100%")
+      }
+    })
+    do.call(tagList, inputs)
+  })
+
+  observeEvent(input$np_create, {
+    cc <- input$np_country %||% ""
+    schema <- country_schema(cc)
+    last_idx <- length(schema)
+    proj <- trimws(input$np_project_name %||% "")
+    pur <- input$np_purpose %||% "appr"
+    if (!nzchar(proj) || !grepl("^[A-Za-z0-9_-]+$", proj) || nchar(proj) > 24L) {
+      showNotification("Project Name must match ^[A-Za-z0-9_-]+$ and be at most 24 chars.",
+                       type = "error", duration = 5); return()
+    }
+    if (length(schema) == 0L) {
+      showNotification("This country has no admin levels defined.",
+                       type = "error", duration = 5); return()
+    }
+    levels <- character(length(schema))
+    parent_codes <- character(0)
+    for (i in seq_along(schema)) {
+      val <- input[[paste0("np_level_", i)]]
+      val <- if (is.null(val)) "" else trimws(as.character(val))
+      if (level_has_shipped_(cc, i)) {
+        if (!nzchar(val)) {
+          showNotification(sprintf("Missing %s.", schema[i]),
+                           type = "error", duration = 5); return()
+        }
+        levels[i] <- val
+      } else if (i == last_idx) {
+        full_name <- val
+        if (!nzchar(full_name)) {
+          showNotification("City is required.", type = "error", duration = 5); return()
+        }
+        scope <- paste(c(cc, parent_codes), collapse = "/")
+        existing_code <- regproj_index_get(scope, full_name)
+        if (!is.null(existing_code)) {
+          levels[i] <- existing_code
+        } else {
+          existing <- unname(unlist(build_level_choices_(cc, parent_codes, i)))
+          new_code <- city_abbreviation(full_name, existing)
+          regproj_index_put(scope, full_name, new_code)
+          levels[i] <- new_code
+        }
+      } else {
+        ch <- build_level_choices_(cc, parent_codes, i)
+        if (val %in% ch) {
+          levels[i] <- val
+        } else {
+          existing <- unname(unlist(ch))
+          code <- city_abbreviation(val, existing)
+          regproj_index_put(paste(c(cc, parent_codes), collapse = "/"), val, code)
+          levels[i] <- code
+        }
+      }
+      parent_codes[i] <- levels[i]
+    }
+    flat <- tryCatch(regproj_flat_segment(cc, levels, proj),
+                     error = function(e) {
+                       showNotification(paste("Path error:", conditionMessage(e)),
+                                        type = "error", duration = 5); NULL
+                     })
+    if (is.null(flat)) return()
+    proj_root <- file.path(default_regproj_root(), pur, flat)
+    if (dir.exists(proj_root)) {
+      showNotification(sprintf("A project named '%s' already exists in this location.", proj),
+                       type = "error", duration = 5); return()
+    }
+    # Create the full multi-OS / multi-method tree so any sibling app can use it.
+    in_dir <- NULL
+    for (os_seg in c("mac", "ubuntu", "win11")) {
+      io_in <- regproj_path(pur, cc, levels, proj, os = os_seg,
+                            in_or_out = "in", create = TRUE)
+      for (m in c("earth", "glmnet", "mgcv", "combined"))
+        regproj_path(pur, cc, levels, proj, os = os_seg,
+                     in_or_out = "out", method = m, create = TRUE)
+      if (os_seg == os_detect()) in_dir <- io_in
+    }
+    fi <- input$np_data_file
+    last_file <- NULL
+    if (!is.null(fi) && nrow(fi) >= 1L && !is.null(in_dir)) {
+      last_file <- fi$name[1L]
+      file.copy(fi$datapath[1L], file.path(in_dir, last_file), overwrite = FALSE)
+    }
+    tryCatch(register_project(proj_root, pur, cc, levels, proj,
+                              last_file = last_file),
+             error = function(e) NULL)
+    np_prefill_(NULL)
+    rv_proj$project_refresh_token <- rv_proj$project_refresh_token + 1L
+    df <- regproj_list_projects(sort_by = rv_proj$project_sort)
+    new_row <- df[df$project_path == proj_root, , drop = FALSE]
+    if (nrow(new_row) == 1L) rv_proj$active_project <- new_row
+    removeModal()
+    showNotification(sprintf("Created project '%s'", proj),
+                     type = "message", duration = 6)
+  })
+
+  observeEvent(input$regproj_project_info, {
+    p <- rv_proj$active_project
+    if (is.null(p)) return()
+    pur_label <- switch(p$purpose, gen = "General", appr = "For Appraisal",
+                        mktarea = "Market Area Analysis", p$purpose)
+    showModal(modalDialog(
+      title = "Project Info", easyClose = TRUE, footer = modalButton("Close"),
+      tags$dl(
+        tags$dt("Project"), tags$dd(p$project_name),
+        tags$dt("Purpose"), tags$dd(pur_label),
+        tags$dt("Location"),
+        tags$dd(paste(toupper(p$country), "·", toupper(p$state), "·",
+                      p$county, "·", p$city)),
+        tags$dt("Folder"),
+        tags$dd(tags$code(p$project_path)),
+        tags$dt("Inputs"),
+        tags$dd(tags$code(file.path(p$project_path,
+                                    paste0(os_detect(), "_in")))),
+        tags$dt("Outputs (mgcv)"),
+        tags$dd(tags$code(file.path(p$project_path,
+                                    paste0(os_detect(), "_out_mgcv"))))
+      )
+    ))
+  })
 
   # Variable selection - returns config list
   var_config_r <- mod_variables_server("vars",
-                                       data_r        = data_mod$data,
-                                       filename_r    = data_mod$filename,
-                                       earth_knots_r = earth_knots_r,
-                                       purpose_r     = reactive(input$purpose))
+                                       data_r           = data_mod$data,
+                                       filename_r       = data_mod$filename,
+                                       earth_knots_r    = earth_knots_r,
+                                       purpose_r        = reactive(input$purpose),
+                                       active_project_r = active_project_r)
 
   # Derived data reactive: recompute sale_age when effective_date changes
   app_data_r <- reactive({
@@ -1003,11 +1449,17 @@ server <- function(input, output, session) {
     h4(label, style = "display:inline;")
   })
 
-  output$report_heading <- renderUI({
-    n <- if (identical(input$purpose, "appraisal")) "10"
-         else if (identical(input$purpose, "market")) "9"
-         else "8"
-    h4(paste0(n, ". Download Report"), style = "display:inline;")
+  output$generate_qmd_heading <- renderUI({
+    n <- if (identical(input$purpose, "appraisal")) 10L
+         else if (identical(input$purpose, "market")) 9L
+         else 8L
+    h4(paste0(n, ". Generate Quarto Report"), style = "display:inline;")
+  })
+  output$convert_qmd_heading <- renderUI({
+    n <- if (identical(input$purpose, "appraisal")) 11L
+         else if (identical(input$purpose, "market")) 10L
+         else 9L
+    h4(paste0(n, ". Convert Quarto Report"), style = "display:inline;")
   })
 
   # ---- Helper: find living_area column from variable specials ----
@@ -1055,13 +1507,16 @@ server <- function(input, output, session) {
       response  <- res$response
       xform     <- res$response_transform %||% "none"
       n         <- nrow(export_df)
+      # Coerce a copy the same way fit_gam did, so predict() works on the
+      # original data (dates -> numeric, factor-designated -> factor).
+      pred_df   <- mgcvUI:::prepare_gam_data_(export_df, res$smooth_specs)
 
       # Predictions (model predicts on transformed scale, back-transform)
       est_col   <- rep(NA_real_, n)
       resid_col <- rep(NA_real_, n)
 
       complete <- tryCatch({
-        pv <- predict(model, newdata = export_df, type = "response")
+        pv <- predict(model, newdata = pred_df, type = "response")
         est_col <- mgcvUI:::back_transform_(as.numeric(pv), xform)
         resid_col <- export_df[[response]] - est_col
         rep(TRUE, n)
@@ -1070,7 +1525,7 @@ server <- function(input, output, session) {
         ok <- logical(n)
         for (i in seq_len(n)) {
           tryCatch({
-            pv <- predict(model, newdata = export_df[i, , drop = FALSE],
+            pv <- predict(model, newdata = pred_df[i, , drop = FALSE],
                           type = "response")
             est_col[i] <<- mgcvUI:::back_transform_(as.numeric(pv), xform)
             resid_col[i] <<- export_df[[response]][i] - est_col[i]
@@ -1083,7 +1538,7 @@ server <- function(input, output, session) {
       # Per-term contributions (remain on transformed scale)
       if (any(complete)) {
         contribs <- compute_gam_contributions_(model,
-                                                export_df[complete, , drop = FALSE])
+                                                pred_df[complete, , drop = FALSE])
         intercept <- stats::coef(model)[["(Intercept)"]]
 
         # Label basis/contributions with scale info
@@ -1233,6 +1688,8 @@ server <- function(input, output, session) {
       xform     <- res$response_transform %||% "none"
       user_cqa  <- input$rca_cqa_value
       n         <- nrow(export_df)
+      # Coerce a copy the same way fit_gam did so predict() works.
+      pred_df   <- mgcvUI:::prepare_gam_data_(export_df, res$smooth_specs)
 
       if (n < 2L) {
         showNotification("Need at least 2 rows (subject + 1 comp).",
@@ -1241,7 +1698,7 @@ server <- function(input, output, session) {
       }
 
       # Predictions (back-transform to original scale)
-      predicted_log <- as.numeric(predict(model, newdata = export_df,
+      predicted_log <- as.numeric(predict(model, newdata = pred_df,
                                           type = "response"))
       predicted <- mgcvUI:::back_transform_(predicted_log, xform)
       actual    <- export_df[[response]]
@@ -1349,7 +1806,7 @@ server <- function(input, output, session) {
       }
 
       # --- Per-term contributions ---
-      contribs <- compute_gam_contributions_(model, export_df)
+      contribs <- compute_gam_contributions_(model, pred_df)
       intercept <- stats::coef(model)[["(Intercept)"]]
 
       # Back-transform basis to dollar scale for display
@@ -1821,548 +2278,64 @@ server <- function(input, output, session) {
   })
 
   # --- 10. Download Report (to output folder) ---
-  observeEvent(input$export_report_btn, {
+  # --- 10. Generate Quarto Report (writes a self-contained .qmd bundle) ---
+  observeEvent(input$generate_qmd_btn, {
     req(gam_result_r())
-
     folder <- input$output_folder
-    if (is.null(folder) || !nzchar(folder)) folder <- path.expand("~/Downloads")
-    if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
-
-    fmt <- input$export_format
-    ext <- paste0(".", fmt)
-    base <- tools::file_path_sans_ext(data_mod$filename() %||% "mgcvui")
-    out_path <- file.path(folder, paste0(base, "_report_",
-                          format(Sys.time(), "%Y%m%d_%H%M%S"), ext))
-
-    showNotification("Generating report...", type = "message",
-                     duration = 3, id = "report_progress")
+    if (is.null(folder) || !nzchar(folder)) {
+      showNotification("Open a project first (output folder not set).",
+                       type = "error", duration = 6); return()
+    }
+    if (!dir.exists(folder)) dir.create(folder, recursive = TRUE, showWarnings = FALSE)
+    base <- tools::file_path_sans_ext(data_mod$filename() %||% "gam_report")
+    showNotification("Generating Quarto report bundle...", type = "message",
+                     duration = 3, id = "qmd_progress")
     tryCatch({
-      res   <- gam_result_r()
-      model <- res$model
-      message("mgcvUI: generating ", fmt, " report to ", out_path)
-
-      summ <- format_gam_summary(res)
-
-      if (fmt == "docx") {
-        # Word document via officer
-        font_fam <- mgcv_font_family_()
-        tmpdir <- tempdir()
-        if (file.access(tmpdir, mode = 2) != 0L) {
-          stop("Temporary directory is not writable: ", tmpdir)
-        }
-
-        # Smooth plots (only univariate s() terms)
-        plotted <- character(0)
-        for (spec in res$smooth_specs) {
-          if (spec$type != "s" || length(spec$vars) != 1L) next
-          var <- spec$vars[1]
-          if (var %in% plotted) next
-          p <- tryCatch(
-            plot_smooth_single(res, var, earth_knots = res$earth_knots),
-            error = function(e) {
-              message("  report plot error for '", var, "': ", e$message)
-              NULL
-            }
-          )
-          if (!is.null(p)) {
-            ggplot2::ggsave(file.path(tmpdir, paste0("smooth_", var, ".png")),
-                            p, width = 7, height = 4, dpi = 150)
-            plotted <- c(plotted, var)
-          }
-        }
-
-        # Variable importance plot
-        p_imp <- tryCatch({
-          imp_df <- data.frame(Term = character(0), Statistic = numeric(0),
-                               Type = character(0), stringsAsFactors = FALSE)
-          if (nrow(summ$smooth_table) > 0)
-            imp_df <- rbind(imp_df, data.frame(
-              Term = summ$smooth_table$Term, Statistic = summ$smooth_table$F,
-              Type = "Smooth", stringsAsFactors = FALSE))
-          pt_no_int <- summ$parametric_table[
-            summ$parametric_table$Term != "(Intercept)", , drop = FALSE]
-          if (nrow(pt_no_int) > 0)
-            imp_df <- rbind(imp_df, data.frame(
-              Term = pt_no_int$Term, Statistic = abs(pt_no_int$t_value),
-              Type = "Parametric", stringsAsFactors = FALSE))
-          if (nrow(imp_df) == 0) NULL else {
-            imp_df$Term <- factor(imp_df$Term,
-                                  levels = imp_df$Term[order(imp_df$Statistic)])
-            ggplot2::ggplot(imp_df,
-              ggplot2::aes(x = .data$Statistic, y = .data$Term,
-                           fill = .data$Type)) +
-              ggplot2::geom_col(alpha = 0.85) +
-              ggplot2::scale_fill_manual(
-                values = c("Smooth" = "#5e81ac", "Parametric" = "#a3be8c")) +
-              ggplot2::labs(title = "Variable Importance (F / |t| statistic)",
-                            x = "Statistic", y = NULL) +
-              ggplot2::theme_minimal(base_size = 13)
-          }
-        }, error = function(e) NULL)
-        if (!is.null(p_imp)) {
-          ggplot2::ggsave(file.path(tmpdir, "importance.png"), p_imp,
-                          width = 7, height = 4, dpi = 150)
-        }
-
-        # Correlation heatmap
-        p_cor <- tryCatch({
-          mf <- model$model
-          pd <- mf[, setdiff(names(mf), res$response), drop = FALSE]
-          nc <- vapply(pd, is.numeric, logical(1))
-          pd <- pd[, nc, drop = FALSE]
-          if (ncol(pd) < 2L) NULL else {
-            cm <- stats::cor(pd, use = "pairwise.complete.obs")
-            vs <- colnames(cm)
-            cl <- expand.grid(Var1 = vs, Var2 = vs, stringsAsFactors = FALSE)
-            cl$value <- as.numeric(cm)
-            cl$Var1 <- factor(cl$Var1, levels = rev(vs))
-            cl$Var2 <- factor(cl$Var2, levels = vs)
-            ts <- max(2.5, 5 - length(vs) * 0.15)
-            ggplot2::ggplot(cl, ggplot2::aes(x = .data$Var2, y = .data$Var1,
-                                             fill = .data$value)) +
-              ggplot2::geom_tile(color = "white", linewidth = 0.5) +
-              ggplot2::geom_text(ggplot2::aes(
-                label = sprintf("%.2f", .data$value)), size = ts) +
-              ggplot2::scale_fill_gradient2(
-                low = "#2166AC", mid = "white", high = "#B2182B",
-                midpoint = 0, limits = c(-1, 1), name = "Correlation") +
-              ggplot2::coord_fixed() +
-              ggplot2::labs(title = "Correlation Matrix", x = NULL, y = NULL) +
-              ggplot2::theme_minimal(base_size = 12) +
-              ggplot2::theme(axis.text.x = ggplot2::element_text(
-                               angle = 45, hjust = 1),
-                             panel.grid = ggplot2::element_blank())
-          }
-        }, error = function(e) NULL)
-        if (!is.null(p_cor)) {
-          ggplot2::ggsave(file.path(tmpdir, "correlation.png"), p_cor,
-                          width = 7, height = 7, dpi = 150)
-        }
-
-        # Diagnostics
-        tryCatch({
-          p_diag <- plot_diagnostics(res)
-          ggplot2::ggsave(file.path(tmpdir, "diagnostics.png"), p_diag,
-                          width = 8, height = 6, dpi = 150)
-        }, error = function(e) {
-          message("  diagnostics plot failed: ", e$message)
-        })
-
-        # Actual vs predicted
-        p_avp <- tryCatch(plot_actual_vs_predicted(res), error = function(e) NULL)
-        if (!is.null(p_avp)) {
-          ggplot2::ggsave(file.path(tmpdir, "actual_vs_predicted.png"), p_avp,
-                          width = 7, height = 5, dpi = 150)
-        }
-
-        # --- Pre-build equation text (no officer calls, pure string work) ---
-        fam <- model$family
-        link_name <- fam$link
-        xform <- res$response_transform %||% "none"
-        resp_name <- res$response
-
-        family_line <- paste0("Family: ", fam$family,
-                              "(link = \"", link_name, "\")  Method: ", model$method)
-
-        lhs <- if (xform == "log10") paste0("log10(", resp_name, ")")
-               else if (xform == "log") paste0("ln(", resp_name, ")")
-               else if (link_name != "identity") paste0(link_name, "(", resp_name, ")")
-               else resp_name
-
-        intercept <- stats::coef(model)[["(Intercept)"]]
-        eq_text <- paste0(lhs, " = ", round(intercept, 4))
-
-        smooth_def_lines <- character(0)
-        for (idx in seq_along(model$smooth)) {
-          sm <- model$smooth[[idx]]
-          var_str <- paste(sm$term, collapse = ", ")
-          eq_text <- paste0(eq_text, " + f", idx, "(", var_str, ")")
-          sm_class <- class(sm)[1L]
-          bs_type <- if (grepl("tp", sm_class)) "thin plate regression spline"
-                     else if (grepl("cr", sm_class)) "cubic regression spline"
-                     else if (grepl("tensor", sm_class)) "tensor product smooth"
-                     else sm_class
-          k_str <- if (length(sm$bs.dim) == 1L) paste0("k = ", sm$bs.dim)
-                   else if (length(sm$margin) > 0L)
-                     paste0("k = ", paste(vapply(sm$margin,
-                       function(mg) mg$bs.dim, numeric(1)), collapse = " x "))
-                   else ""
-          smooth_def_lines <- c(smooth_def_lines,
-            paste0("f", idx, " -> ", sm$label, " -- ", bs_type, ", ", k_str))
-        }
-
-        sm_obj <- summary(model)
-        if (!is.null(sm_obj$p.table) && nrow(sm_obj$p.table) > 1L) {
-          param_names <- rownames(sm_obj$p.table)
-          param_names <- param_names[param_names != "(Intercept)"]
-          all_coefs <- stats::coef(model)
-          mf_eq <- stats::model.frame(model)
-          factor_vars <- names(mf_eq)[vapply(mf_eq, is.factor, logical(1))]
-          factors_shown <- character(0)
-          for (pn in param_names) {
-            matched_factor <- NULL
-            for (fv in factor_vars) {
-              if (startsWith(pn, fv)) { matched_factor <- fv; break }
-            }
-            if (!is.null(matched_factor)) {
-              if (matched_factor %in% factors_shown) next
-              factors_shown <- c(factors_shown, matched_factor)
-              n_levels <- nlevels(mf_eq[[matched_factor]])
-              eq_text <- paste0(eq_text, " + B_", matched_factor,
-                                " (", n_levels, " levels)")
-            } else {
-              coef_val <- all_coefs[[pn]]
-              if (coef_val >= 0) {
-                eq_text <- paste0(eq_text, " + ", round(coef_val, 4),
-                                  " * ", pn)
-              } else {
-                eq_text <- paste0(eq_text, " - ",
-                                  round(abs(coef_val), 4), " * ", pn)
-              }
-            }
-          }
-        }
-
-        # Specs table data
-        spec_rows <- lapply(res$smooth_specs, function(sp) {
-          var_name <- paste(sp$vars, collapse = ", ")
-          term_type <- sp$type
-          bs <- if (!is.null(sp$bs)) sp$bs else "tp"
-          k_val <- if (!is.null(sp$k)) as.character(sp$k) else "default"
-          knots <- ""
-          if (!is.null(res$earth_knots) &&
-              sp$vars[1] %in% names(res$earth_knots$knots)) {
-            kv <- res$earth_knots$knots[[sp$vars[1]]]
-            knots <- paste(round(kv, 4), collapse = ", ")
-          }
-          if (term_type == "linear") {
-            formula_term <- var_name
-          } else {
-            args <- var_name
-            if (bs != "tp") args <- paste0(args, ", bs=\"", bs, "\"")
-            if (k_val != "default") args <- paste0(args, ", k=", k_val)
-            formula_term <- paste0(term_type, "(", args, ")")
-          }
-          data.frame(Term = formula_term, Variable = var_name,
-                     Type = term_type,
-                     Basis = if (term_type == "linear") "-" else bs,
-                     k = k_val,
-                     Knots = if (nzchar(knots)) knots else "-",
-                     stringsAsFactors = FALSE)
-        })
-        spec_df <- do.call(rbind, spec_rows)
-
-        message("  docx equation built: ", substr(eq_text, 1, 60), "...")
-
-        # --- Now build the Word document (all simple doc <- calls) ---
-        doc <- officer::read_docx()
-        doc <- officer::body_add_par(doc, "mgcvUI GAM Report",
-                                     style = "heading 1")
-        doc <- officer::body_add_par(doc, paste("Date:",
-                                     format(Sys.time(), "%Y-%m-%d %H:%M")))
-        doc <- officer::body_add_par(doc, "")
-
-        # ---- EQUATION (first section) ----
-        doc <- officer::body_add_par(doc, "Equation", style = "heading 2")
-        doc <- officer::body_add_par(doc, family_line)
-        doc <- officer::body_add_par(doc, "")
-        doc <- officer::body_add_par(doc, eq_text)
-        doc <- officer::body_add_par(doc, "")
-        doc <- officer::body_add_par(doc, "Smooth function definitions:")
-        for (sline in smooth_def_lines) {
-          doc <- officer::body_add_par(doc, sline)
-        }
-        doc <- officer::body_add_par(doc, "")
-        doc <- officer::body_add_par(doc, "Smooth Function Definitions",
-                                     style = "heading 3")
-        doc <- officer::body_add_table(doc, value = spec_df,
-                                       style = "table_template")
-
-        # ---- MODEL SUMMARY ----
-        doc <- officer::body_add_par(doc, "Model Summary", style = "heading 2")
-        doc <- officer::body_add_par(doc, paste("R-squared:",
-                                     round(summ$r_squared, 4)))
-        doc <- officer::body_add_par(doc, paste("Deviance explained:",
-                                     round(summ$dev_explained * 100, 1), "%"))
-        doc <- officer::body_add_par(doc, paste("AIC:", round(summ$aic, 1)))
-        doc <- officer::body_add_par(doc, paste("n:", summ$n_obs))
-        if (!is.null(summ$cv_rsq)) {
-          doc <- officer::body_add_par(doc, paste("CV R-squared:",
-                                       round(summ$cv_rsq, 4)))
-        }
-        doc <- officer::body_add_par(doc, paste("Family:", summ$family))
-        doc <- officer::body_add_par(doc, paste("Method:", summ$method))
-
-        # Smooth terms table
-        if (nrow(summ$smooth_table) > 0) {
-          doc <- officer::body_add_par(doc, "Smooth Terms", style = "heading 2")
-          st <- summ$smooth_table
-          st$EDF <- round(st$EDF, 2)
-          st$Ref.df <- round(st$Ref.df, 2)
-          st$F <- round(st$F, 2)
-          st$p_value <- format.pval(st$p_value, digits = 3)
-          doc <- officer::body_add_table(doc, value = st,
-                                         style = "table_template")
-        }
-
-        # Parametric terms table
-        if (nrow(summ$parametric_table) > 0) {
-          doc <- officer::body_add_par(doc, "Parametric Terms",
-                                       style = "heading 2")
-          ptbl <- summ$parametric_table
-          ptbl$Estimate <- round(ptbl$Estimate, 4)
-          ptbl$Std_Error <- round(ptbl$Std_Error, 4)
-          ptbl$t_value <- round(ptbl$t_value, 3)
-          ptbl$p_value <- format.pval(ptbl$p_value, digits = 3)
-          doc <- officer::body_add_table(doc, value = ptbl,
-                                         style = "table_template")
-        }
-
-        # Variable importance
-        fp <- file.path(tmpdir, "importance.png")
-        if (file.exists(fp)) {
-          doc <- officer::body_add_par(doc, "Variable Importance",
-                                       style = "heading 2")
-          doc <- officer::body_add_img(doc, src = fp, width = 6, height = 3.5)
-          doc <- officer::body_add_par(doc, "")
-        }
-
-        # Smooth plots
-        doc <- officer::body_add_par(doc, "Contribution Plots",
-                                     style = "heading 2")
-        for (var in plotted) {
-          fp <- file.path(tmpdir, paste0("smooth_", var, ".png"))
-          if (file.exists(fp)) {
-            doc <- officer::body_add_img(doc, src = fp, width = 6, height = 3.5)
-            doc <- officer::body_add_par(doc, "")
-          }
-        }
-
-        # Interaction heatmaps — generate PNGs first, add to doc after
-        int_pngs <- character(0)
-        for (spec in res$smooth_specs) {
-          if (!spec$type %in% c("ti", "te") || length(spec$vars) != 2L) next
-          key <- paste(sort(spec$vars), collapse = ",")
-          fn <- file.path(tmpdir, paste0("int_", gsub(",", "_", key), ".png"))
-          if (fn %in% int_pngs) next
-          p <- tryCatch(plot_interaction_single(res, spec$vars, type = spec$type),
-                        error = function(e) { message("  int plot err: ", e$message); NULL })
-          if (!is.null(p)) {
-            tryCatch(ggplot2::ggsave(fn, p, width = 6, height = 5, dpi = 150),
-                     error = function(e) NULL)
-            if (file.exists(fn)) int_pngs <- c(int_pngs, fn)
-          }
-        }
-        for (fn in int_pngs) {
-          doc <- officer::body_add_img(doc, src = fn, width = 6, height = 5)
-          doc <- officer::body_add_par(doc, "")
-        }
-
-        # Factor-by-smooth plots
-        by_pngs <- character(0)
-        for (spec in res$smooth_specs) {
-          if (spec$type != "s" || length(spec$vars) != 1L) next
-          if (is.null(spec$by) || !nzchar(spec$by)) next
-          fn <- file.path(tmpdir, paste0("by_", spec$vars, "_", spec$by, ".png"))
-          if (fn %in% by_pngs) next
-          p <- tryCatch(plot_by_smooth_single(res, spec$vars, by_var = spec$by),
-                        error = function(e) { message("  by plot err: ", e$message); NULL })
-          if (!is.null(p)) {
-            tryCatch(ggplot2::ggsave(fn, p, width = 6, height = 3.5, dpi = 150),
-                     error = function(e) NULL)
-            if (file.exists(fn)) by_pngs <- c(by_pngs, fn)
-          }
-        }
-        for (fn in by_pngs) {
-          doc <- officer::body_add_img(doc, src = fn, width = 6, height = 3.5)
-          doc <- officer::body_add_par(doc, "")
-        }
-
-        # Parametric term plots
-        param_pngs <- character(0)
-        pred_cols <- tryCatch(colnames(predict(model, type = "terms")),
-                              error = function(e) character(0))
-        smooth_labels <- vapply(model$smooth, function(sm) sm$label, character(1))
-        param_terms <- setdiff(pred_cols, smooth_labels)
-        for (term in param_terms) {
-          fn <- file.path(tmpdir, paste0("param_", gsub("[^a-zA-Z0-9]", "_", term), ".png"))
-          p <- tryCatch(plot_parametric_single(res, term),
-                        error = function(e) { message("  param plot err: ", e$message); NULL })
-          if (!is.null(p)) {
-            tryCatch(ggplot2::ggsave(fn, p, width = 6, height = 3.5, dpi = 150),
-                     error = function(e) NULL)
-            if (file.exists(fn)) param_pngs <- c(param_pngs, fn)
-          }
-        }
-        for (fn in param_pngs) {
-          doc <- officer::body_add_img(doc, src = fn, width = 6, height = 3.5)
-          doc <- officer::body_add_par(doc, "")
-        }
-
-        # Correlation
-        fp <- file.path(tmpdir, "correlation.png")
-        if (file.exists(fp)) {
-          doc <- officer::body_add_par(doc, "Correlation Matrix",
-                                       style = "heading 2")
-          doc <- officer::body_add_img(doc, src = fp, width = 6, height = 6)
-          doc <- officer::body_add_par(doc, "")
-        }
-
-        # Diagnostics
-        doc <- officer::body_add_par(doc, "Diagnostics", style = "heading 2")
-        fp <- file.path(tmpdir, "diagnostics.png")
-        if (file.exists(fp)) {
-          doc <- officer::body_add_img(doc, src = fp, width = 7, height = 5.25)
-        }
-
-        # Actual vs Predicted
-        doc <- officer::body_add_par(doc, "Actual vs Predicted",
-                                     style = "heading 2")
-        fp <- file.path(tmpdir, "actual_vs_predicted.png")
-        if (file.exists(fp)) {
-          doc <- officer::body_add_img(doc, src = fp, width = 6, height = 4.3)
-        }
-
-        # ANOVA table
-        tryCatch({
-          aov <- summary(model)
-          parts <- list()
-          if (!is.null(aov$p.table) && nrow(aov$p.table) > 0) {
-            ptab <- as.data.frame(aov$p.table)
-            ptab$Term <- rownames(ptab)
-            ptab$Type <- "parametric"
-            parts <- c(parts, list(ptab))
-          }
-          if (!is.null(aov$s.table) && nrow(aov$s.table) > 0) {
-            stab <- as.data.frame(aov$s.table)
-            stab$Term <- rownames(stab)
-            stab$Type <- "smooth"
-            parts <- c(parts, list(stab))
-          }
-          if (length(parts) > 0) {
-            all_cols <- unique(unlist(lapply(parts, names)))
-            aov_df <- do.call(rbind, lapply(parts, function(p) {
-              for (m in setdiff(all_cols, names(p))) p[[m]] <- NA
-              p[, all_cols, drop = FALSE]
-            }))
-            front <- c("Term", "Type")
-            aov_df <- aov_df[, c(front, setdiff(names(aov_df), front)),
-                              drop = FALSE]
-            rownames(aov_df) <- NULL
-            for (pc in grep("p-value|Pr\\(", names(aov_df), value = TRUE))
-              aov_df[[pc]] <- format.pval(aov_df[[pc]], digits = 3)
-            doc <- officer::body_add_par(doc, "ANOVA", style = "heading 2")
-            doc <- officer::body_add_table(doc, value = aov_df,
-                                           style = "table_template")
-          }
-        }, error = function(e) NULL)
-
-        # Concurvity
-        tryCatch({
-          if (length(model$smooth) > 0L) {
-            con <- mgcv::concurvity(model, full = TRUE)
-            con_df <- as.data.frame(round(con, 4))
-            doc <<- officer::body_add_par(doc, "Concurvity (Overall)",
-                                          style = "heading 2")
-            doc <<- officer::body_add_table(doc, value = con_df,
-                                            style = "table_template")
-          }
-          if (length(model$smooth) >= 2L) {
-            con_pw <- mgcv::concurvity(model, full = FALSE)
-            if (is.list(con_pw) && "worst" %in% names(con_pw)) {
-              pw_df <- as.data.frame(round(con_pw$worst, 4))
-              doc <<- officer::body_add_par(doc, "Concurvity (Pairwise Worst)",
-                                            style = "heading 2")
-              doc <<- officer::body_add_table(doc, value = pw_df,
-                                              style = "table_template")
-            }
-          }
-        }, error = function(e) NULL)
-
-        # Sign consistency (earth only)
-        tryCatch({
-          signs <- check_sign_consistency(res)
-          if (!is.null(signs)) {
-            doc <<- officer::body_add_par(doc,
-              "Earth vs GAM Sign Consistency", style = "heading 2")
-            doc <<- officer::body_add_table(doc,
-              value = signs[, c("variable", "earth_direction",
-                                "gam_direction", "consistent")],
-              style = "table_template")
-          }
-        }, error = function(e) NULL)
-
-        # Basis check
-        tryCatch({
-          bc_text <- utils::capture.output(mgcv::gam.check(model, type = "n"))
-          if (length(bc_text) > 0) {
-            doc <<- officer::body_add_par(doc, "Basis Dimension Check",
-                                          style = "heading 2")
-            for (line in bc_text)
-              doc <<- officer::body_add_par(doc, line)
-          }
-        }, error = function(e) NULL)
-
-        # Mgcv output
-        tryCatch({
-          out_text <- utils::capture.output({
-            cat(sprintf("Timing: %.2f seconds\n\n", res$elapsed))
-            cat("Formula:\n")
-            print(res$formula)
-            cat("\nSummary:\n")
-            print(summary(model))
-            cat("\nFamily:\n")
-            print(model$family)
-          })
-          doc <<- officer::body_add_par(doc, "Mgcv Output", style = "heading 2")
-          for (line in out_text)
-            doc <<- officer::body_add_par(doc, line)
-        }, error = function(e) NULL)
-
-        print(doc, target = out_path)
-
-      } else {
-        # HTML or PDF via rmarkdown
-        rmd_template <- system.file("rmd", "gam_report.Rmd",
-                                     package = "mgcvUI")
-        if (nzchar(rmd_template)) {
-          tmpdir <- tempdir()
-          rmd_copy <- file.path(tmpdir, "gam_report.Rmd")
-          file.copy(rmd_template, rmd_copy, overwrite = TRUE)
-
-          # Save result to temp RDS for template
-          rds_path <- file.path(tmpdir, "gam_result.rds")
-          saveRDS(res, rds_path)
-
-          out_fmt <- if (fmt == "html") {
-            rmarkdown::html_document()
-          } else {
-            rmarkdown::pdf_document()
-          }
-
-          tmp_out <- file.path(tmpdir, paste0("gam_report", ext))
-          rmarkdown::render(
-            rmd_copy,
-            output_format = out_fmt,
-            output_file = tmp_out,
-            params = list(result_path = rds_path,
-                          title = "mgcvUI GAM Report"),
-            envir = new.env(parent = globalenv()),
-            quiet = TRUE
-          )
-          file.copy(tmp_out, out_path, overwrite = TRUE)
-        } else {
-          stop("Report template not found.")
-        }
-      }
-
-      session$sendCustomMessage("download_check",
-                                list(id = "export_report_btn"))
-      showNotification(paste0("Report saved to: ", out_path),
+      qmd_path <- generate_quarto_report(gam_result_r(), dest_dir = folder,
+                                         base = base)
+      updateTextInput(session, "convert_qmd_path", value = qmd_path)
+      session$sendCustomMessage("download_check", list(id = "generate_qmd_btn"))
+      showNotification(paste0("Quarto bundle written to: ", dirname(qmd_path)),
                        type = "message", duration = 8)
     }, error = function(e) {
-      showNotification(paste("Report error:", e$message),
-                       type = "error", duration = 10)
+      showNotification(paste("Generate error:", e$message),
+                       type = "error", duration = 12)
+    })
+  })
+
+  # --- 11. Convert Quarto Report (any .qmd) -> HTML/Word/PDF ---
+  shinyFiles::shinyFileChoose(input, "convert_qmd_browse", roots = volumes,
+                              session = session, filetypes = c("qmd"))
+  observeEvent(input$convert_qmd_browse, {
+    sel <- shinyFiles::parseFilePaths(volumes, input$convert_qmd_browse)
+    if (nrow(sel) >= 1L && nzchar(sel$datapath[1L]))
+      updateTextInput(session, "convert_qmd_path",
+                      value = as.character(sel$datapath[1L]))
+  })
+
+  observeEvent(input$convert_qmd_btn, {
+    qmd <- trimws(input$convert_qmd_path %||% "")
+    if (!nzchar(qmd) || !file.exists(qmd)) {
+      showNotification("Pick a valid .qmd file first.", type = "error",
+                       duration = 6); return()
+    }
+    fmts <- input$convert_formats
+    if (length(fmts) == 0L) {
+      showNotification("Select at least one output format.", type = "error",
+                       duration = 6); return()
+    }
+    paper <- mgcvUI:::locale_paper_()
+    showNotification("Rendering report...", type = "message", duration = 3,
+                     id = "convert_progress")
+    tryCatch({
+      out_paths <- convert_quarto_file(qmd, formats = fmts, paper_size = paper)
+      session$sendCustomMessage("download_check", list(id = "convert_qmd_btn"))
+      showNotification(paste0("Wrote ", length(out_paths), " file(s):\n",
+                              paste(basename(out_paths), collapse = "\n")),
+                       type = "message", duration = 12)
+    }, error = function(e) {
+      showNotification(paste("Convert error:", e$message),
+                       type = "error", duration = 15)
     })
   })
 }

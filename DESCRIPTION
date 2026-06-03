@@ -1,6 +1,6 @@
 Package: mgcvUI
 Title: Interactive GAM Builder for Real Estate Appraisers
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: person("William", "Craytor", email = "bcraytor@proton.me",
     role = c("aut", "cre"))
 Description: A Shiny application for building, diagnosing, and reporting
@@ -21,12 +21,15 @@ Imports:
     readxl,
     DT,
     ggplot2,
-    officer,
     rmarkdown,
     broom,
     gratia,
     plotly,
     shinyFiles,
+    DBI,
+    RSQLite,
+    jsonlite,
+    quarto,
     rlang,
     htmltools,
     graphics,
@@ -35,9 +38,7 @@ Imports:
     utils
 Suggests:
     earth (>= 5.3.0),
-    DBI,
-    RSQLite,
-    jsonlite,
+    officer,
     bslib,
     callr,
     openxlsx,

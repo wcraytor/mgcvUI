@@ -9,7 +9,8 @@ mod_variables_server(
   data_r,
   filename_r = reactive(NULL),
   earth_knots_r = reactive(NULL),
-  purpose_r = reactive("general")
+  purpose_r = reactive("general"),
+  active_project_r = reactive(NULL)
 )
 }
 \arguments{
@@ -24,6 +25,11 @@ object (or \code{NULL}).}
 
 \item{purpose_r}{A reactive returning the purpose mode string
 (\code{"general"}, \code{"appraisal"}, or \code{"market"}).}
+
+\item{active_project_r}{A reactive returning the active regProj project
+(a one-row data frame with \code{project_path}/\code{purpose}) or \code{NULL}. Used to
+save/restore per-(project, purpose) settings via the "Save current
+settings as default" buttons.}
 }
 \value{
 A reactive list with components: \code{response}, \code{predictors},

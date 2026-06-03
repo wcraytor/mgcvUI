@@ -142,3 +142,298 @@ export_gam_docx <- function(gam_result, file) {
   print(doc, target = file)
   invisible(file)
 }
+
+
+# ===== Two-step Quarto report (generate bundle -> convert) =================
+
+#' Validate an mgcvUI_result object
+#' @noRd
+validate_mgcvUI_result_ <- function(x) {
+  if (!inherits(x, "mgcvUI_result") || is.null(x$model)) {
+    stop("`gam_result` must be an mgcvUI_result with a fitted model.",
+         call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+#' Prepare GAM report assets
+#'
+#' Pre-generates all plots (PNG + PDF) and a `report_data.rds` payload for the
+#' GAM report, into `assets_dir`. The heavy fitted model is stripped from the
+#' saved payload — the report reads only small precomputed tables/text and the
+#' pre-rendered plot files, so the bundle stays compact.
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param assets_dir Directory to write into. If `NULL`, a temp dir is created.
+#' @return The assets directory path (invisibly).
+#' @export
+prepare_report_assets <- function(gam_result, assets_dir = NULL) {
+  validate_mgcvUI_result_(gam_result)
+  if (is.null(assets_dir)) assets_dir <- tempfile("mgcvUI_assets_")
+  dir.create(assets_dir, recursive = TRUE, showWarnings = FALSE)
+  assets_dir <- normalizePath(assets_dir)
+  plots_dir <- file.path(assets_dir, "plots")
+  dir.create(plots_dir, showWarnings = FALSE)
+
+  model <- gam_result$model
+  summary_info <- format_gam_summary(gam_result)
+
+  # Variable-importance table: smooth terms by F/Chi.sq, parametric by |t|.
+  imp_rows <- list()
+  st <- summary_info$smooth_table
+  if (nrow(st) > 0L)
+    imp_rows[[length(imp_rows) + 1L]] <-
+      data.frame(Term = st$Term, Importance = abs(st$F),
+                 Kind = "smooth", stringsAsFactors = FALSE)
+  pt <- summary_info$parametric_table
+  if (nrow(pt) > 0L) {
+    pt2 <- pt[pt$Term != "(Intercept)", , drop = FALSE]
+    if (nrow(pt2) > 0L)
+      imp_rows[[length(imp_rows) + 1L]] <-
+        data.frame(Term = pt2$Term, Importance = abs(pt2$t_value),
+                   Kind = "parametric", stringsAsFactors = FALSE)
+  }
+  importance <- if (length(imp_rows)) do.call(rbind, imp_rows) else
+    data.frame(Term = character(0), Importance = numeric(0),
+               Kind = character(0))
+
+  equation <- tryCatch(paste(deparse(gam_result$formula), collapse = " "),
+                       error = function(e) "")
+  summary_text <- tryCatch(
+    paste(utils::capture.output(print(summary(model))), collapse = "\n"),
+    error = function(e) "")
+
+  predictors <- tryCatch(
+    unique(unlist(lapply(gam_result$smooth_specs, function(s) s$vars))),
+    error = function(e) character(0))
+
+  lean_result <- list(
+    response     = gam_result$response,
+    predictors   = predictors,
+    smooth_specs = gam_result$smooth_specs,
+    formula_str  = equation,
+    family       = summary_info$family,
+    method       = summary_info$method,
+    n_obs        = summary_info$n_obs
+  )
+  class(lean_result) <- "mgcvUI_result_lean"
+
+  saveRDS(list(
+    result       = lean_result,
+    summary_info = summary_info,
+    equation     = equation,
+    importance   = importance,
+    summary_text = summary_text
+  ), file.path(assets_dir, "report_data.rds"), compress = "xz")
+
+  # --- Fonts (offline-safe) ---
+  use_showtext <- requireNamespace("sysfonts", quietly = TRUE) &&
+    requireNamespace("showtext", quietly = TRUE)
+  if (use_showtext) {
+    if (!"Roboto Condensed" %in% sysfonts::font_families())
+      tryCatch(sysfonts::font_add_google("Roboto Condensed", "Roboto Condensed"),
+               error = function(e) NULL)
+    showtext::showtext_auto()
+    ggplot2::theme_set(ggplot2::theme_minimal(base_family = "Roboto Condensed"))
+  } else {
+    ggplot2::theme_set(ggplot2::theme_minimal(base_family = "sans"))
+  }
+  on.exit(if (use_showtext) showtext::showtext_auto(FALSE), add = TRUE)
+
+  save_plot_ <- function(name, plot_fn, width = 8, height = 5) {
+    for (ext in c("png", "pdf")) {
+      path <- file.path(plots_dir, paste0(name, ".", ext))
+      if (ext == "png")
+        grDevices::png(path, width = width, height = height, units = "in", res = 150)
+      else
+        grDevices::pdf(path, width = width, height = height)
+      tryCatch({
+        res <- plot_fn()
+        if (inherits(res, c("ggplot", "patchwork", "gg", "ggalign")) ||
+            inherits(res, "htmlwidget")) print(res)
+      }, error = function(e) {
+        graphics::plot.new(); graphics::text(0.5, 0.5, paste("Error:", e$message))
+      })
+      grDevices::dev.off()
+    }
+  }
+
+  # Combined smooth-effect plots (gratia::draw)
+  save_plot_("smooths", function() plot_smooths(gam_result, residuals = TRUE),
+             width = 9, height = 7)
+
+  # Per-term plots
+  specs <- gam_result$smooth_specs
+  if (length(specs) > 0L) {
+    for (i in seq_along(specs)) {
+      sp <- specs[[i]]
+      vars <- sp$vars
+      typ  <- sp$type %||% "s"
+      nm <- paste0("term_", i)
+      if (identical(typ, "linear")) next
+      if (length(vars) >= 2L) {
+        save_plot_(nm, function() plot_interaction_single(gam_result, vars, type = typ),
+                   width = 8, height = 6)
+      } else if (!is.null(sp$by) && nzchar(sp$by)) {
+        save_plot_(nm, function() plot_by_smooth_single(gam_result, vars, sp$by),
+                   width = 8, height = 5)
+      } else {
+        save_plot_(nm, function() plot_smooth_single(gam_result, vars,
+                     residuals = TRUE, earth_knots = gam_result$earth_knots),
+                   width = 8, height = 5)
+      }
+    }
+  }
+
+  # Variable importance bar chart
+  if (nrow(importance) > 0L) {
+    save_plot_("importance", function() {
+      imp <- importance[order(importance$Importance), , drop = FALSE]
+      imp$Term <- factor(imp$Term, levels = imp$Term)
+      ggplot2::ggplot(imp, ggplot2::aes(x = .data$Importance, y = .data$Term,
+                                        fill = .data$Kind)) +
+        ggplot2::geom_col() +
+        ggplot2::labs(x = "Importance (|F| / |t|)", y = NULL, fill = NULL)
+    }, width = 8, height = 5)
+  }
+
+  # Correlation matrix of numeric predictors
+  save_plot_("correlation", function() {
+    mf <- model$model
+    num <- mf[, vapply(mf, is.numeric, logical(1)), drop = FALSE]
+    if (ncol(num) < 2L) { graphics::plot.new(); return(invisible(NULL)) }
+    cm <- stats::cor(num, use = "pairwise.complete.obs")
+    dd <- expand.grid(Var1 = rownames(cm), Var2 = colnames(cm))
+    dd$value <- as.vector(cm)
+    ggplot2::ggplot(dd, ggplot2::aes(.data$Var1, .data$Var2, fill = .data$value)) +
+      ggplot2::geom_tile() +
+      ggplot2::geom_text(ggplot2::aes(label = sprintf("%.2f", .data$value)),
+                         size = 3) +
+      ggplot2::scale_fill_gradient2(low = "#bf616a", mid = "#eceff4",
+                                    high = "#5e81ac", midpoint = 0,
+                                    limits = c(-1, 1)) +
+      ggplot2::labs(x = NULL, y = NULL, fill = "r") +
+      ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+  }, width = 9, height = 7)
+
+  # Diagnostics (base 4-panel) + actual vs predicted (ggplot)
+  save_plot_("diagnostics", function() plot_diagnostics(gam_result),
+             width = 9, height = 7)
+  save_plot_("actual_vs_predicted",
+             function() plot_actual_vs_predicted(gam_result),
+             width = 8, height = 5)
+
+  invisible(assets_dir)
+}
+
+#' Generate a Quarto report bundle (without rendering)
+#'
+#' Writes a self-contained Quarto bundle under `<dest_dir>/<base>_qmd/`
+#' containing the populated `<base>.qmd`, all pre-generated plots, the report
+#' data RDS, and `reference.docx`. Render it to HTML / Word / PDF with
+#' [convert_quarto_file()].
+#'
+#' @param gam_result An `mgcvUI_result` from [fit_gam()].
+#' @param dest_dir Directory to write the bundle into.
+#' @param base Bundle base name (no extension).
+#' @return Invisibly, the absolute path to the generated `.qmd` file.
+#' @export
+generate_quarto_report <- function(gam_result, dest_dir, base = "gam_report") {
+  validate_mgcvUI_result_(gam_result)
+  dest_dir <- path.expand(dest_dir)
+  bundle_dir <- file.path(dest_dir, paste0(base, "_qmd"))
+  dir.create(bundle_dir, recursive = TRUE, showWarnings = FALSE)
+  bundle_dir <- normalizePath(bundle_dir)
+
+  prepare_report_assets(gam_result, assets_dir = bundle_dir)
+
+  template <- system.file("quarto", "gam_report.qmd", package = "mgcvUI")
+  if (template == "")
+    stop("Quarto template not found. Try reinstalling 'mgcvUI'.", call. = FALSE)
+  qmd_path <- file.path(bundle_dir, paste0(base, ".qmd"))
+  file.copy(template, qmd_path, overwrite = TRUE)
+
+  qmd_text <- readLines(qmd_path, warn = FALSE)
+  qmd_text <- sub('^  data_file: ""$', '  data_file: "report_data.rds"', qmd_text)
+  writeLines(qmd_text, qmd_path)
+
+  ref_docx <- system.file("quarto", "reference.docx", package = "mgcvUI")
+  if (ref_docx != "")
+    file.copy(ref_docx, file.path(bundle_dir, "reference.docx"), overwrite = TRUE)
+
+  message("mgcvUI: Quarto report bundle ready at ", bundle_dir)
+  invisible(qmd_path)
+}
+
+#' Convert a Quarto source file to one or more output formats
+#'
+#' Renders any `.qmd` file to the requested formats via
+#' `quarto::quarto_render()`.
+#'
+#' @param qmd_path Path to a Quarto source (`.qmd`) file.
+#' @param formats Character vector; any subset of `c("html", "docx", "pdf")`.
+#' @param output_dir Directory for the rendered output(s). Defaults to the
+#'   directory of `qmd_path`.
+#' @param paper_size `"letter"` or `"a4"` (PDF only).
+#' @return Invisibly, a character vector of output file paths.
+#' @export
+convert_quarto_file <- function(qmd_path, formats = c("html"),
+                                output_dir = NULL, paper_size = "letter") {
+  if (!requireNamespace("quarto", quietly = TRUE)) {
+    stop("The 'quarto' package is required. ",
+         "Install it with: install.packages('quarto')", call. = FALSE)
+  }
+  qmd_path <- path.expand(qmd_path)
+  if (!file.exists(qmd_path))
+    stop("Quarto file not found: ", qmd_path, call. = FALSE)
+  formats <- match.arg(formats, c("html", "docx", "pdf"), several.ok = TRUE)
+  paper_size <- match.arg(paper_size, c("letter", "a4"))
+
+  if (is.null(output_dir)) output_dir <- dirname(qmd_path)
+  output_dir <- path.expand(output_dir)
+  if (!dir.exists(output_dir))
+    dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+
+  # Ensure QUARTO_R points to the running R; restore on exit.
+  old_quarto_r <- Sys.getenv("QUARTO_R", unset = NA)
+  Sys.setenv(QUARTO_R = file.path(R.home("bin"), "R"))
+  on.exit({
+    if (is.na(old_quarto_r)) Sys.unsetenv("QUARTO_R")
+    else Sys.setenv(QUARTO_R = old_quarto_r)
+  }, add = TRUE)
+
+  # On Windows, Quarto CLI may not be on PATH. Search common locations.
+  if (.Platform$OS.type == "windows" && !nzchar(Sys.which("quarto"))) {
+    for (qdir in c(
+      file.path(Sys.getenv("LOCALAPPDATA"), "Programs", "Quarto", "bin"),
+      file.path(Sys.getenv("ProgramFiles"), "Quarto", "bin"),
+      "C:/Program Files/Quarto/bin")) {
+      qexe <- file.path(qdir, "quarto.exe")
+      if (file.exists(qexe)) {
+        old_path <- Sys.getenv("PATH")
+        Sys.setenv(PATH = paste(normalizePath(qdir, winslash = "/"),
+                                old_path, sep = ";"))
+        on.exit(Sys.setenv(PATH = old_path), add = TRUE)
+        break
+      }
+    }
+  }
+
+  base <- tools::file_path_sans_ext(basename(qmd_path))
+  out_paths <- character(0)
+  for (fmt in formats) {
+    out_file <- file.path(output_dir, paste0(base, ".", fmt))
+    message(sprintf("mgcvUI: rendering %s -> %s", fmt, out_file))
+    quarto::quarto_render(input = qmd_path, output_format = fmt,
+                          output_file = basename(out_file),
+                          execute_params = list(paper_size = paper_size),
+                          quiet = FALSE)
+    src <- file.path(dirname(qmd_path), basename(out_file))
+    if (normalizePath(src, mustWork = FALSE) !=
+        normalizePath(out_file, mustWork = FALSE)) {
+      if (file.exists(src)) file.rename(src, out_file)
+    }
+    out_paths <- c(out_paths, out_file)
+  }
+  invisible(out_paths)
+}
