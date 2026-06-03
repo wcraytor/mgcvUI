@@ -13,14 +13,16 @@ mod_data_ui(id)
 A \link[shiny:reexports]{shiny::tagList}.
 }
 \description{
-Compact file upload widget for embedding in a sidebar, with a per-file
-locale country selector for CSV separator and decimal conventions.
+Compact file picker for embedding in a sidebar. Lists the CSV/Excel files
+in the active regProj project's \verb{in/} folder (files are added to the
+project via Finder/Explorer or the New-Project dialog). A per-import
+locale selector controls CSV separator and decimal conventions.
 }
 \examples{
 if (interactive()) {
   ui <- fluidPage(mod_data_ui("data1"))
   server <- function(input, output, session) {
-    mod_data_server("data1")
+    mod_data_server("data1", reactive(NULL))
   }
   shinyApp(ui, server)
 }

@@ -4,10 +4,13 @@
 \alias{mgcvUI}
 \title{Launch the mgcvUI Shiny Application}
 \usage{
-mgcvUI(port = 7880L, ...)
+mgcvUI(port = 7880L, launch.browser = interactive(), ...)
 }
 \arguments{
 \item{port}{Integer port number. Defaults to 7880.}
+
+\item{launch.browser}{Logical; open the app in a browser. Defaults to
+\code{TRUE} in interactive sessions, \code{FALSE} otherwise.}
 
 \item{...}{Additional arguments passed to \code{\link[shiny:runApp]{shiny::runApp()}}.}
 }

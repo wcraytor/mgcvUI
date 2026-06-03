@@ -1,3 +1,38 @@
+# mgcvUI 0.3.0
+
+## regProj project model (shared with earthUI / glmnetUI)
+
+- Replaced the flat file-upload with a **Project** section backed by the
+  shared regProj tree and SQLite databases at `~/regProj` (override with the
+  `REGPROJ_ROOT` env var or the regProj-root field in Settings). Projects,
+  input files, and per-method outputs are shared across the sibling apps;
+  mgcvUI reads/writes the `mgcv` settings columns and writes to
+  `<os>_out_mgcv`.
+- New **Project** section: pick an existing project or create one via a
+  country / state / county / city geo cascade. Import Data now lists the
+  files in the active project's `<os>_in/` folder. The purpose and output
+  folder are derived from the active project (the manual output-folder box
+  was removed).
+- New exported functions: `regproj_path()`, `regproj_list_projects()`,
+  `regproj_geo_db_connect()`, `regproj_projects_db_connect()`,
+  `get_project_settings()`, `set_project_settings()`, `register_project()`,
+  and supporting helpers.
+
+## Two-step Quarto report
+
+- The single-step report was replaced by a two-step Quarto flow:
+  **Generate Quarto Report** writes a self-contained `.qmd` bundle (source +
+  pre-rendered plots + `report_data.rds` + `reference.docx`) to the project's
+  mgcv output folder; **Convert Quarto Report** renders any `.qmd` to HTML /
+  Word / PDF via `quarto::quarto_render()`.
+- New exported functions: `prepare_report_assets()`,
+  `generate_quarto_report()`, `convert_quarto_file()`. The legacy
+  `render_gam_report()` / `export_gam_docx()` remain for programmatic use;
+  `officer` moved to Suggests.
+- New dependencies promoted to Imports: `DBI`, `RSQLite`, `jsonlite`,
+  `quarto`.
+
+
 # mgcvUI 0.2.0
 
 ## Contribution plots for all term types

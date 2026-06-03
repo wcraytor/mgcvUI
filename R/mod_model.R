@@ -150,7 +150,14 @@ mod_model_server <- function(id, data_r, var_config_r,
     output$data_preview_table <- DT::renderDT({
       req(data_r())
       DT::datatable(data_r(),
-                    options = list(scrollX = TRUE, pageLength = 15),
+                    extensions = "Select",
+                    selection = "none",  # let the Select extension drive it
+                    options = list(
+                      scrollX = TRUE, pageLength = 15,
+                      # OS-style: click = single, Ctrl/Cmd-click = toggle,
+                      # Shift-click = range.
+                      select = list(style = "os", items = "row")
+                    ),
                     rownames = FALSE)
     })
 

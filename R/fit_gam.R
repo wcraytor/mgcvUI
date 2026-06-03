@@ -1,3 +1,64 @@
+# Common date formats tried when parsing character date columns.
+gam_date_formats_ <- c("%m/%d/%y", "%m/%d/%Y", "%Y-%m-%d", "%Y/%m/%d",
+                       "%d/%m/%y", "%d/%m/%Y", "%m-%d-%y", "%m-%d-%Y",
+                       "%d-%m-%Y", "%d.%m.%Y", "%b %d, %Y", "%B %d, %Y")
+
+#' Coerce a data frame so it matches what the GAM was fit on
+#'
+#' Applies the same type coercions at fit time and predict time so the model is
+#' predictable on the original data:
+#' * `Date`/`POSIXct` columns become numeric.
+#' * Character/factor columns used in a SMOOTH term are parsed as dates to
+#'   numeric (e.g. an earth-imported `contract_date`); a non-date character
+#'   column in a smooth raises a clear error.
+#' * Columns in a parametric (`"linear"`) term that were designated Factor
+#'   (`spec$factor`) or are character become factors, so they are dummy-coded.
+#'
+#' @param data A data frame.
+#' @param smooth_specs The model's smooth specifications.
+#' @return The coerced data frame.
+#' @noRd
+prepare_gam_data_ <- function(data, smooth_specs) {
+  data <- as.data.frame(data)
+  for (col in names(data)) {
+    if (inherits(data[[col]], c("POSIXct", "POSIXlt", "Date"))) {
+      data[[col]] <- as.numeric(data[[col]])
+    }
+  }
+  for (spec in smooth_specs) {
+    if (identical(spec$type, "linear")) {
+      for (v in spec$vars) {
+        if (v %in% names(data) &&
+            (isTRUE(spec$factor) || is.character(data[[v]]))) {
+          data[[v]] <- as.factor(data[[v]])
+        }
+      }
+    } else {
+      for (v in spec$vars) {
+        if (!v %in% names(data)) next
+        col <- data[[v]]
+        if (!is.character(col) && !is.factor(col)) next
+        x <- as.character(col)
+        parsed <- NULL
+        for (fmt in gam_date_formats_) {
+          d <- as.Date(x, format = fmt)
+          ok <- !is.na(d) & d >= as.Date("1900-01-01") &
+            d <= as.Date("2100-12-31")
+          if (sum(ok, na.rm = TRUE) > length(x) * 0.5) { parsed <- d; break }
+        }
+        if (!is.null(parsed)) {
+          data[[v]] <- as.numeric(parsed)
+        } else {
+          stop("Cannot smooth non-numeric variable '", v,
+               "'. Designate it as Factor or Linear (or remove it).",
+               call. = FALSE)
+        }
+      }
+    }
+  }
+  data
+}
+
 #' Fit a GAM Model
 #'
 #' Wrapper around [mgcv::gam()] that accepts the specification objects
@@ -73,17 +134,8 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
   if (is.null(discrete)) discrete <- FALSE
   if (is.null(nthreads) || is.na(nthreads)) nthreads <- 1L
 
-  # Ensure plain data.frame with types mgcv can handle
+  # Ensure plain data.frame
   data <- as.data.frame(data)
-  for (col in names(data)) {
-    if (inherits(data[[col]], "POSIXct") || inherits(data[[col]], "POSIXlt")) {
-      data[[col]] <- as.numeric(data[[col]])
-    } else if (inherits(data[[col]], "Date")) {
-      data[[col]] <- as.numeric(data[[col]])
-    } else if (is.numeric(data[[col]])) {
-      data[[col]] <- as.numeric(data[[col]])
-    }
-  }
 
   # Validate smooth_specs structure
   for (i in seq_along(smooth_specs)) {
@@ -100,6 +152,12 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
       stop("Response '", response, "' not found in data.", call. = FALSE)
     }
   }
+
+  # Coerce types consistently (dates/char-dates -> numeric for smooths,
+  # factor-designated/character -> factor for parametric terms). The SAME
+  # transform must be applied at predict time (export, RCA, plots) so the model
+  # is predictable on the original data — see [prepare_gam_data_()].
+  data <- prepare_gam_data_(data, smooth_specs)
 
   # Handle low-cardinality variables
   drop_idx <- integer(0)
@@ -197,19 +255,14 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
     family <- get(family, mode = "function")()
   }
 
-  # Coerce predictor columns: factors/characters need to be factors for gam()
-  for (spec in smooth_specs) {
-    if (spec$type == "linear") {
-      for (v in spec$vars) {
-        if (is.character(data[[v]])) {
-          data[[v]] <- as.factor(data[[v]])
-        }
-      }
-    }
-  }
+  # (Type coercion, including factor designation, was applied up-front by
+  # prepare_gam_data_.)
 
   # Log column classes for debugging
-  all_vars <- unique(c(response, unlist(lapply(smooth_specs, `[[`, "vars"))))
+  # Include `by` variables (factor-by-smooth) so the model frame retains them.
+  all_vars <- unique(c(response,
+                       unlist(lapply(smooth_specs, `[[`, "vars")),
+                       unlist(lapply(smooth_specs, `[[`, "by"))))
   for (v in all_vars) {
     message("  col '", v, "': class=", paste(class(data[[v]]), collapse = "/"),
             " length=", length(data[[v]]),
@@ -267,7 +320,27 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
   if (!is.null(weights)) {
     gam_args$weights <- weights
   }
-  model <- do.call(mgcv::gam, gam_args)
+  # The default outer/newton optimizer can diverge on ill-conditioned or
+  # over-parameterized models (NaN gradient -> "missing value where TRUE/FALSE
+  # needed"). Fall back to the more robust EFS optimizer, then to a clear error.
+  model <- tryCatch(
+    do.call(mgcv::gam, gam_args),
+    error = function(e) {
+      message("  primary optimizer failed (", conditionMessage(e),
+              "); retrying with optimizer='efs'")
+      args2 <- gam_args
+      args2$optimizer <- "efs"
+      tryCatch(
+        do.call(mgcv::gam, args2),
+        error = function(e2)
+          stop("GAM fit failed (", conditionMessage(e2), "). The model may be ",
+               "over-parameterized for the data — reduce the number of ",
+               "smooths/interactions (e.g. avoid several overlapping tensor ",
+               "terms on the same variable, or collinear predictors like ",
+               "contract_date and sale_age), or raise gamma.", call. = FALSE)
+      )
+    }
+  )
   elapsed <- (proc.time() - t0)[["elapsed"]]
   cat(sprintf("Main GAM fit complete in %.1fs\n", elapsed))
 
