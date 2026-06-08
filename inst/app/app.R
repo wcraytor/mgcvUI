@@ -217,6 +217,10 @@ ui <- fluidPage(
     .mgcv-navbar .mgcv-menu-btn:hover { background: var(--bs-tertiary-bg); }
     .mgcv-navbar .mgcv-dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 6px; padding: 12px 16px; min-width: 280px; z-index: 10001; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
     .mgcv-navbar .dropdown.open .mgcv-dropdown-menu { display: block; }
+    /* File/dir chooser modals must sit ABOVE the open Settings dropdown
+       (z-index 10001) so their folder list and Select button are clickable. */
+    .modal { z-index: 20002 !important; }
+    .modal-backdrop { z-index: 20001 !important; }
     .mgcv-navbar .mgcv-spacer { flex: 1; }
     #mgcv-theme-toggle {
       width: 38px; height: 38px; border-radius: 50%;
@@ -311,8 +315,6 @@ ui <- fluidPage(
         selectInput("locale_paper", "Paper",
                     choices = c("Letter" = "letter", "A4" = "a4"),
                     selected = "letter", width = "100%"),
-        actionLink("locale_save_default", "Save as my default",
-                   style = "font-size: 0.85em; color: #5e81ac; display: block; margin-top: 4px;"),
         tags$hr(style = "margin: 10px 0;"),
         tags$label(class = "control-label", "regProj root folder"),
         tags$div(style = "display:flex; gap:6px; align-items:flex-end;",
@@ -323,10 +325,15 @@ ui <- fluidPage(
                                      class = "btn btn-outline-secondary btn-sm",
                                      style = "margin-bottom:0;")
         ),
-        actionLink("regproj_root_save", "Save root",
-                   style = "font-size: 0.85em; color: #5e81ac; display: block; margin-top: 4px;"),
         tags$p(style = "font-size: 0.75em; color: var(--bs-secondary-color); margin-top: 4px;",
-               "Shared with earthUI / glmnetUI. Projects, input files, and outputs live here.")
+               "Shared with earthUI / glmnetUI. Projects, input files, and outputs live here."),
+        tags$hr(style = "margin: 10px 0;"),
+        tags$div(style = "display:flex; gap:6px;",
+          actionButton("settings_save", "Save",
+                       class = "btn-primary btn-sm", style = "flex:1;"),
+          actionButton("settings_close", "Close",
+                       class = "btn-outline-secondary btn-sm", style = "flex:1;")
+        )
       )
     ),
     tags$div(class = "mgcv-spacer"),
@@ -340,11 +347,13 @@ ui <- fluidPage(
       var el = document.getElementById(id);
       if (el) el.classList.toggle('open');
     }
-    document.addEventListener('click', function(e) {
-      var dropdowns = document.querySelectorAll('.mgcv-navbar .dropdown');
-      dropdowns.forEach(function(dd) {
-        if (!dd.contains(e.target)) dd.classList.remove('open');
-      });
+    // Settings stays open until you click the gear again or press
+    // \"Save and Close\" — it does NOT auto-close on outside clicks, so using
+    // the Browse/Select file dialog can never dismiss it.
+    // Allow the server to close the Settings dropdown (Save and Close).
+    Shiny.addCustomMessageHandler('close_settings_dropdown', function(msg) {
+      var el = document.getElementById('mgcv-settings-dropdown');
+      if (el) el.classList.remove('open');
     });
 
     function mgcvToggleTheme() {
@@ -860,16 +869,43 @@ server <- function(input, output, session) {
     message("mgcvUI: locale guard released")
   }, once = TRUE)
 
-  # Save locale as user default (explicit button)
-  observeEvent(input$locale_save_default, {
+  # Settings "Save": persist locale defaults + the regProj root, and keep the
+  # Settings panel open so the user can review/adjust the other fields.
+  observeEvent(input$settings_save, {
+    # 1) Locale defaults -> settings DB
     locale_settings <- list(
       locale_country = input$locale_country,
       locale_paper   = input$locale_paper,
       locale_import  = input[["data-locale_import"]]
     )
     mgcvUI:::settings_db_write_locale_(locale_settings)
-    showNotification("Locale saved as default for all new files.",
+    # 2) regProj root -> per-user prefs (only if a non-empty, usable path)
+    p <- trimws(input$regproj_root %||% "")
+    root_msg <- ""
+    if (nzchar(p)) {
+      p <- path.expand(p)
+      ok <- dir.exists(p) || tryCatch({ dir.create(p, recursive = TRUE); TRUE },
+                                      error = function(e) FALSE,
+                                      warning = function(w) FALSE)
+      if (ok && dir.exists(p)) {
+        prefs <- mgcvui_prefs_read()
+        prefs$regproj_root <- p
+        mgcvui_prefs_write(prefs)
+        rv_proj$project_refresh_token <- rv_proj$project_refresh_token + 1L
+        root_msg <- paste0(" regProj root: ", p)
+      } else {
+        showNotification(sprintf("Cannot create or access: %s", p),
+                         type = "error", duration = 6)
+        return()
+      }
+    }
+    showNotification(paste0("Settings saved.", root_msg),
                      type = "message", duration = 4)
+  })
+
+  # Settings "Close": dismiss the Settings panel (does not save).
+  observeEvent(input$settings_close, {
+    session$sendCustomMessage("close_settings_dropdown", list())
   })
 
   # When Settings country changes, sync import locale and update env
@@ -984,13 +1020,11 @@ server <- function(input, output, session) {
       updateTextInput(session, "output_folder", value = "")
     } else {
       parsed <- mgcvUI::regproj_parse_flat(basename(p$project_path))
-      out_dir <- tryCatch(
-        mgcvUI::regproj_path(p$purpose, parsed$country, parsed$levels,
-                             parsed$project_name, in_or_out = "out",
-                             method = "mgcv", create = TRUE),
-        error = function(e)
-          file.path(p$project_path,
-                    paste0(mgcvUI::os_detect(), "_out_mgcv")))
+      # Derive the output folder from the project's ACTUAL path so it lands
+      # under the project's real regProj root (not a default-root recomputation,
+      # which goes to the wrong root for a custom regProj root).
+      out_dir <- file.path(p$project_path,
+                           paste0(mgcvUI::os_detect(), "_out_mgcv"))
       if (!dir.exists(out_dir))
         dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
       updateTextInput(session, "output_folder", value = out_dir)
@@ -1028,29 +1062,6 @@ server <- function(input, output, session) {
     d <- shinyFiles::parseDirPath(volumes, input$regproj_root_browse)
     if (length(d) > 0 && nzchar(d))
       updateTextInput(session, "regproj_root", value = as.character(d))
-  })
-
-  observeEvent(input$regproj_root_save, {
-    p <- trimws(input$regproj_root %||% "")
-    if (!nzchar(p)) {
-      showNotification("regProj root folder is empty.",
-                       type = "error", duration = 5); return()
-    }
-    p <- path.expand(p)
-    if (!dir.exists(p)) {
-      ok <- tryCatch({ dir.create(p, recursive = TRUE); TRUE },
-                     error = function(e) FALSE, warning = function(w) FALSE)
-      if (!ok || !dir.exists(p)) {
-        showNotification(sprintf("Cannot create or access: %s", p),
-                         type = "error", duration = 6); return()
-      }
-    }
-    prefs <- mgcvui_prefs_read()
-    prefs$regproj_root <- p
-    mgcvui_prefs_write(prefs)
-    rv_proj$project_refresh_token <- rv_proj$project_refresh_token + 1L
-    showNotification(sprintf("regProj root saved: %s", p),
-                     type = "message", duration = 5)
   })
 
   # Pending location prefill for the New Project modal.
@@ -1160,8 +1171,8 @@ server <- function(input, output, session) {
         actionButton("np_create", "Create Project", class = "btn-primary")),
       tags$div(class = "small text-muted", style = "margin-bottom: 12px;",
         "Country, State, County, City, and Purpose are locked once the project is created."),
-      textInput("np_project_name", "Project Name *",
-                placeholder = "letters, digits, _ and -, max 24 chars",
+      textInput("np_project_name", "Project Name * (max 8 chars)",
+                placeholder = "max 8 chars; a date-time prefix is added automatically",
                 width = "100%"),
       radioButtons("np_purpose", "Purpose *",
                    choices = c("General" = "gen", "For Appraisal" = "appr",
@@ -1254,12 +1265,16 @@ server <- function(input, output, session) {
     cc <- input$np_country %||% ""
     schema <- country_schema(cc)
     last_idx <- length(schema)
-    proj <- trimws(input$np_project_name %||% "")
     pur <- input$np_purpose %||% "appr"
-    if (!nzchar(proj) || !grepl("^[A-Za-z0-9_-]+$", proj) || nchar(proj) > 24L) {
-      showNotification("Project Name must match ^[A-Za-z0-9_-]+$ and be at most 24 chars.",
-                       type = "error", duration = 5); return()
-    }
+    # Validate the typed name (<= 8 chars) and prepend the creation timestamp.
+    # Country-agnostic: works for any country's admin-level depth.
+    proj <- tryCatch(
+      regproj_new_project_name(trimws(input$np_project_name %||% "")),
+      error = function(e) {
+        showNotification(conditionMessage(e), type = "error", duration = 5)
+        NULL
+      })
+    if (is.null(proj)) return()
     if (length(schema) == 0L) {
       showNotification("This country has no admin levels defined.",
                        type = "error", duration = 5); return()
@@ -1496,7 +1511,12 @@ server <- function(input, output, session) {
       return()
     }
 
-    folder <- input$output_folder
+    folder <- local({
+      .ap <- rv_proj$active_project
+      if (!is.null(.ap))
+        file.path(.ap$project_path, paste0(mgcvUI::os_detect(), "_out_mgcv"))
+      else input$output_folder
+    })
     if (is.null(folder) || !nzchar(folder)) folder <- path.expand("~/Downloads")
     if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
 
@@ -1676,7 +1696,12 @@ server <- function(input, output, session) {
       return()
     }
 
-    folder <- input$output_folder
+    folder <- local({
+      .ap <- rv_proj$active_project
+      if (!is.null(.ap))
+        file.path(.ap$project_path, paste0(mgcvUI::os_detect(), "_out_mgcv"))
+      else input$output_folder
+    })
     if (is.null(folder) || !nzchar(folder)) folder <- path.expand("~/Downloads")
     if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
 
@@ -2202,7 +2227,12 @@ server <- function(input, output, session) {
     gap <- ifelse(!is.na(sp) & sp != 0, abs(gross / sp), NA)
     comp_rows <- comp_rows[order(gap, na.last = TRUE)]
 
-    folder <- input$output_folder
+    folder <- local({
+      .ap <- rv_proj$active_project
+      if (!is.null(.ap))
+        file.path(.ap$project_path, paste0(mgcvUI::os_detect(), "_out_mgcv"))
+      else input$output_folder
+    })
     if (is.null(folder) || !nzchar(folder)) folder <- path.expand("~/Downloads")
     if (!dir.exists(folder)) dir.create(folder, recursive = TRUE)
 
@@ -2281,7 +2311,12 @@ server <- function(input, output, session) {
   # --- 10. Generate Quarto Report (writes a self-contained .qmd bundle) ---
   observeEvent(input$generate_qmd_btn, {
     req(gam_result_r())
-    folder <- input$output_folder
+    folder <- local({
+      .ap <- rv_proj$active_project
+      if (!is.null(.ap))
+        file.path(.ap$project_path, paste0(mgcvUI::os_detect(), "_out_mgcv"))
+      else input$output_folder
+    })
     if (is.null(folder) || !nzchar(folder)) {
       showNotification("Open a project first (output folder not set).",
                        type = "error", duration = 6); return()

@@ -199,6 +199,12 @@ prepare_report_assets <- function(gam_result, assets_dir = NULL) {
 
   equation <- tryCatch(paste(deparse(gam_result$formula), collapse = " "),
                        error = function(e) "")
+  # Rich LaTeX equation (same f_i notation as the Equation tab), in the
+  # line-broken `aligned` form so it fits the PDF text width.
+  eq_parts <- tryCatch(
+    format_gam_equation_(model, gam_result$response,
+                         gam_result$response_transform),
+    error = function(e) NULL)
   summary_text <- tryCatch(
     paste(utils::capture.output(print(summary(model))), collapse = "\n"),
     error = function(e) "")
@@ -218,12 +224,19 @@ prepare_report_assets <- function(gam_result, assets_dir = NULL) {
   )
   class(lean_result) <- "mgcvUI_result_lean"
 
+  n_smooth_chunks <- {
+    n <- tryCatch(length(model$smooth), error = function(e) 0L)
+    if (n > 0L) as.integer(ceiling(n / 6)) else 0L
+  }
   saveRDS(list(
-    result       = lean_result,
-    summary_info = summary_info,
-    equation     = equation,
-    importance   = importance,
-    summary_text = summary_text
+    result        = lean_result,
+    summary_info  = summary_info,
+    equation      = equation,
+    equation_latex = if (!is.null(eq_parts)) eq_parts$aligned else NULL,
+    equation_defs = if (!is.null(eq_parts)) eq_parts$defs else NULL,
+    importance    = importance,
+    summary_text  = summary_text,
+    n_smooth_chunks = n_smooth_chunks
   ), file.path(assets_dir, "report_data.rds"), compress = "xz")
 
   # --- Fonts (offline-safe) ---
@@ -259,8 +272,25 @@ prepare_report_assets <- function(gam_result, assets_dir = NULL) {
   }
 
   # Combined smooth-effect plots (gratia::draw)
-  save_plot_("smooths", function() plot_smooths(gam_result, residuals = TRUE),
-             width = 9, height = 7)
+  # Smooth Effects: 2 panels per row, split into page-sized chunks (6 smooths =
+  # 3 rows ~= one page) so each renders LARGE and they flow across pages,
+  # instead of one tall image that LaTeX shrinks to fit a single page.
+  n_sm_ <- tryCatch(length(gam_result$model$smooth), error = function(e) 0L)
+  sm_per_chunk_ <- 6L
+  n_smooth_chunks_ <- if (n_sm_ > 0L)
+    as.integer(ceiling(n_sm_ / sm_per_chunk_)) else 0L
+  if (n_smooth_chunks_ > 0L) {
+    sm_chunks_ <- split(seq_len(n_sm_),
+                        ceiling(seq_len(n_sm_) / sm_per_chunk_))
+    for (ci_ in seq_along(sm_chunks_)) {
+      idx_  <- sm_chunks_[[ci_]]
+      rows_ <- ceiling(length(idx_) / 2)
+      save_plot_(paste0("smooths_", ci_),
+                 function() plot_smooths(gam_result, residuals = TRUE,
+                                         select = idx_),
+                 width = 9, height = max(3.4, rows_ * 3.0))
+    }
+  }
 
   # Per-term plots
   specs <- gam_result$smooth_specs
@@ -424,10 +454,14 @@ convert_quarto_file <- function(qmd_path, formats = c("html"),
   for (fmt in formats) {
     out_file <- file.path(output_dir, paste0(base, ".", fmt))
     message(sprintf("mgcvUI: rendering %s -> %s", fmt, out_file))
+    # quiet = TRUE: do NOT echo the quarto CLI output through the R package's
+    # cli formatter. Some `quarto` package versions interpret `{...}` in that
+    # output (e.g. the PDF metadata line `\KOMAoption{captions}{...}`) as a
+    # glue expression and abort with "object 'captions' not found".
     quarto::quarto_render(input = qmd_path, output_format = fmt,
                           output_file = basename(out_file),
                           execute_params = list(paper_size = paper_size),
-                          quiet = FALSE)
+                          quiet = TRUE)
     src <- file.path(dirname(qmd_path), basename(out_file))
     if (normalizePath(src, mustWork = FALSE) !=
         normalizePath(out_file, mustWork = FALSE)) {

@@ -39,8 +39,10 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 result       <- .assets$result
 summary_info <- .assets$summary_info
 importance   <- .assets$importance
-equation     <- .assets$equation
-summary_text <- .assets$summary_text
+equation       <- .assets$equation
+equation_latex <- .assets$equation_latex
+equation_defs  <- .assets$equation_defs
+summary_text   <- .assets$summary_text
 
 .plots_dir <- if (nzchar(.data_file)) file.path(dirname(.data_file), "plots") else "plots"
 if (!dir.exists(.plots_dir) && dir.exists("plots")) .plots_dir <- "plots"
@@ -87,7 +89,20 @@ include_plot <- function(name) {
 ## Model Equation
 
 ```{r equation, results='asis'}
-cat("```\n", equation, "\n```\n", sep = "")
+if (!is.null(equation_latex) && nzchar(equation_latex)) {
+  # Display math, one term per line (aligned) so it never runs off the page.
+  cat("\n$$\n", equation_latex, "\n$$\n\n", sep = "")
+  if (length(equation_defs)) {
+    cat("**Smooth function definitions:**\n\n")
+    for (d in equation_defs) {
+      cat(sprintf("- $%s$ → `%s` — %s\n", d$fn, d$label, d$desc))
+    }
+    cat("\n")
+  }
+} else {
+  # Fallback: raw R formula in a code block.
+  cat("```\n", equation, "\n```\n", sep = "")
+}
 ```
 
 ## Smooth Terms
@@ -123,7 +138,13 @@ include_plot("importance")
 ## Smooth Effects
 
 ```{r smooths, results='asis'}
-include_plot("smooths")
+# Smooth panels are split into page-sized chunks so each renders large.
+nch <- .assets$n_smooth_chunks
+if (is.null(nch) || nch < 1) {
+  include_plot("smooths")            # backward-compat (older bundles)
+} else {
+  for (i in seq_len(nch)) include_plot(paste0("smooths_", i))
+}
 ```
 
 ```{r per-term, results='asis'}

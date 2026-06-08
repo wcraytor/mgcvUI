@@ -105,3 +105,112 @@ tidy_gam <- function(gam_result) {
 glance_gam <- function(gam_result) {
   broom::glance(gam_result$model)
 }
+
+
+#' Build the model-equation LaTeX (shared by the Equation tab and the report)
+#'
+#' Produces the same `f_i(...)` notation shown on the Equation tab, in two
+#' forms: a single-line `inline` body, and a line-broken `aligned` body (one
+#' term per line) that fits within a PDF text width. Also returns the smooth
+#' function definitions. Neither body includes the surrounding `$$`.
+#'
+#' @param model A fitted `mgcv::gam` model.
+#' @param response Character response-variable name.
+#' @param response_transform LHS transform: "none", "log", or "log10".
+#' @return `list(inline, aligned, defs)`, where `defs` is a list of
+#'   `list(fn, label, desc, vars)`.
+#' @noRd
+format_gam_equation_ <- function(model, response, response_transform = "none") {
+  fam <- model$family
+  link_name <- fam$link
+  # Escape LaTeX specials inside \text{} — a raw '_' (e.g. sale_price) renders
+  # fine in MathJax (the tab) but breaks real LaTeX/PDF ("Missing $ inserted").
+  esc_ <- function(x) gsub("([_&%#$])", "\\\\\\1", x)
+  resp_tex <- esc_(response)
+  xform <- if (is.null(response_transform)) "none" else response_transform
+
+  if (xform == "log10") {
+    lhs <- paste0("\\log_{10}\\bigl(\\widehat{\\text{", resp_tex, "}}\\bigr)")
+  } else if (xform == "log") {
+    lhs <- paste0("\\ln\\bigl(\\widehat{\\text{", resp_tex, "}}\\bigr)")
+  } else if (link_name == "identity") {
+    lhs <- paste0("\\widehat{\\text{", resp_tex, "}}")
+  } else if (link_name == "log") {
+    lhs <- paste0("\\log\\bigl(\\widehat{\\text{", resp_tex, "}}\\bigr)")
+  } else if (link_name == "inverse") {
+    lhs <- paste0("\\frac{1}{\\widehat{\\text{", resp_tex, "}}}")
+  } else {
+    lhs <- paste0("\\text{", link_name, "}\\bigl(\\widehat{\\text{",
+                  resp_tex, "}}\\bigr)")
+  }
+
+  # Each term: list(op = "+"/"-"/"" , tex). First (intercept) has op = "".
+  terms <- list(list(op = "", tex = as.character(round(
+    stats::coef(model)[["(Intercept)"]], 4))))
+
+  defs <- list()
+  for (idx in seq_along(model$smooth)) {
+    sm <- model$smooth[[idx]]
+    fn_label <- paste0("f_{", idx, "}")
+    terms[[length(terms) + 1L]] <- list(
+      op  = "+",
+      tex = paste0(fn_label, "(\\text{",
+                   esc_(paste(sm$term, collapse = ", ")), "})"))
+    sm_class <- class(sm)[1L]
+    bs_type <- if (grepl("tp", sm_class)) "thin plate regression spline"
+      else if (grepl("cr", sm_class)) "cubic regression spline"
+      else if (grepl("ps", sm_class)) "P-spline"
+      else if (grepl("tensor", sm_class) || grepl("t2", sm_class))
+        "tensor product smooth"
+      else sm_class
+    defs[[length(defs) + 1L]] <- list(
+      fn    = paste0("f_", idx),
+      label = sm$label,
+      desc  = paste0(bs_type, ", k = ", sm$bs.dim),
+      vars  = paste(sm$term, collapse = ", "))
+  }
+
+  sm_obj <- summary(model)
+  if (!is.null(sm_obj$p.table) && nrow(sm_obj$p.table) > 1L) {
+    param_names <- rownames(sm_obj$p.table)
+    param_names <- param_names[param_names != "(Intercept)"]
+    all_coefs <- stats::coef(model)
+    mf <- stats::model.frame(model)
+    factor_vars <- names(mf)[vapply(mf, is.factor, logical(1))]
+    factors_shown <- character(0)
+    for (pn in param_names) {
+      matched_factor <- NULL
+      for (fv in factor_vars) {
+        if (startsWith(pn, fv)) { matched_factor <- fv; break }
+      }
+      if (!is.null(matched_factor)) {
+        if (matched_factor %in% factors_shown) next
+        factors_shown <- c(factors_shown, matched_factor)
+        n_levels <- nlevels(mf[[matched_factor]])
+        terms[[length(terms) + 1L]] <- list(op = "+", tex = paste0(
+          "\\beta_{\\text{", esc_(matched_factor), "}} \\text{ (", n_levels,
+          " levels)}"))
+      } else {
+        coef_val <- all_coefs[[pn]]
+        if (coef_val >= 0) {
+          terms[[length(terms) + 1L]] <- list(op = "+", tex = paste0(
+            round(coef_val, 4), " \\cdot \\text{", esc_(pn), "}"))
+        } else {
+          terms[[length(terms) + 1L]] <- list(op = "-", tex = paste0(
+            round(abs(coef_val), 4), " \\cdot \\text{", esc_(pn), "}"))
+        }
+      }
+    }
+  }
+
+  inline <- paste0(lhs, " = ", terms[[1L]]$tex)
+  for (k in seq_along(terms)[-1L])
+    inline <- paste0(inline, " ", terms[[k]]$op, " ", terms[[k]]$tex)
+
+  aligned <- paste0("\\begin{aligned}\n", lhs, " ={}& ", terms[[1L]]$tex)
+  for (k in seq_along(terms)[-1L])
+    aligned <- paste0(aligned, " \\\\\n  & ", terms[[k]]$op, " ", terms[[k]]$tex)
+  aligned <- paste0(aligned, "\n\\end{aligned}")
+
+  list(inline = inline, aligned = aligned, defs = defs)
+}

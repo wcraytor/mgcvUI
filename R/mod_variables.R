@@ -1,3 +1,62 @@
+#' Guess the default Special-column tag from a variable name (internal)
+#'
+#' Returns the appraisal Special tag most similar to \code{name} (by exact /
+#' synonym / whole-token match), or \code{"no"} when no tag is a reasonable
+#' match. Conservative: generic words (\code{"area"}, \code{"age"}) only match
+#' a whole name, never a sub-token, so columns like \code{area_id} or
+#' \code{garage_spaces} stay \code{"no"}. \code{"no"} / \code{"display_only"}
+#' are never guessed. Kept identical across the sibling apps (glmnetUI, earthUI).
+#'
+#' @param name Character scalar column name (already snake_cased).
+#' @param tags Character vector of available Special options.
+#' @return A single tag from \code{tags}, or \code{"no"}.
+#' @noRd
+special_default_for_ <- function(name, tags) {
+  cand <- setdiff(tags, c("no", "display_only"))
+  if (length(cand) == 0L || is.null(name) || !nzchar(name)) return("no")
+
+  norm <- function(x) gsub("[^a-z0-9]+", "", tolower(x))
+  tok <- function(x) {
+    x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)        # camelCase -> space
+    parts <- strsplit(tolower(x), "[^a-z0-9]+")[[1L]]
+    parts[nzchar(parts)]
+  }
+  syn <- list(
+    latitude        = c("lat"),
+    longitude       = c("long", "lon", "lng"),
+    living_area     = c("livingarea", "gla", "sqft", "livingsqft", "livingsf",
+                        "grosslivingarea", "livarea", "livsf", "livingsq"),
+    lot_size        = c("lotsize", "lotsf", "lotsqft", "lotarea"),
+    site_dimensions = c("sitedimensions", "sitedim", "sitedims"),
+    actual_age      = c("age", "actualage"),
+    effective_age   = c("effectiveage", "effage"),
+    sale_age        = c("saleage", "ageofsale", "daystosale"),
+    sale_type       = c("saletype", "typeofsale"),
+    contract_date   = c("contractdate", "kdate"),
+    listing_date    = c("listingdate", "listdate"),
+    dom             = c("daysonmarket", "daysmarket"),
+    concessions     = c("concession", "conc", "sellerconcessions",
+                        "saleconcessions"),
+    weight          = c("wt", "wgt")
+  )
+  generic <- c("area", "age")
+
+  keys_for <- function(tag) {
+    k <- unique(c(norm(tag), norm(syn[[tag]])))
+    k[nzchar(k)]
+  }
+  nn   <- norm(name)
+  toks <- norm(tok(name))
+
+  for (tag in cand) if (nn %in% keys_for(tag)) return(tag)
+  for (tag in cand) {
+    k <- setdiff(keys_for(tag), generic)
+    k <- k[nchar(k) >= 3L]
+    if (length(k) && any(toks %in% k)) return(tag)
+  }
+  "no"
+}
+
 #' Variable Selection Module -- UI
 #'
 #' Compact variable table with Inc, Type, and Linear checkboxes,
@@ -377,11 +436,10 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       # Keep this list identical to earthUI's special-column options so the
       # three sibling apps share the same designations.
       special_choices <- if (appraiser) {
-        c("no", "actual_age", "area", "concessions",
-          "contract_date", "display_only", "dom",
-          "effective_age", "latitude", "listing_date",
-          "living_area", "longitude", "lot_size",
-          "sale_age", "sale_type", "site_dimensions", "weight")
+        c("actual_age", "area", "concessions", "contract_date",
+          "display_only", "dom", "effective_age", "latitude",
+          "listing_date", "living_area", "longitude", "lot_size",
+          "no", "sale_age", "sale_type", "site_dimensions", "weight")
       } else {
         c("no", "weight")
       }
@@ -390,15 +448,17 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         var <- cols[i]
         det_type <- unname(detected[i])
 
-        # Defaults: unchecked, auto-detected type, not linear, no special, not factor
+        # Defaults: unchecked, auto-detected type, not linear, not factor.
+        # Special defaults to the tag most similar to the column name (or "no").
         inc_val     <- FALSE
         type_val    <- det_type
         lin_val     <- FALSE
-        special_val <- "no"
+        special_val <- special_default_for_(var, special_choices)
         fac_val     <- FALSE
 
         # Restore from saved settings
-        if (!is.null(saved) && !is.null(saved$variables[[var]])) {
+        has_saved_var <- !is.null(saved) && !is.null(saved$variables[[var]])
+        if (has_saved_var) {
           sv <- saved$variables[[var]]
           if (!is.null(sv$inc)) inc_val <- isTRUE(sv$inc)
           if (!is.null(sv$type) && sv$type %in% type_choices) {
@@ -411,8 +471,12 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
           if (!is.null(sv$factor)) fac_val <- isTRUE(sv$factor)
         }
 
-        # Earth import overrides (always applied when earth knots present)
-        if (!is.null(ek)) {
+        # Earth import SEEDS selections for variables the user has not yet
+        # configured. A saved per-variable choice wins (e.g. you unselected a
+        # variable and clicked "Save current settings as default"), so the
+        # earth auto-include can't silently re-add it. Once a config is saved,
+        # it already captures the earth-seeded selections, so nothing is lost.
+        if (!is.null(ek) && !has_saved_var) {
           if (var %in% ek$predictors) {
             inc_val <- TRUE
           }

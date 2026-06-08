@@ -15,9 +15,27 @@
 #' )
 #' res <- fit_gam(mtcars, "mpg", specs)
 #' plot_smooths(res)
-plot_smooths <- function(gam_result, residuals = TRUE) {
-  gratia::draw(gam_result$model, residuals = residuals) +
-    ggplot2::theme_minimal(base_size = 12)
+plot_smooths <- function(gam_result, residuals = TRUE, select = NULL) {
+  # 2 panels per row so each smooth is wide enough to read (the default ~4-wide
+  # layout makes the panels too narrow and the axis labels collide). `select`
+  # (integer smooth indices) lets the report draw a page-sized subset so many
+  # smooths render large across pages instead of being shrunk into one image.
+  args <- list(object = gam_result$model, residuals = residuals, ncol = 2)
+  if (!is.null(select)) args$select <- select
+  p <- tryCatch(
+    do.call(gratia::draw, args),
+    error = function(e) gratia::draw(gam_result$model, residuals = residuals))
+  # gratia::draw() returns a patchwork of panels. Apply theming to EVERY panel
+  # with `&` (not `+`, which only hits the last panel). Keep gratia's default
+  # right-hand colourbars — moving them to the bottom makes them tall and
+  # squeezes the panels. Just give each panel title a little bottom margin so
+  # it doesn't crowd the legend header. The report scales the figure height by
+  # the number of smooths so the panels stay readable.
+  tryCatch(
+    p & ggplot2::theme_minimal(base_size = 12) &
+      ggplot2::theme(
+        plot.title = ggplot2::element_text(margin = ggplot2::margin(b = 6))),
+    error = function(e) p + ggplot2::theme_minimal(base_size = 12))
 }
 
 
@@ -68,28 +86,34 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
     formatC(round(x), format = "f", big.mark = ",", digits = 0)
   }
 
+  # Map the colour/fill to descriptive labels so the plot carries a legend.
+  # Title is intentionally omitted — the report adds a section heading for the
+  # term, so a plot title would duplicate it.
   p <- ggplot2::ggplot(
     sm_data,
     ggplot2::aes(x = .data[[variable]], y = .data$.estimate)
   ) +
     ggplot2::geom_ribbon(
       ggplot2::aes(ymin = .data$.estimate - 1.96 * .data$.se,
-                   ymax = .data$.estimate + 1.96 * .data$.se),
-      fill = "steelblue", alpha = 0.2
+                   ymax = .data$.estimate + 1.96 * .data$.se,
+                   fill = "95% confidence band"),
+      alpha = 0.2
     ) +
-    ggplot2::geom_line(color = "steelblue", linewidth = 1.2) +
+    ggplot2::geom_line(ggplot2::aes(color = "Smooth estimate"),
+                       linewidth = 1.2) +
     ggplot2::scale_y_continuous(labels = comma_fmt) +
     ggplot2::labs(y = paste0("Contribution to ", gam_result$response),
-                  x = variable,
-                  title = variable) +
+                  x = variable) +
     ggplot2::theme_minimal(base_size = 14) +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", size = 16),
       axis.title = ggplot2::element_text(size = 13),
-      axis.text = ggplot2::element_text(size = 11)
+      axis.text = ggplot2::element_text(size = 11),
+      legend.position = "bottom",
+      legend.title = ggplot2::element_blank()
     )
 
   # Add partial residuals
+  has_points <- FALSE
   if (residuals) {
     pres <- gratia::partial_residuals(model)
     smooth_label <- paste0("s(", variable, ")")
@@ -100,13 +124,14 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
       )
       p <- p + ggplot2::geom_point(
         data = res_df,
-        ggplot2::aes(x = .data$x, y = .data$y),
-        alpha = 0.3, size = 1.5, color = "grey40"
+        ggplot2::aes(x = .data$x, y = .data$y, color = "Partial residuals"),
+        alpha = 0.3, size = 1.5
       )
+      has_points <- TRUE
     }
   }
 
-  # Add earth knot positions
+  # Add earth knot positions (no legend entry — kept visually distinct).
   if (!is.null(earth_knots) && variable %in% names(earth_knots$knots)) {
     knot_df <- data.frame(xintercept = earth_knots$knots[[variable]])
     p <- p + ggplot2::geom_vline(
@@ -115,6 +140,23 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
       linetype = "dashed", color = "red", alpha = 0.6
     )
   }
+
+  # Manual scales + per-key glyphs so each legend entry looks like its layer
+  # (a line for the estimate, a point for the residuals).
+  col_breaks <- c("Smooth estimate",
+                  if (has_points) "Partial residuals")
+  p <- p +
+    ggplot2::scale_color_manual(
+      name = NULL, breaks = col_breaks,
+      values = c("Smooth estimate" = "steelblue",
+                 "Partial residuals" = "grey40")) +
+    ggplot2::scale_fill_manual(
+      name = NULL, values = c("95% confidence band" = "steelblue")) +
+    ggplot2::guides(
+      color = ggplot2::guide_legend(order = 1, override.aes = list(
+        linetype = c("solid", if (has_points) "blank"),
+        shape    = c(NA,      if (has_points) 16))),
+      fill = ggplot2::guide_legend(order = 2))
 
   p
 }
@@ -655,8 +697,7 @@ plot_interaction_single <- function(gam_result, vars, type = "ti") {
   sm_sel <- model$smooth[[smooth_idx]]$label
   sm_data <- gratia::smooth_estimates(model, select = sm_sel, n = 50)
 
-  title_text <- paste0(type, "(", paste(vars, collapse = ", "), ")")
-
+  # Title omitted — the report adds a section heading for the term.
   ggplot2::ggplot(sm_data,
     ggplot2::aes(x = .data[[vars[1]]], y = .data[[vars[2]]],
                  fill = .data$.estimate)) +
@@ -664,10 +705,9 @@ plot_interaction_single <- function(gam_result, vars, type = "ti") {
     ggplot2::scale_fill_gradient2(
       low = "#2166AC", mid = "white", high = "#B2182B",
       midpoint = 0, name = "Contribution") +
-    ggplot2::labs(title = title_text, x = vars[1], y = vars[2]) +
+    ggplot2::labs(x = vars[1], y = vars[2]) +
     ggplot2::theme_minimal(base_size = 12) +
     ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", size = 14),
       legend.position = "bottom",
       legend.key.width = ggplot2::unit(1.5, "cm")
     )
@@ -706,19 +746,16 @@ plot_by_smooth_single <- function(gam_result, variable, by_var) {
     sm_data
   }))
 
-  title_text <- paste0("s(", variable, ", by=", by_var, ")")
-
+  # Title omitted — the report adds a section heading for the term.
   ggplot2::ggplot(all_data,
     ggplot2::aes(x = .data[[variable]], y = .data$.estimate,
                  color = .data$level)) +
     ggplot2::geom_line(linewidth = 1) +
-    ggplot2::labs(title = title_text, x = variable,
+    ggplot2::labs(x = variable,
                   y = paste0("Contribution to ", gam_result$response),
                   color = by_var) +
     ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold", size = 16)
-    )
+    ggplot2::theme(legend.position = "bottom")
 }
 
 
