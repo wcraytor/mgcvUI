@@ -79,3 +79,22 @@ test_that("prepare_report_assets + generate_quarto_report build a bundle", {
   # The heavy fitted model must NOT be in the lean payload.
   expect_null(payload$result$model)
 })
+
+test_that("is_project_dir recognizes valid project leaves only", {
+  # Exercises the path logic with a real OS tempdir. On Windows the root has
+  # backslashes, so is_project_dir() must not treat the root as a regex.
+  root <- file.path(tempdir(), paste0("regProj_ipd_", as.integer(runif(1, 1, 1e6))))
+  good <- file.path(root, "appr", "us_ca_081_burlin_proj")
+  dir.create(good, recursive = TRUE)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  expect_true(is_project_dir(good, root = root))
+  expect_false(is_project_dir(file.path(root, "appr"), root = root))  # wrong depth
+  bad_purpose <- file.path(root, "nope", "us_ca_081_burlin_proj")
+  dir.create(bad_purpose, recursive = TRUE)
+  expect_false(is_project_dir(bad_purpose, root = root))
+  not_proj <- file.path(root, "appr", "not-a-project")
+  dir.create(not_proj, recursive = TRUE)
+  expect_false(is_project_dir(not_proj, root = root))
+  expect_false(is_project_dir(file.path(root, "appr", "missing"), root = root))
+})
