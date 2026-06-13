@@ -1443,6 +1443,20 @@ server <- function(input, output, session) {
                                 dark_mode_r   = reactive(identical(input$dark_mode, "dark")))
   gam_result_r <- model_mod$result
 
+  # Trilogy mode: after each fit, register this method's fit-stamp in the
+  # project's trilogy.json so the combined report can group the run's files.
+  observeEvent(gam_result_r(), {
+    ctx <- getOption("mgcvUI.trilogy")
+    if (is.null(ctx)) return()
+    pp <- ctx$project_path %||% NULL
+    res <- gam_result_r()
+    ts <- res$fit_ts %||% NULL
+    if (!is.null(pp) && !is.null(ts)) {
+      try(mgcvUI::trilogy_register_fit(pp, "mgcv", mgcvUI:::fit_stamp_(ts)),
+          silent = TRUE)
+    }
+  }, ignoreInit = TRUE)
+
   # Report export (existing module — kept for function export features)
   mod_report_server("report",
                     gam_result_r = gam_result_r,
