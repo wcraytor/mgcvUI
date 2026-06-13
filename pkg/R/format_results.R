@@ -214,3 +214,19 @@ format_gam_equation_ <- function(model, response, response_transform = "none") {
 
   list(inline = inline, aligned = aligned, defs = defs)
 }
+
+#' Format the canonical fit timestamp for output filenames (internal)
+#'
+#' Every output produced from a single GAM fit (Excel exports, the report, the
+#' model/predictions/functions downloads, and the Quarto bundle) is named with
+#' the *fit* time rather than each file's creation time, so a fit's outputs
+#' group together and a Trilogy run can gather the three methods' files by fit
+#' time. Falls back to the current time if no fit timestamp is available.
+#'
+#' @param ts A POSIXct fit time (e.g. `gam_result_r()$fit_ts`), or NULL.
+#' @return Character `"%Y%m%d_%H%M%S"`.
+#' @noRd
+fit_stamp_ <- function(ts = NULL) {
+  if (is.null(ts) || length(ts) == 0L || all(is.na(ts))) ts <- Sys.time()
+  format(ts, "%Y%m%d_%H%M%S")
+}
