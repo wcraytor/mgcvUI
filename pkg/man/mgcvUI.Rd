@@ -4,13 +4,19 @@
 \alias{mgcvUI}
 \title{Launch the mgcvUI Shiny Application}
 \usage{
-mgcvUI(port = 7880L, launch.browser = interactive(), ...)
+mgcvUI(port = 7880L, launch.browser = interactive(), trilogy = NULL, ...)
 }
 \arguments{
 \item{port}{Integer port number. Defaults to 7880.}
 
 \item{launch.browser}{Logical; open the app in a browser. Defaults to
 \code{TRUE} in interactive sessions, \code{FALSE} otherwise.}
+
+\item{trilogy}{Trilogy context, or \code{NULL} (the default) for a normal
+standalone run. When non-\code{NULL}, the app runs in "trilogy mode": it shows
+"(Trilogy Mode)" after the title and (in future steps) reads the locked
+earth model + settings for the run. Normally set by the Trilogy UI, not by
+hand. Exposed to the app via \code{getOption("mgcvUI.trilogy")}.}
 
 \item{...}{Additional arguments passed to \code{\link[shiny:runApp]{shiny::runApp()}}.}
 }

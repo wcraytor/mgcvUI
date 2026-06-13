@@ -302,6 +302,10 @@ ui <- fluidPage(
       tags$img(src = "logo.png"),
       "mgcvUI",
       tags$small(" - GAM Builder"),
+      if (!is.null(getOption("mgcvUI.trilogy")))
+        tags$span(" (Trilogy Mode)",
+          style = paste0("font-size: 0.55em; font-weight: bold;",
+                         " color: #5e81ac; margin-left: 8px;")),
       style = "margin: 0;"
     ),
     tags$div(class = "dropdown", id = "mgcv-settings-dropdown",
