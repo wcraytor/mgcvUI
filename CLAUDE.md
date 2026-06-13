@@ -9,7 +9,12 @@ Generalized Additive Models using [mgcv](https://CRAN.R-project.org/package=mgcv
 
 ## Repository Layout
 
+The R package lives in `pkg/` (the repo root holds non-package material:
+`docs/` manual source, `demo_mls/`, `Output/`, scripts, `.github/`). All
+build/check/test commands target `pkg/`.
+
 ```
+pkg/                      # The R package (everything below is under pkg/)
 R/                        # Package source
   launch.R                # mgcvUI() — starts Shiny app
   regproj.R               # regProj project model (paths, geo helpers, prefs)
@@ -67,17 +72,17 @@ env var or the regProj-root field in Settings → persisted to
 
 ```bash
 # Run the Shiny app (port 7880) via devtools
-Rscript -e 'devtools::load_all(); mgcvUI(launch.browser = TRUE)'
+Rscript -e 'devtools::load_all("pkg"); mgcvUI(launch.browser = TRUE)'
 
 # Install package locally (never use quick=TRUE — it skips inst/ updates)
-R CMD INSTALL .
+R CMD INSTALL pkg
 
 # Rebuild roxygen docs + NAMESPACE
-Rscript -e 'roxygen2::roxygenise()'
+Rscript -e 'roxygen2::roxygenise("pkg")'
 
 # Run tests (use devtools::test, which load_all()s the package first;
 # testthat::test_dir does not auto-load and will fail on internal symbols)
-Rscript -e 'devtools::test()'
+Rscript -e 'devtools::test("pkg")'
 ```
 
 ## Key Conventions

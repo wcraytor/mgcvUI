@@ -74,9 +74,10 @@ See the **System Requirements & Troubleshooting** appendix in the
 ## Installation
 
 ```r
-# Install from GitHub (not yet on CRAN)
+# Install from GitHub (not yet on CRAN). The R package lives in the
+# pkg/ subdirectory of the repo, so point pak at it:
 # install.packages("pak")
-pak::pak("wcraytor/mgcvUI")
+pak::pak("wcraytor/mgcvUI/pkg")
 ```
 
 ## Quick start

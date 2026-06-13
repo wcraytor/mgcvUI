@@ -50,6 +50,7 @@ Suggests:
     sysfonts,
     showtext,
     thematic,
-    tinytex
+    tinytex,
+    R.rsp
 Config/testthat/edition: 3
-VignetteBuilder: knitr
+VignetteBuilder: knitr, R.rsp
