@@ -75,8 +75,9 @@ R CMD INSTALL .
 # Rebuild roxygen docs + NAMESPACE
 Rscript -e 'roxygen2::roxygenise()'
 
-# Run tests
-Rscript -e 'testthat::test_dir("tests/testthat")'
+# Run tests (use devtools::test, which load_all()s the package first;
+# testthat::test_dir does not auto-load and will fail on internal symbols)
+Rscript -e 'devtools::test()'
 ```
 
 ## Key Conventions

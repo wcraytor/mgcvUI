@@ -6,6 +6,8 @@
 #' @param gam_result An `mgcvUI_result` from [fit_gam()].
 #' @param residuals Logical. If `TRUE`, overlay partial residuals on
 #'   smooth plots. Default `TRUE`.
+#' @param select Optional integer vector selecting which smooth terms to
+#'   plot (by index). `NULL` (the default) plots all smooth terms.
 #' @return A ggplot object showing all smooth terms in a faceted layout.
 #' @export
 #' @examples

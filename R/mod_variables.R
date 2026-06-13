@@ -601,7 +601,23 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         })();
       ", ns(""))))
 
-      tagList(header, rows, js)
+      # Non-locking note: earth seeds the variable config (and spline knots),
+      # but every selection stays editable -- unlike glmnetUI, mgcvUI fits the
+      # GAM from the user's selections, so nothing is locked.
+      earth_seed_note <- if (!is.null(ek)) {
+        tags$div(
+          class = "mgcv-earth-seed-note",
+          style = paste0("font-size:0.8em; padding:4px 6px; margin-bottom:4px;",
+                         " border-left:3px solid #5e81ac;",
+                         " background:rgba(136,192,208,0.12);"),
+          HTML(paste0(
+            "Variable selections (Include / Linear / Factor) and spline knots ",
+            "were <b>seeded</b> from the imported earth model. These are a ",
+            "starting point \u2014 you can still change any of them."))
+        )
+      }
+
+      tagList(earth_seed_note, header, rows, js)
     })
 
     # When earth knots arrive, re-set response

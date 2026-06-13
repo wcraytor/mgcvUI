@@ -1,5 +1,22 @@
 # mgcvUI 0.3.0
 
+## earthUI Import
+
+- **Earth-seed note**: When an earthUI result is imported, the Variable
+  Configuration table now shows a note explaining that the variable
+  selections (Include / Linear / Factor) and spline knots were *seeded* from
+  the earth model. Unlike glmnetUI (whose glmnet fit is bound to earth's
+  basis), mgcvUI fits the GAM from the user's selections, so every control
+  stays fully editable — earth only provides a head start. A new test pins
+  this seed-but-editable behavior.
+
+## CRAN preparation
+
+- Cleaned `R CMD check --as-cran`: escaped non-ASCII characters in
+  `R/fit_gam.R` and `R/mod_data.R`, and documented the `select` argument of
+  `plot_smooths()` (resolving a code/documentation mismatch). The check now
+  reports a single expected "New submission" note.
+
 ## regProj project model (shared with earthUI / glmnetUI)
 
 - Replaced the flat file-upload with a **Project** section backed by the

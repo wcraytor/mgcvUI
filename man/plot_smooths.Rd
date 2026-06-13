@@ -4,13 +4,16 @@
 \alias{plot_smooths}
 \title{Plot GAM Smooth Terms}
 \usage{
-plot_smooths(gam_result, residuals = TRUE)
+plot_smooths(gam_result, residuals = TRUE, select = NULL)
 }
 \arguments{
 \item{gam_result}{An \code{mgcvUI_result} from \code{\link[=fit_gam]{fit_gam()}}.}
 
 \item{residuals}{Logical. If \code{TRUE}, overlay partial residuals on
 smooth plots. Default \code{TRUE}.}
+
+\item{select}{Optional integer vector selecting which smooth terms to
+plot (by index). \code{NULL} (the default) plots all smooth terms.}
 }
 \value{
 A ggplot object showing all smooth terms in a faceted layout.

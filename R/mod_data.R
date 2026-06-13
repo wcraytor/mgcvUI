@@ -110,7 +110,7 @@ mod_data_server <- function(id, active_project_r = reactive(NULL)) {
       last <- regproj_last_file_get(p$project_path)
       if (length(files) == 0L) {
         return(tags$div(class = "small text-muted",
-          "(no files in this project's in/ folder yet — drop CSV/Excel files into ",
+          "(no files in this project's in/ folder yet \u2014 drop CSV/Excel files into ",
           tags$code(file.path(p$project_path, paste0(os_detect(), "_in"))),
           " and click Refresh)"))
       }

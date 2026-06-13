@@ -119,7 +119,7 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
   # Ensure mgcv namespace is loaded (needed in callr subprocesses).
   # When discrete=TRUE, gam() internally calls bam() by name, which
 
-  # requires mgcv on the search path — not just loaded as a namespace.
+  # requires mgcv on the search path -- not just loaded as a namespace.
   if (!isNamespaceLoaded("mgcv")) loadNamespace("mgcv")
   if (isTRUE(discrete) && !"package:mgcv" %in% search()) {
     attachNamespace("mgcv")
@@ -156,7 +156,7 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
   # Coerce types consistently (dates/char-dates -> numeric for smooths,
   # factor-designated/character -> factor for parametric terms). The SAME
   # transform must be applied at predict time (export, RCA, plots) so the model
-  # is predictable on the original data — see [prepare_gam_data_()].
+  # is predictable on the original data -- see [prepare_gam_data_()].
   data <- prepare_gam_data_(data, smooth_specs)
 
   # Handle low-cardinality variables
@@ -334,7 +334,7 @@ fit_gam <- function(data, response, smooth_specs, family = gaussian(),
         do.call(mgcv::gam, args2),
         error = function(e2)
           stop("GAM fit failed (", conditionMessage(e2), "). The model may be ",
-               "over-parameterized for the data — reduce the number of ",
+               "over-parameterized for the data -- reduce the number of ",
                "smooths/interactions (e.g. avoid several overlapping tensor ",
                "terms on the same variable, or collinear predictors like ",
                "contract_date and sale_age), or raise gamma.", call. = FALSE)
@@ -645,7 +645,7 @@ cv_rsq_ <- function(data, formula, family, method, select,
 
   actual <- data[[response]][valid]
   p <- preds[valid]
-  # Use overall mean (not just valid subset) for proper R² denominator
+  # Use overall mean (not just valid subset) for proper R^2 denominator
   overall_mean <- mean(data[[response]])
   ss_res <- sum((actual - p)^2)
   ss_tot <- sum((actual - overall_mean)^2)
