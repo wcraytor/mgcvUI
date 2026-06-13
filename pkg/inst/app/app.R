@@ -1650,7 +1650,7 @@ server <- function(input, output, session) {
 
       base <- tools::file_path_sans_ext(data_mod$filename() %||% "mgcvui")
       out_path <- file.path(folder, paste0(base, "_output_",
-                            format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"))
+                            mgcvUI:::fit_stamp_(gam_result_r()$fit_ts), ".xlsx"))
       writexl::write_xlsx(export_df, out_path)
       session$sendCustomMessage("download_check", list(id = "export_data"))
       showNotification(paste0("Output saved to: ", out_path),
@@ -1960,7 +1960,7 @@ server <- function(input, output, session) {
 
       base <- tools::file_path_sans_ext(data_mod$filename() %||% "mgcvui")
       out_path <- file.path(folder, paste0(base, "_adjusted_",
-                            format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"))
+                            mgcvUI:::fit_stamp_(gam_result_r()$fit_ts), ".xlsx"))
       writexl::write_xlsx(export_df, out_path)
       session$sendCustomMessage("download_check",
                                 list(id = "rca_output_btn"))
@@ -2322,7 +2322,12 @@ server <- function(input, output, session) {
                        type = "error", duration = 6); return()
     }
     if (!dir.exists(folder)) dir.create(folder, recursive = TRUE, showWarnings = FALSE)
-    base <- tools::file_path_sans_ext(data_mod$filename() %||% "gam_report")
+    # Stamp the bundle with the fit time so the .qmd and everything it renders
+    # to (HTML/Word/PDF) share this fit's timestamp (groups a fit's files; lets
+    # a Trilogy run gather them).
+    base <- paste0(
+      tools::file_path_sans_ext(data_mod$filename() %||% "gam_report"),
+      "_", mgcvUI:::fit_stamp_(gam_result_r()$fit_ts))
     showNotification("Generating Quarto report bundle...", type = "message",
                      duration = 3, id = "qmd_progress")
     tryCatch({

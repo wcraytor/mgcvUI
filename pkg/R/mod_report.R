@@ -56,7 +56,7 @@ mod_report_server <- function(id, gam_result_r, data_r) {
       filename = function() {
         ext <- switch(input$format,
                       html = ".html", pdf = ".pdf", docx = ".docx")
-        paste0("gam_report_", format(Sys.Date(), "%Y%m%d"), ext)
+        paste0("gam_report_", fit_stamp_(gam_result_r()$fit_ts), ext)
       },
       content = function(file) {
         res <- gam_result_r()
@@ -72,7 +72,7 @@ mod_report_server <- function(id, gam_result_r, data_r) {
 
     output$download_model <- downloadHandler(
       filename = function() {
-        paste0("gam_model_", format(Sys.Date(), "%Y%m%d"), ".rds")
+        paste0("gam_model_", fit_stamp_(gam_result_r()$fit_ts), ".rds")
       },
       content = function(file) {
         res <- gam_result_r()
@@ -83,7 +83,7 @@ mod_report_server <- function(id, gam_result_r, data_r) {
 
     output$download_predictions <- downloadHandler(
       filename = function() {
-        paste0("gam_predictions_", format(Sys.Date(), "%Y%m%d"), ".csv")
+        paste0("gam_predictions_", fit_stamp_(gam_result_r()$fit_ts), ".csv")
       },
       content = function(file) {
         res <- gam_result_r()
@@ -99,7 +99,7 @@ mod_report_server <- function(id, gam_result_r, data_r) {
 
     output$download_functions <- downloadHandler(
       filename = function() {
-        paste0("gam_functions_", format(Sys.Date(), "%Y%m%d"), ".zip")
+        paste0("gam_functions_", fit_stamp_(gam_result_r()$fit_ts), ".zip")
       },
       content = function(file) {
         res <- gam_result_r()

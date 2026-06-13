@@ -275,6 +275,7 @@ mod_model_server <- function(id, data_r, var_config_r,
           tryCatch({
             res <- do.call(fit_gam, fit_args)
             res$response_transform <- rv$xform
+            res$fit_ts <- Sys.time()   # canonical fit time for all outputs
             result(res)
             session$sendCustomMessage("mgcv_show_check",
                                       list(id = ns("fit")))
@@ -331,6 +332,7 @@ mod_model_server <- function(id, data_r, var_config_r,
         tryCatch({
           res <- proc$get_result()
           res$response_transform <- rv$xform
+          res$fit_ts <- Sys.time()   # canonical fit time for all outputs
           result(res)
           session$sendCustomMessage("mgcv_show_check",
                                     list(id = ns("fit")))
