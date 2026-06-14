@@ -1751,15 +1751,48 @@ server <- function(input, output, session) {
       trilogy_get_lock(rv_proj$active_project$project_path)$shared else NULL
     cqa_sel <- tlock$cqa_mode %||% unname(cqa_choices[1])
     if (!cqa_sel %in% cqa_choices) cqa_sel <- unname(cqa_choices[1])
-    cqa_def <- suppressWarnings(as.numeric(tlock$cqa %||% 5.00))
-    if (length(cqa_def) != 1L || is.na(cqa_def)) cqa_def <- 5.00
+    # Trilogy mode prefills the locked CQA; otherwise the field starts blank
+    # (placeholder) so the analyst must enter a value -- no app-chosen default.
+    cqa_locked <- suppressWarnings(as.numeric(tlock$cqa))
+    cqa_val <- if (length(cqa_locked) == 1L && !is.na(cqa_locked))
+      as.character(cqa_locked) else ""
+
+    cqa_sf_help <- tags$span(
+      `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
+      `data-bs-content` = paste0(
+        "This CQA value is based on the ranked Residual/SF in order to ",
+        "reduce the impact of home size on the residual value."),
+      title = "CQA per SF",
+      style = paste0("display:inline-block; width:16px; height:16px;",
+                     " margin-left:5px; border-radius:50%; background:#88c0d0;",
+                     " color:#fff; font-size:10px; font-weight:bold;",
+                     " line-height:16px; text-align:center; cursor:pointer;"),
+      "?")
+    cqa_names <- list("CQA")
+    if (!is.null(la_col))
+      cqa_names <- c(cqa_names, list(tagList("CQA per SF", cqa_sf_help)))
 
     showModal(modalDialog(
       title = "RCA Raw Output \u2014 Subject CQA Score",
       radioButtons("rca_cqa_type", "Score type:",
-                   choices = cqa_choices, selected = cqa_sel, inline = TRUE),
-      numericInput("rca_cqa_value", "Subject CQA Score:",
-                   value = cqa_def, min = 0, max = 9.99, step = 0.01),
+                   choiceNames = cqa_names, choiceValues = unname(cqa_choices),
+                   selected = cqa_sel, inline = TRUE),
+      textInput("rca_cqa_value", "Enter CQA score for subject:",
+                value = cqa_val,
+                placeholder = "[Enter a CQA value between 0.00 and 10.00]"),
+      tags$script(HTML("
+        (function(){
+          function rcaValidate(){
+            var el = document.getElementById('rca_cqa_value');
+            var btn = document.getElementById('export_rca');
+            if(!el || !btn) return;
+            var v = parseFloat(el.value);
+            btn.disabled = !(!isNaN(v) && v >= 0 && v <= 10);
+          }
+          $(document).off('input.mgcv_rca').on('input.mgcv_rca', '#rca_cqa_value', rcaValidate);
+          setTimeout(rcaValidate, 120);
+        })();
+      ")),
       footer = tagList(
         modalButton("Cancel"),
         actionButton("export_rca", "Generate", class = "btn-primary")
@@ -1769,6 +1802,14 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$export_rca, {
+    # Validate the CQA score (0.00-10.00); keep the modal open and show an
+    # error if it is blank or out of range.
+    cqa_num <- suppressWarnings(as.numeric(input$rca_cqa_value))
+    if (length(cqa_num) != 1L || is.na(cqa_num) || cqa_num < 0 || cqa_num > 10) {
+      showNotification("Please enter a CQA score between 0.00 and 10.00.",
+                       type = "error", duration = 6)
+      return()
+    }
     removeModal()
     req(gam_result_r(), data_mod$data())
     if (!requireNamespace("writexl", quietly = TRUE)) {
@@ -1793,7 +1834,7 @@ server <- function(input, output, session) {
       model     <- res$model
       response  <- res$response
       xform     <- res$response_transform %||% "none"
-      user_cqa  <- input$rca_cqa_value
+      user_cqa  <- cqa_num
       n         <- nrow(export_df)
       # Coerce a copy the same way fit_gam did so predict() works.
       pred_df   <- mgcvUI:::prepare_gam_data_(export_df, res$smooth_specs)
