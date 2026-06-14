@@ -1,6 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^LICENSE$
 ^LICENSE\.md$
 ^README\.md$
 ^.*\.Rcheck$
