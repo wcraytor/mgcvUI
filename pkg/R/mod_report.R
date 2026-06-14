@@ -48,6 +48,8 @@ mod_report_ui <- function(id) {
 #' @param id Shiny module namespace ID.
 #' @param gam_result_r A reactive returning an `mgcvUI_result`.
 #' @param data_r A reactive returning the data frame.
+#' @return No return value; called for its side effects (wires up the
+#'   report-export module's Shiny outputs and download handlers).
 #' @export
 mod_report_server <- function(id, gam_result_r, data_r) {
   moduleServer(id, function(input, output, session) {

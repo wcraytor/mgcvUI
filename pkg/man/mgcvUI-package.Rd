@@ -5,7 +5,7 @@
 \alias{mgcvUI-package}
 \title{mgcvUI: Interactive GAM Builder for Real Estate Appraisers}
 \description{
-A Shiny application for building, diagnosing, and reporting Generalized Additive Models (GAMs) via 'mgcv'. Designed for real estate appraisers who need transparent, defensible nonlinear models. Optionally imports knot structure from 'earth' MARS models (e.g. via 'earthUI') to bridge exploratory and confirmatory modelling stages.
+A 'shiny' application for building, diagnosing, and reporting Generalized Additive Models (GAMs) via 'mgcv'. Designed for real estate appraisers who need transparent, defensible nonlinear models. Optionally imports knot structure from 'earth' MARS models (e.g. via 'earthUI') to bridge exploratory and confirmatory modelling stages. The generalized additive model methods are described in Wood (2011) \doi{10.1111/j.1467-9868.2010.00749.x}.
 }
 \seealso{
 Useful links:

@@ -13,6 +13,10 @@ mod_report_server(id, gam_result_r, data_r)
 
 \item{data_r}{A reactive returning the data frame.}
 }
+\value{
+No return value; called for its side effects (wires up the
+report-export module's Shiny outputs and download handlers).
+}
 \description{
 Report Export Module -- Server
 }

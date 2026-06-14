@@ -4,6 +4,8 @@
 #' settings are remembered when the same data file is re-opened.
 #'
 #' @name settings_db
+#' @return No return value; this page documents the internal
+#'   settings-persistence helpers.
 #' @keywords internal
 NULL
 

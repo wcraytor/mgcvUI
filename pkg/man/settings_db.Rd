@@ -3,6 +3,10 @@
 \name{settings_db}
 \alias{settings_db}
 \title{Settings Persistence (SQLite, keyed by input file name)}
+\value{
+No return value; this page documents the internal
+settings-persistence helpers.
+}
 \description{
 Stores and retrieves per-file variable configuration so that
 settings are remembered when the same data file is re-opened.

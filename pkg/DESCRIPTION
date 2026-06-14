@@ -3,11 +3,13 @@ Title: Interactive GAM Builder for Real Estate Appraisers
 Version: 0.3.0
 Authors@R: person("William", "Craytor", email = "bcraytor@proton.me",
     role = c("aut", "cre"))
-Description: A Shiny application for building, diagnosing, and reporting
+Description: A 'shiny' application for building, diagnosing, and reporting
     Generalized Additive Models (GAMs) via 'mgcv'. Designed for real estate
     appraisers who need transparent, defensible nonlinear models. Optionally
     imports knot structure from 'earth' MARS models (e.g. via 'earthUI') to
-    bridge exploratory and confirmatory modelling stages.
+    bridge exploratory and confirmatory modelling stages. The generalized
+    additive model methods are described in Wood (2011)
+    <doi:10.1111/j.1467-9868.2010.00749.x>.
 License: AGPL (>= 3)
 URL: https://github.com/wcraytor/mgcvUI
 BugReports: https://github.com/wcraytor/mgcvUI/issues
