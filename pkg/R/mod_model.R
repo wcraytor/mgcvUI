@@ -35,7 +35,19 @@ mod_model_results_ui <- function(id) {
       id = ns("results_tabs"),
       tabPanel("Data",
         br(),
-        DT::DTOutput(ns("data_preview_table"))
+        # Appraisal/Market: split into Subject Property (row 1) and Comparable
+        # Sales (rows 2+), matching earthUI / glmnetUI. General: single table.
+        conditionalPanel(
+          condition = "input.purpose === 'appraisal' || input.purpose === 'market'",
+          h5("Subject Property"),
+          DT::DTOutput(ns("preview_subjects")),
+          h5("Comparable Sales"),
+          DT::DTOutput(ns("preview_comps"))
+        ),
+        conditionalPanel(
+          condition = "input.purpose === 'general'",
+          DT::DTOutput(ns("data_preview_table"))
+        )
       ),
       tabPanel("Equation",
         br(),
@@ -138,17 +150,45 @@ mod_model_results_ui <- function(id) {
 #' @export
 mod_model_server <- function(id, data_r, var_config_r,
                              earth_knots_r = reactive(NULL),
-                             dark_mode_r = reactive(FALSE)) {
+                             dark_mode_r = reactive(FALSE),
+                             purpose_r = reactive("general")) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     result <- reactiveVal(NULL)
-    rv <- reactiveValues(bg_proc = NULL, fitting = FALSE, xform = "none")
+    rv <- reactiveValues(bg_proc = NULL, fitting = FALSE, xform = "none",
+                         aborted = FALSE)
 
     output$has_model <- reactive(!is.null(result()))
     outputOptions(output, "has_model", suspendWhenHidden = FALSE)
 
+    # Double-click any preview cell to open a popup with its full text.
+    # Single click is reserved for row selection (Select extension), so we
+    # bind on dblclick. CSS clips the visible cell to one line; the DOM still
+    # holds the full value, so .text() returns it in full.
+    cell_popup_js <- DT::JS("
+      table.on('dblclick', 'td', function() {
+        var text = $(this).text();
+        if (text.length > 0) {
+          var $popup = $('#mgcv-cell-popup');
+          if (!$popup.length) {
+            $popup = $('<div id=\"mgcv-cell-popup\">' +
+              '<div class=\"mgcv-popup-backdrop\"></div>' +
+              '<div class=\"mgcv-popup-content\"><pre></pre>' +
+              '<button class=\"btn btn-sm btn-secondary mgcv-popup-close\">Close</button></div></div>');
+            $('body').append($popup);
+            $popup.on('click', '.mgcv-popup-backdrop, .mgcv-popup-close', function() {
+              $popup.hide();
+            });
+          }
+          $popup.find('pre').text(text);
+          $popup.show();
+        }
+      });
+    ")
+
+    # General mode: single table of all rows.
     output$data_preview_table <- DT::renderDT({
-      req(data_r())
+      req(data_r(), purpose_r() == "general")
       DT::datatable(data_r(),
                     extensions = "Select",
                     selection = "none",  # let the Select extension drive it
@@ -158,7 +198,35 @@ mod_model_server <- function(id, data_r, var_config_r,
                       # Shift-click = range.
                       select = list(style = "os", items = "row")
                     ),
-                    rownames = FALSE)
+                    rownames = FALSE,
+                    callback = cell_popup_js)
+    })
+
+    # Appraisal/Market mode: Subject Property (row 1).
+    output$preview_subjects <- DT::renderDT({
+      req(data_r(), purpose_r() %in% c("appraisal", "market"),
+          nrow(data_r()) >= 1L)
+      subj <- data_r()[1L, , drop = FALSE]
+      DT::datatable(subj,
+                    options = list(scrollX = TRUE, dom = "t"),
+                    rownames = FALSE,
+                    callback = cell_popup_js)
+    })
+
+    # Appraisal/Market mode: Comparable Sales (rows 2+).
+    output$preview_comps <- DT::renderDT({
+      req(data_r(), purpose_r() %in% c("appraisal", "market"),
+          nrow(data_r()) >= 2L)
+      comps <- data_r()[2:nrow(data_r()), , drop = FALSE]
+      DT::datatable(comps,
+                    extensions = "Select",
+                    selection = "none",
+                    options = list(
+                      scrollX = TRUE, pageLength = 15,
+                      select = list(style = "os", items = "row")
+                    ),
+                    rownames = FALSE,
+                    callback = cell_popup_js)
     })
 
     observeEvent(input$fit, {
@@ -201,6 +269,7 @@ mod_model_server <- function(id, data_r, var_config_r,
           type = "warning", duration = 20)
       }
 
+      rv$aborted <- FALSE
       session$sendCustomMessage("fitting_start", list())
 
       resp_col <- cfg$response
@@ -291,6 +360,7 @@ mod_model_server <- function(id, data_r, var_config_r,
 
     # --- Abort handler ---
     observeEvent(input$abort_fit, {
+      rv$aborted <- TRUE
       proc <- rv$bg_proc
       if (!is.null(proc) && proc$is_alive()) {
         proc$kill()
@@ -298,6 +368,9 @@ mod_model_server <- function(id, data_r, var_config_r,
       }
       rv$bg_proc <- NULL
       rv$fitting <- FALSE
+      # Discard any result from this aborted run so the tabs don't populate,
+      # even if the background process finished a beat before the abort landed.
+      result(NULL)
       session$sendCustomMessage("fitting_done", list(text = "Aborted"))
     })
 
@@ -329,6 +402,12 @@ mod_model_server <- function(id, data_r, var_config_r,
       # Check if process finished
       if (!proc$is_alive()) {
         rv$fitting <- FALSE
+        rv$bg_proc <- NULL
+        # User aborted: discard the result so the tabs do NOT populate.
+        if (isTRUE(rv$aborted)) {
+          tryCatch(proc$kill(), error = function(e) NULL)
+          return()
+        }
         tryCatch({
           res <- proc$get_result()
           res$response_transform <- rv$xform
@@ -1094,7 +1173,8 @@ mod_model_server <- function(id, data_r, var_config_r,
       DT::datatable(
         utils::head(data_r(), 100L),
         rownames = FALSE,
-        options = list(scrollX = TRUE, pageLength = 10L)
+        options = list(scrollX = TRUE, pageLength = 10L),
+        callback = cell_popup_js
       )
     })
 

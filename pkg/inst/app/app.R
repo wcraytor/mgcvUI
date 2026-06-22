@@ -140,6 +140,29 @@ ui <- fluidPage(
     /* --- DataTables --- */
     .dataTable td, .dataTable th { padding: 4px 8px !important; }
     .dataTables_wrapper { font-size: 0.9em; overflow-x: auto; }
+    /* Keep rows one line tall: cap column width, clip with an ellipsis.
+       Full text is available by double-clicking a cell (see cell_popup_js). */
+    .dataTable td { max-width: 40ch; overflow: hidden;
+                    text-overflow: ellipsis; white-space: nowrap;
+                    cursor: pointer; }
+
+    /* Full-cell-text popup (opened on double-click) */
+    #mgcv-cell-popup { display: none; }
+    .mgcv-popup-backdrop { position: fixed; top: 0; left: 0; width: 100%;
+                           height: 100%; background: rgba(0,0,0,0.3);
+                           z-index: 9998; }
+    .mgcv-popup-content { position: fixed; top: 50%; left: 50%;
+                          transform: translate(-50%, -50%);
+                          background: var(--bs-body-bg, #eceff4);
+                          color: var(--bs-body-color, #2e3440);
+                          border-radius: 8px; padding: 20px; max-width: 80vw;
+                          max-height: 70vh; overflow: auto; z-index: 9999;
+                          box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .mgcv-popup-content pre { white-space: pre-wrap; word-wrap: break-word;
+                              margin-bottom: 12px; font-size: 0.9em; }
+    .mgcv-popup-close { float: right; }
+    [data-mgcv-theme='dark'] .mgcv-popup-content {
+      background: #3b4252; color: #d8dee9; }
 
     /* DT DataTables: adapt to current theme */
     .dataTables_wrapper { color: var(--bs-body-color); }
@@ -295,21 +318,6 @@ ui <- fluidPage(
     .shiny-notification { word-wrap: break-word; overflow-wrap: anywhere; }
 
   "))),
-
-  # --- Appraisal / liability disclaimer (always visible) ---
-  tags$div(class = "mgcv-disclaimer", role = "note",
-    style = paste0("background: rgba(235,203,139,0.18);",
-                   " border-bottom: 1px solid #ebcb8b;",
-                   " font-size: 0.76em; line-height: 1.35;",
-                   " padding: 5px 14px; text-align: center;"),
-    HTML(paste0(
-      "&#9888; <b>For analysis only &mdash; not an appraisal.</b> ",
-      "Statistical estimates for analytical and educational use. Any value ",
-      "conclusion must be independently reviewed and signed by a qualified, ",
-      "licensed appraiser per applicable standards (e.g. USPAP). Provided ",
-      "&ldquo;as is&rdquo; without warranty (AGPL-3.0) &mdash; use at your own ",
-      "risk. See the README for full terms."))
-  ),
 
   # --- Top Menu Bar ---
   tags$nav(class = "mgcv-navbar",
@@ -497,11 +505,15 @@ ui <- fluidPage(
     Shiny.addCustomMessageHandler('fitting_done', function(msg) {
       var $log = $('#mgcv-trace-log');
       var hasError = msg.text === 'Error' || (msg.text && msg.text.match(/error|fail/i));
-      var color = hasError ? '#bf616a' : '#a3be8c';
+      var aborted = msg.text === 'Aborted' || (msg.text && msg.text.match(/abort/i));
+      var color = hasError ? '#bf616a' : (aborted ? '#ebcb8b' : '#a3be8c');
       $log.append($('<div style=\\\"color:' + color + ';font-weight:bold;margin-top:4px;\\\">').text(msg.text));
       $log.scrollTop($log[0].scrollHeight);
-      if (hasError) {
+      if (hasError || aborted) {
+        // Terminal: do NOT run the 'completing the tabs' sequence on abort/error.
+        if (window.mgcvFittingTabsPoll) { clearInterval(window.mgcvFittingTabsPoll); window.mgcvFittingTabsPoll = null; }
         clearInterval(window.mgcvTimerInterval);
+        window.mgcvTimerInterval = null;
         $('#mgcv-fitting-close').show();
       } else {
         $log.append($('<div style=\\\"color:#88c0d0;margin-top:2px;\\\">').text('Now completing the tabs.'));
@@ -827,6 +839,16 @@ ui <- fluidPage(
   tags$footer(
     style = paste("text-align: center; padding: 10px 15px 15px;",
                   "font-size: 0.8em; color: var(--bs-secondary-color);"),
+    tags$p(style = "margin: 2px 0; font-weight: 600;",
+      HTML(paste0(
+        "&#9888; For analysis only &mdash; not an appraisal. Any value ",
+        "conclusion must be independently reviewed and signed by a qualified, ",
+        "licensed appraiser per applicable standards (e.g. USPAP). ")),
+      tags$a(href = "#",
+             onclick = paste0("event.preventDefault();var e=document.getElementById",
+                              "('show_about');if(e)e.click();return false;"),
+             "Full disclaimer")
+    ),
     tags$p(style = "margin: 2px 0;",
       HTML(paste0("mgcvUI v", utils::packageVersion("mgcvUI")))
     ),
@@ -1050,6 +1072,15 @@ server <- function(input, output, session) {
       switch(p$purpose, gen = "general", appr = "appraisal",
              mktarea = "market", "general")
     updateRadioButtons(session, "purpose", selected = pur)
+
+    # earthUI is the source of truth for the Effective Date: apply earthUI's
+    # saved value on every project open (falls back to the existing value when
+    # earthUI has none).
+    cf_proj <- valengrCore::earth_carryforward_(
+      if (is.null(p)) NULL else p$project_path, pur)
+    if (!is.null(cf_proj$effective_date))
+      updateDateInput(session, "effective_date",
+                      value = cf_proj$effective_date)
 
     data_mod$reset()
     earth_mod$reset()
@@ -1494,7 +1525,8 @@ server <- function(input, output, session) {
                                 data_r        = app_data_r,
                                 var_config_r  = var_config_r,
                                 earth_knots_r = earth_knots_r,
-                                dark_mode_r   = reactive(identical(input$dark_mode, "dark")))
+                                dark_mode_r   = reactive(identical(input$dark_mode, "dark")),
+                                purpose_r     = reactive(input$purpose))
   gam_result_r <- model_mod$result
 
   # Trilogy mode: after each fit, register this method's fit-stamp in the
@@ -1557,6 +1589,20 @@ server <- function(input, output, session) {
     la_idx <- which(sp == "living_area")
     if (length(la_idx) == 0) return(NULL)
     names(sp)[la_idx[1L]]
+  }
+
+  # living_area for the RCA: mgcvUI's own tag first; otherwise the column
+  # earthUI tagged as living_area (carried forward), but only when an earthUI
+  # model is imported and the column exists in the loaded data. Enables the
+  # "CQA per SF" option without re-tagging in mgcvUI.
+  resolve_living_area_ <- function() {
+    la <- find_living_area_()
+    if (!is.null(la)) return(la)
+    if (is.null(tryCatch(earth_mod$knots(), error = function(e) NULL)) ||
+        is.null(rv_proj$active_project)) return(NULL)
+    la_e <- valengrCore::earth_carryforward_(
+      rv_proj$active_project$project_path, input$purpose)$living_area
+    if (!is.null(la_e) && la_e %in% names(data_mod$data())) la_e else NULL
   }
 
   # ---- Helper: compute per-smooth-term contributions ----
@@ -1659,7 +1705,7 @@ server <- function(input, output, session) {
       export_df[["residual"]] <- round(resid_col, 1)
 
       # --- CQA scores ---
-      la_col <- find_living_area_()
+      la_col <- resolve_living_area_()
       comp_rows <- if (identical(input$purpose, "appraisal")) -1L else seq_len(n)
       comp_resid <- resid_col[comp_rows]
       comp_resid <- comp_resid[!is.na(comp_resid)]
@@ -1738,24 +1784,34 @@ server <- function(input, output, session) {
   observeEvent(input$rca_output_btn, {
     req(gam_result_r(), data_mod$data())
 
-    la_col <- find_living_area_()
+    la_col <- resolve_living_area_()
     cqa_choices <- c("CQA" = "cqa")
     if (!is.null(la_col)) {
       cqa_choices <- c(cqa_choices, "CQA per SF" = "cqa_sf")
     }
 
-    # Trilogy mode: default the CQA inputs to the values locked in earthUI
-    # (carried over so all three methods reconcile to the same subject CQA).
-    tlock <- if (!is.null(getOption("mgcvUI.trilogy")) &&
-                 !is.null(rv_proj$active_project))
-      trilogy_get_lock(rv_proj$active_project$project_path)$shared else NULL
-    cqa_sel <- tlock$cqa_mode %||% unname(cqa_choices[1])
+    # Carry the subject-CQA type + value forward from earthUI ONLY when an
+    # earthUI model has been imported. earthUI saves them to the shared regProj
+    # settings; a Trilogy lock is used as a fallback. Without an earth import
+    # the field starts blank (placeholder) so the analyst enters a value.
+    cqa_type_pre <- NULL; cqa_value_pre <- NULL
+    if (!is.null(tryCatch(earth_mod$knots(), error = function(e) NULL)) &&
+        !is.null(rv_proj$active_project)) {
+      cf_cqa <- valengrCore::earth_carryforward_(
+        rv_proj$active_project$project_path, input$purpose)
+      cqa_type_pre  <- cf_cqa$cqa_type
+      cqa_value_pre <- cf_cqa$cqa_value
+      if (is.null(cqa_type_pre) && !is.null(getOption("mgcvUI.trilogy"))) {
+        tl <- trilogy_get_lock(rv_proj$active_project$project_path)$shared
+        cqa_type_pre  <- tl$cqa_mode
+        tlv <- suppressWarnings(as.numeric(tl$cqa))
+        if (length(tlv) == 1L && !is.na(tlv)) cqa_value_pre <- tlv
+      }
+    }
+    cqa_sel <- cqa_type_pre %||% unname(cqa_choices[1])
     if (!cqa_sel %in% cqa_choices) cqa_sel <- unname(cqa_choices[1])
-    # Trilogy mode prefills the locked CQA; otherwise the field starts blank
-    # (placeholder) so the analyst must enter a value -- no app-chosen default.
-    cqa_locked <- suppressWarnings(as.numeric(tlock$cqa))
-    cqa_val <- if (length(cqa_locked) == 1L && !is.na(cqa_locked))
-      as.character(cqa_locked) else ""
+    cqa_val <- if (!is.null(cqa_value_pre) && !is.na(cqa_value_pre))
+      as.character(cqa_value_pre) else ""
 
     cqa_sf_help <- tags$span(
       `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
@@ -1859,7 +1915,7 @@ server <- function(input, output, session) {
       export_df[[paste0("est_", response)]] <- round(predicted, 1)
 
       # --- CQA scores on comps (rows 2+) ---
-      la_col <- find_living_area_()
+      la_col <- resolve_living_area_()
       comp_resid <- residuals_val[-1L]
       comp_resid_valid <- comp_resid[!is.na(comp_resid)]
       n_comps <- length(comp_resid_valid)

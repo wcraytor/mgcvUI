@@ -1,5 +1,9 @@
 # mgcvUI 0.3.0
 
+## Data Preview
+
+- **Full-text cell pop-up**: Double-click any cell in the Data Preview to open a pop-up with its complete contents. Cells are now truncated to the column width and kept to a single line, so long free-text fields (e.g. property remarks) no longer stretch a row down the page. Single-click still selects a row.
+
 ## earthUI Import
 
 - **Earth-seed note**: When an earthUI result is imported, the Variable

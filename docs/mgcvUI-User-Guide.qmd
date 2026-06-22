@@ -961,6 +961,8 @@ After successful fitting, a white checkmark appears on the Fit button and a stat
 
 Shows the imported data as an interactive DataTable with horizontal scrolling and 15 rows per page.
 
+Each cell is kept to a single line and truncated to the column width, so wide free-text fields (such as property remarks) do not stretch a row down the page. Single-click selects a row; **double-click any cell** to open a pop-up showing its full, untruncated contents.
+
 ## Equation
 
 Displays the fitted GAM model in two parts:

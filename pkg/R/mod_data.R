@@ -128,14 +128,18 @@ mod_data_server <- function(id, active_project_r = reactive(NULL)) {
       files <- project_in_files_()
       if (is.null(p) || is.null(f) || !nzchar(f)) return()
       if (!(f %in% files)) return()       # stale picker value mid-switch
-      key <- paste(p$project_path, f, sep = "||")
-      if (identical(isolate(loaded_key()), key)) return()
       in_dir <- file.path(p$project_path, paste0(os_detect(), "_in"))
       full <- file.path(in_dir, f)
       if (!file.exists(full)) {
         showNotification(sprintf("File not found: %s", full),
                          type = "error", duration = 6); return()
       }
+      # Fold mtime into the key so editing the file IN PLACE (same project,
+      # same name) changes the key and forces a re-import. "Refresh file list"
+      # re-fires this observe (via project_in_files_), which re-reads mtime.
+      mt <- tryCatch(as.numeric(file.mtime(full)), error = function(e) NA_real_)
+      key <- paste(p$project_path, f, mt, sep = "||")
+      if (identical(isolate(loaded_key()), key)) return()
       loaded_key(key)
       regproj_last_file_set(p$project_path, f)
       ext <- tolower(tools::file_ext(f))

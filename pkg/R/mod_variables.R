@@ -1,61 +1,7 @@
-#' Guess the default Special-column tag from a variable name (internal)
-#'
-#' Returns the appraisal Special tag most similar to \code{name} (by exact /
-#' synonym / whole-token match), or \code{"no"} when no tag is a reasonable
-#' match. Conservative: generic words (\code{"area"}, \code{"age"}) only match
-#' a whole name, never a sub-token, so columns like \code{area_id} or
-#' \code{garage_spaces} stay \code{"no"}. \code{"no"} / \code{"display_only"}
-#' are never guessed. Kept identical across the sibling apps (glmnetUI, earthUI).
-#'
-#' @param name Character scalar column name (already snake_cased).
-#' @param tags Character vector of available Special options.
-#' @return A single tag from \code{tags}, or \code{"no"}.
-#' @noRd
-special_default_for_ <- function(name, tags) {
-  cand <- setdiff(tags, c("no", "display_only"))
-  if (length(cand) == 0L || is.null(name) || !nzchar(name)) return("no")
-
-  norm <- function(x) gsub("[^a-z0-9]+", "", tolower(x))
-  tok <- function(x) {
-    x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)        # camelCase -> space
-    parts <- strsplit(tolower(x), "[^a-z0-9]+")[[1L]]
-    parts[nzchar(parts)]
-  }
-  syn <- list(
-    latitude        = c("lat"),
-    longitude       = c("long", "lon", "lng"),
-    living_area     = c("livingarea", "gla", "sqft", "livingsqft", "livingsf",
-                        "grosslivingarea", "livarea", "livsf", "livingsq"),
-    lot_size        = c("lotsize", "lotsf", "lotsqft", "lotarea"),
-    site_dimensions = c("sitedimensions", "sitedim", "sitedims"),
-    actual_age      = c("age", "actualage"),
-    effective_age   = c("effectiveage", "effage"),
-    sale_age        = c("saleage", "ageofsale", "daystosale"),
-    sale_type       = c("saletype", "typeofsale"),
-    contract_date   = c("contractdate", "kdate"),
-    listing_date    = c("listingdate", "listdate"),
-    dom             = c("daysonmarket", "daysmarket"),
-    concessions     = c("concession", "conc", "sellerconcessions",
-                        "saleconcessions"),
-    weight          = c("wt", "wgt")
-  )
-  generic <- c("area", "age")
-
-  keys_for <- function(tag) {
-    k <- unique(c(norm(tag), norm(syn[[tag]])))
-    k[nzchar(k)]
-  }
-  nn   <- norm(name)
-  toks <- norm(tok(name))
-
-  for (tag in cand) if (nn %in% keys_for(tag)) return(tag)
-  for (tag in cand) {
-    k <- setdiff(keys_for(tag), generic)
-    k <- k[nchar(k) >= 3L]
-    if (length(k) && any(toks %in% k)) return(tag)
-  }
-  "no"
-}
+# The appraisal "Special" column roles and the default-guesser
+# (special_roles_(), special_default_for_()) now live in valengrCore so all
+# three sibling apps share one definition. Called as
+# valengrCore::special_default_for_() / valengrCore::special_roles_().
 
 #' Variable Selection Module -- UI
 #'
@@ -361,12 +307,22 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       fname <- filename_r()
       saved <- read_saved_()
 
-      if (!is.null(saved) && !is.null(saved$response) &&
-            saved$response %in% num_vars) {
+      # earthUI is the source of truth for the Response: prefer its saved
+      # target when it is a numeric column here; otherwise fall back to this
+      # app's own saved response.
+      ap_ <- active_project_r()
+      earth_resp <- if (is.null(ap_)) NULL else
+        valengrCore::earth_carryforward_(ap_$project_path, purpose_r())$response
+      sel_resp <- if (!is.null(earth_resp) && earth_resp %in% num_vars)
+                    earth_resp
+                  else if (!is.null(saved) && !is.null(saved$response) &&
+                           saved$response %in% num_vars) saved$response
+                  else NULL
+      if (!is.null(sel_resp)) {
         restoring_(TRUE)
         session$onFlushed(function() restoring_(FALSE), once = TRUE)
         updateSelectInput(session, "response", choices = num_vars,
-                          selected = saved$response)
+                          selected = sel_resp)
         if (!is.null(saved$response_transform)) {
           updateSelectInput(session, "response_transform",
                             selected = saved$response_transform)
@@ -433,16 +389,9 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       type_choices <- c("numeric", "integer", "character", "factor",
                         "logical", "Date", "POSIXct")
       appraiser <- purpose_r() %in% c("appraisal", "market")
-      # Keep this list identical to earthUI's special-column options so the
-      # three sibling apps share the same designations.
-      special_choices <- if (appraiser) {
-        c("actual_age", "area", "concessions", "contract_date",
-          "display_only", "dom", "effective_age", "latitude",
-          "listing_date", "living_area", "longitude", "lot_size",
-          "no", "sale_age", "sale_type", "site_dimensions", "weight")
-      } else {
-        c("no", "weight")
-      }
+      # Shared across the three sibling apps via valengrCore. Covers both
+      # appraisal and Market Area Analysis (appraiser) modes.
+      special_choices <- valengrCore::special_roles_(appraiser)
 
       rows <- lapply(seq_along(cols), function(i) {
         var <- cols[i]
@@ -453,7 +402,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
         inc_val     <- FALSE
         type_val    <- det_type
         lin_val     <- FALSE
-        special_val <- special_default_for_(var, special_choices)
+        special_val <- valengrCore::special_default_for_(var, special_choices)
         fac_val     <- FALSE
 
         # Restore from saved settings
