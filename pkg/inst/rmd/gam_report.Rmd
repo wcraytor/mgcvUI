@@ -163,6 +163,9 @@ tryCatch({
 })
 ```
 
+See the [Notation: Value-Contribution Functions](#sec-gnotation) section at the
+end of this report for an explanation of the $f_i$ smooth-function notation.
+
 ## Formula
 
 ```
@@ -503,6 +506,12 @@ cat("\n\n== Summary ==\n\n")
 print(summary(model))
 cat("\n\n== Family ==\n\n")
 print(model$family)
+```
+
+## Notation: Value-Contribution Functions {#sec-gnotation}
+
+```{r g-legend, results='asis'}
+cat(mgcvUI::g_function_legend("markdown"))
 ```
 
 ---

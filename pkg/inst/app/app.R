@@ -95,8 +95,11 @@ ui <- fluidPage(
     /* --- Full-width container (match earthUI) --- */
     .container-fluid { max-width: 100% !important; padding: 0 15px; }
 
-    /* --- Initial window sizing --- */
-    body { min-width: 1400px; }
+    /* Sidebar width matched to earthUI (one-third column, 500px floor). */
+    .col-sm-4 { min-width: 500px; }
+    /* Minimum app width so the results tabs are always visible (they need
+       ~1520px; a horizontal scrollbar appears on narrower screens). */
+    body { min-width: 1600px; }
 
     /* --- Variable table --- */
     .mgcv-var-row {
@@ -729,7 +732,7 @@ ui <- fluidPage(
               tags$span(class = "mgcv-section-info",
                 `data-bs-toggle` = "popover", `data-bs-trigger` = "hover focus",
                 `data-bs-placement` = "left", onclick = "event.stopPropagation();",
-                `data-bs-content` = "Calculates Reconciliation by Comparable Adjustment (RCA). Choose CQA or CQA per SF (if living area is designated), enter the subject's score to interpolate its residual, then computes per-variable and net/gross adjustments for each comparable sale.",
+                `data-bs-content` = "Calculates Residual Constraint Approach (RCA). Choose CQA or CQA per SF (if living area is designated), enter the subject's score to interpolate its residual, then computes per-variable and net/gross adjustments for each comparable sale.",
                 "?")),
             actionButton("rca_output_btn",
                          "Calculate RCA Adjustments & Download",
@@ -1076,7 +1079,7 @@ server <- function(input, output, session) {
     # earthUI is the source of truth for the Effective Date: apply earthUI's
     # saved value on every project open (falls back to the existing value when
     # earthUI has none).
-    cf_proj <- valengrCore::earth_carryforward_(
+    cf_proj <- mgcvUI::earth_carryforward_(
       if (is.null(p)) NULL else p$project_path, pur)
     if (!is.null(cf_proj$effective_date))
       updateDateInput(session, "effective_date",
@@ -1600,7 +1603,7 @@ server <- function(input, output, session) {
     if (!is.null(la)) return(la)
     if (is.null(tryCatch(earth_mod$knots(), error = function(e) NULL)) ||
         is.null(rv_proj$active_project)) return(NULL)
-    la_e <- valengrCore::earth_carryforward_(
+    la_e <- mgcvUI::earth_carryforward_(
       rv_proj$active_project$project_path, input$purpose)$living_area
     if (!is.null(la_e) && la_e %in% names(data_mod$data())) la_e else NULL
   }
@@ -1797,7 +1800,7 @@ server <- function(input, output, session) {
     cqa_type_pre <- NULL; cqa_value_pre <- NULL
     if (!is.null(tryCatch(earth_mod$knots(), error = function(e) NULL)) &&
         !is.null(rv_proj$active_project)) {
-      cf_cqa <- valengrCore::earth_carryforward_(
+      cf_cqa <- mgcvUI::earth_carryforward_(
         rv_proj$active_project$project_path, input$purpose)
       cqa_type_pre  <- cf_cqa$cqa_type
       cqa_value_pre <- cf_cqa$cqa_value

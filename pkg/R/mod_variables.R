@@ -1,7 +1,6 @@
 # The appraisal "Special" column roles and the default-guesser
-# (special_roles_(), special_default_for_()) now live in valengrCore so all
-# three sibling apps share one definition. Called as
-# valengrCore::special_default_for_() / valengrCore::special_roles_().
+# (special_roles_(), special_default_for_()) live in specials.R, absorbed
+# from valengrCore (2026-07-03) and kept identical across the sibling apps.
 
 #' Variable Selection Module -- UI
 #'
@@ -312,7 +311,7 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       # app's own saved response.
       ap_ <- active_project_r()
       earth_resp <- if (is.null(ap_)) NULL else
-        valengrCore::earth_carryforward_(ap_$project_path, purpose_r())$response
+        earth_carryforward_(ap_$project_path, purpose_r())$response
       sel_resp <- if (!is.null(earth_resp) && earth_resp %in% num_vars)
                     earth_resp
                   else if (!is.null(saved) && !is.null(saved$response) &&
@@ -381,6 +380,10 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       }
       detected <- detect_column_types(df)
       detected <- detected[cols]
+      # Pre-check the Factor box only for unambiguous (non-numeric) categoricals
+      # (text/factor/logical). Numeric factors are the appraiser's call. A saved
+      # per-variable choice still wins (restored below).
+      fac_auto <- detect_categoricals_(df)
 
       fname <- filename_r()
       saved <- read_saved_()
@@ -389,21 +392,23 @@ mod_variables_server <- function(id, data_r, filename_r = reactive(NULL),
       type_choices <- c("numeric", "integer", "character", "factor",
                         "logical", "Date", "POSIXct")
       appraiser <- purpose_r() %in% c("appraisal", "market")
-      # Shared across the three sibling apps via valengrCore. Covers both
-      # appraisal and Market Area Analysis (appraiser) modes.
-      special_choices <- valengrCore::special_roles_(appraiser)
+      # Kept identical across the three sibling apps (specials.R). Covers
+      # both appraisal and Market Area Analysis (appraiser) modes.
+      special_choices <- special_roles_(appraiser)
 
       rows <- lapply(seq_along(cols), function(i) {
         var <- cols[i]
         det_type <- unname(detected[i])
 
-        # Defaults: unchecked, auto-detected type, not linear, not factor.
+        # Defaults: unchecked, auto-detected type, not linear. Factor is
+        # pre-checked only for unambiguous (non-numeric) categoricals; numeric
+        # columns are factors only if the appraiser ticks the box.
         # Special defaults to the tag most similar to the column name (or "no").
         inc_val     <- FALSE
         type_val    <- det_type
         lin_val     <- FALSE
-        special_val <- valengrCore::special_default_for_(var, special_choices)
-        fac_val     <- FALSE
+        special_val <- special_default_for_(var, special_choices)
+        fac_val     <- isTRUE(fac_auto[[var]])
 
         # Restore from saved settings
         has_saved_var <- !is.null(saved) && !is.null(saved$variables[[var]])

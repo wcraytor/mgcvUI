@@ -1,3 +1,14 @@
+# Internal: enlarge axis tick labels and titles to match the earthUI graphs
+# (axis.text 15, axis.title 16) so single-panel plots are legible in both the
+# app tabs and the report. gratia multi-panel plots (draw/appraise) keep their
+# smaller base_size to avoid crowding.
+mgcv_axis_fonts_ <- function() {
+  ggplot2::theme(
+    axis.text  = ggplot2::element_text(size = 15),
+    axis.title = ggplot2::element_text(size = 16)
+  )
+}
+
 #' Plot GAM Smooth Terms
 #'
 #' Produces ggplot2-based smooth plots for each term in the fitted GAM,
@@ -106,10 +117,10 @@ plot_smooth_single <- function(gam_result, variable, residuals = TRUE,
     ggplot2::scale_y_continuous(labels = comma_fmt) +
     ggplot2::labs(y = paste0("Contribution to ", gam_result$response),
                   x = variable) +
-    ggplot2::theme_minimal(base_size = 14) +
+    ggplot2::theme_minimal(base_size = 15) +
     ggplot2::theme(
-      axis.title = ggplot2::element_text(size = 13),
-      axis.text = ggplot2::element_text(size = 11),
+      axis.title = ggplot2::element_text(size = 16),
+      axis.text = ggplot2::element_text(size = 15),
       legend.position = "bottom",
       legend.title = ggplot2::element_blank()
     )
@@ -708,11 +719,12 @@ plot_interaction_single <- function(gam_result, vars, type = "ti") {
       low = "#2166AC", mid = "white", high = "#B2182B",
       midpoint = 0, name = "Contribution") +
     ggplot2::labs(x = vars[1], y = vars[2]) +
-    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme_minimal(base_size = 15) +
     ggplot2::theme(
       legend.position = "bottom",
       legend.key.width = ggplot2::unit(1.5, "cm")
-    )
+    ) +
+    mgcv_axis_fonts_()
 }
 
 
@@ -756,8 +768,9 @@ plot_by_smooth_single <- function(gam_result, variable, by_var) {
     ggplot2::labs(x = variable,
                   y = paste0("Contribution to ", gam_result$response),
                   color = by_var) +
-    ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::theme(legend.position = "bottom")
+    ggplot2::theme_minimal(base_size = 15) +
+    ggplot2::theme(legend.position = "bottom") +
+    mgcv_axis_fonts_()
 }
 
 
@@ -793,8 +806,9 @@ plot_parametric_single <- function(gam_result, term) {
       ggplot2::geom_col(fill = "#5e81ac", alpha = 0.85) +
       ggplot2::labs(title = paste0(term, " (factor)"),
                     x = term, y = paste0("Contribution to ", resp)) +
-      ggplot2::theme_minimal(base_size = 14) +
-      ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = 16))
+      ggplot2::theme_minimal(base_size = 15) +
+      ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = 16)) +
+      mgcv_axis_fonts_()
   } else {
     x_vals <- if (term %in% names(mf)) mf[[term]] else seq_along(contrib)
     df <- data.frame(x = x_vals, contrib = contrib)
@@ -804,8 +818,9 @@ plot_parametric_single <- function(gam_result, term) {
       ggplot2::geom_line(data = df[ord, ], color = "#bf616a", linewidth = 1) +
       ggplot2::labs(title = paste0(term, " (linear)"),
                     x = term, y = paste0("Contribution to ", resp)) +
-      ggplot2::theme_minimal(base_size = 14) +
-      ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = 16))
+      ggplot2::theme_minimal(base_size = 15) +
+      ggplot2::theme(plot.title = ggplot2::element_text(face = "bold", size = 16)) +
+      mgcv_axis_fonts_()
   }
 }
 
@@ -870,5 +885,6 @@ plot_actual_vs_predicted <- function(gam_result) {
                          linetype = "dashed", color = "grey40") +
     ggplot2::labs(x = "Predicted", y = "Actual",
                   title = "Actual vs Predicted (original scale)") +
-    ggplot2::theme_minimal(base_size = 12)
+    ggplot2::theme_minimal(base_size = 15) +
+    mgcv_axis_fonts_()
 }

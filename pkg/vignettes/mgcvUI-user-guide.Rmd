@@ -30,18 +30,32 @@ into smooth, statistically rigorous curves.
 
 The sidebar contains numbered workflow steps:
 
-1. **Import Data** -- Browse for a CSV or Excel file (read directly from
-   disk, no upload size limits).
-2. **Import from earthUI** (optional) -- Browse for an earthUI result
-   `.rds` file to seed knot positions from a MARS model.
-3. **Variable Configuration** -- Select the response variable, configure
-   predictors (include/exclude, type, special roles, factor/linear flags).
-4. **Predictor Settings** -- The variable table showing all columns with
-   checkboxes for Inc, Factor, Linear, and dropdowns for Type and Special.
+1. **Project** -- Create or open a shared regProj project. A project sets
+   the purpose (General / Appraisal / Market Area) and location (country,
+   state, county, city -- a cascading geo picker) plus its input/output
+   folders. Projects live under a shared root (default `~/regProj`) and
+   are shared with the sibling apps earthUI and glmnetUI. The purpose is
+   locked once the project is created; the output folder is derived as
+   `<os>_out_mgcv` inside the project.
+2. **Import Data** -- Pick a CSV or Excel file from the active project's
+   `<os>_in/` folder (add files via Finder/Explorer, then click Refresh).
+3. **Import from earthUI** (optional) -- Browse for an earthUI result
+   `.rds` file to seed knot positions from a MARS model. Seeded variable
+   selections remain editable.
+4. **Variable Configuration** -- Select the response variable and configure
+   predictors: the table shows all columns with checkboxes for Inc, Factor,
+   Linear, and dropdowns for Type and Special.
 5. **Mgcv Call Parameters** -- Family, method, gamma, select, basis, k,
    and advanced parameters (optimizer, scale, discrete, threads).
 6. **Fit Mgcv GAM Model** -- Click to fit.
-7. **Download** -- Export estimated prices, residuals, and reports.
+7. **Download Output** -- Export estimated prices and residuals (Excel).
+8. **Calculate RCA Adjustments & Download** -- Appraisal and Market modes,
+   after fitting.
+9. **Generate Sales Grid & Download** -- Appraisal mode, after RCA.
+10. **Generate Quarto Report** -- Writes an editable `.qmd` report bundle
+    to the project's output folder.
+11. **Convert Quarto Report** -- Renders a `.qmd` file to HTML, Word, or
+    PDF (PDF requires LaTeX).
 
 The main panel shows results in tabs: Data, Equation, Summary, Variable
 Importance, Contribution (smooth plots), Correlation, Diagnostics,
@@ -73,7 +87,7 @@ breakpoints; mgcv's job is regularized estimation, not discovery.
 | Setting | Value | Reason |
 |---------|-------|--------|
 | Default basis | `cr` (cubic regression) | Faster, interpretable, uses earth knot positions directly |
-| Default k | 5 | Earth already found breakpoints; low k prevents refitting |
+| Default k | 0 (auto = 10) | Earth knots are preserved and augmented with data quantiles |
 | Gamma | 1.4 | Stronger parsimony bias (Wood & Fasiolo recommendation) |
 | Select | TRUE | Second-stage shrinkage guard |
 | Method | REML | Best for correlated predictors, small n |
@@ -92,7 +106,7 @@ All values remain individually editable after a preset is applied.
 | **CV** | Checkbox | TRUE | 10-fold cross-validated R-squared |
 | **Select** | Checkbox | TRUE | Adds a shrinkage penalty so smooth terms can be penalized to zero. This is the `select` argument to `mgcv::gam()` |
 | **Default basis** | Dropdown | tp / cr | Basis type for smooth terms. `tp` = thin plate regression spline (adaptive), `cr` = cubic regression spline (fast, interpretable) |
-| **Default k** | Numeric | 0 / 5 | Basis dimension (max wiggliness). 0 = auto (mgcv default of 10). Lower values produce smoother curves |
+| **Default k** | Numeric | 0 | Basis dimension (max wiggliness). 0 = auto (mgcv default of 10). Lower values produce smoother curves |
 | **Tensor type** | Dropdown | ti | `ti` = tensor interaction (recommended), `te` = tensor product |
 
 ### Advanced Parameters
@@ -116,13 +130,17 @@ response). Each row has:
 | **Variable** | Column name |
 | **Type** | Detected data type (numeric, integer, character, factor, etc.) |
 | **Inc** | Include in the model |
-| **Special** | Column role: `no` (default), `actual_age`, `area`, `concessions`, `contract_date`, `display_only`, `dom`, `effective_age`, `latitude`, `listing_date`, `living_area`, `longitude`, `lot_size`, `sale_age`, `site_dimensions`, `weights` |
+| **Special** | Column role: `no` (default), `actual_age`, `area`, `concessions`, `contract_date`, `display_only`, `dom`, `effective_age`, `latitude`, `listing_date`, `living_area`, `longitude`, `lot_size`, `sale_age`, `sale_type`, `site_dimensions`, `weight` |
 | **Factor** | Treat as a factor (categorical) variable |
 | **Linear** | Force linear (no smooth) |
 | **NAs** | Count and percentage of missing values |
 
-Variables with > 50% NAs are automatically excluded. Variables with only 2
-unique values are automatically converted to factors.
+Variables with > 50% NAs are automatically excluded. Text, TRUE/FALSE, and
+R-factor columns are treated as factors automatically (they can only enter the
+model as factors), and a binary 0/1 column is coerced to a factor at fit time.
+A **numeric** column is a factor only if you tick its **Factor** box —
+mgcvUI never infers categorical from a numeric's value range, so discrete
+numeric predictors (e.g. `bath_count`) stay continuous/smoothed.
 
 ## Interactions
 
@@ -168,6 +186,14 @@ in a tensor interaction with `living_area`. This generates
 `ti(sale_age, living_area)` without a standalone `s(sale_age)` -- the
 time appreciation rate varies smoothly with house size rather than being
 a flat $/day rate.
+
+### Enabled Interactions in the Report
+
+When the model contains any interaction, the exported report includes an
+**Enabled Interactions** matrix (predictors on both axes, a check mark where an
+interaction term was included). It covers both tensor interactions
+(`ti()`/`te()`) and factor-by-smooth interactions (`s(var, by=factor)`), and is
+rendered in landscape, mirroring earthUI's Allowed Interactions matrix.
 
 This feature works identically across earthUI, glmnetUI, and mgcvUI.
 In earthUI, it blocks degree-1 hinge functions. In glmnetUI, it removes
@@ -226,7 +252,7 @@ of the terms before treating the model as defensible.
 
 | Tab | Contents |
 |-----|----------|
-| **Data** | Preview of the imported data |
+| **Data** | Imported data; in Appraisal/Market modes split into Subject Property (row 1) and Comparable Sales tables. Double-click any cell for a full-text pop-up |
 | **Equation** | LaTeX-rendered model equation with smooth function definitions |
 | **Summary** | R-squared, CV R-squared, deviance explained, AIC, smooth and parametric term tables |
 | **Variable Importance** | Bar chart and table ranked by F-statistic (smooth) or |t|-statistic (parametric) |
@@ -248,9 +274,9 @@ mgcvUI remembers your settings across sessions:
   automatically to a SQLite database when changed.
 - **Per-file settings** -- Response variable, predictor configuration,
   family, method, select, gamma are saved per data filename.
-- **Last-used files** -- The data file and earth file paths are remembered;
-  files are auto-loaded on next launch if they still exist at their
-  original locations.
+- **Last-used files** -- Each project remembers its last-used data file
+  and reloads it when the project is reopened; the last earth `.rds` path
+  is also remembered.
 
 Settings are stored in `tools::R_user_dir("mgcvUI", "data")/settings.sqlite`.
 

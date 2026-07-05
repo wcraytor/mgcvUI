@@ -236,6 +236,7 @@ prepare_report_assets <- function(gam_result, assets_dir = NULL) {
     equation_defs = if (!is.null(eq_parts)) eq_parts$defs else NULL,
     importance    = importance,
     summary_text  = summary_text,
+    interaction_matrix = build_interaction_matrix_(gam_result),
     n_smooth_chunks = n_smooth_chunks
   ), file.path(assets_dir, "report_data.rds"), compress = "xz")
 
@@ -323,7 +324,14 @@ prepare_report_assets <- function(gam_result, assets_dir = NULL) {
       ggplot2::ggplot(imp, ggplot2::aes(x = .data$Importance, y = .data$Term,
                                         fill = .data$Kind)) +
         ggplot2::geom_col() +
-        ggplot2::labs(x = "Importance (|F| / |t|)", y = NULL, fill = NULL)
+        ggplot2::labs(x = "Importance (|F| / |t|)", y = NULL, fill = NULL) +
+        # Match the axis font sizes used by the smooth/contribution plots
+        # (plot_smooth_single) so the term labels and axis are equally legible.
+        ggplot2::theme_minimal(base_size = 15) +
+        ggplot2::theme(
+          axis.title = ggplot2::element_text(size = 16),
+          axis.text = ggplot2::element_text(size = 15)
+        )
     }, width = 8, height = 5)
   }
 
@@ -470,4 +478,35 @@ convert_quarto_file <- function(qmd_path, formats = c("html"),
     out_paths <- c(out_paths, out_file)
   }
   invisible(out_paths)
+}
+
+# Build the enabled-interaction matrix for the report: a logical matrix
+# (predictors on both axes) with TRUE where a pairwise interaction term was
+# included in the GAM. Two kinds count: tensor interactions (`ti`/`te` specs
+# with two variables) and factor-by-smooth interactions (a smooth spec with a
+# `by` factor). Returns NULL when there are no interactions. Mirrors earthUI's
+# allowed-interaction matrix.
+#' @noRd
+build_interaction_matrix_ <- function(gam_result) {
+  specs <- gam_result$smooth_specs
+  if (is.null(specs) || length(specs) == 0L) return(NULL)
+  pairs <- list()
+  for (s in specs) {
+    if (!is.null(s$by) && nzchar(s$by) && length(s$vars) >= 1L) {
+      pairs <- c(pairs, list(c(s$vars[1L], s$by)))           # factor-by-smooth
+    } else if (length(s$vars) == 2L && isTRUE(s$type %in% c("ti", "te"))) {
+      pairs <- c(pairs, list(c(s$vars[1L], s$vars[2L])))     # tensor interaction
+    }
+  }
+  if (length(pairs) == 0L) return(NULL)
+  vars <- unique(c(unlist(lapply(specs, function(s) s$vars)), unlist(pairs)))
+  n <- length(vars)
+  mat <- matrix(FALSE, n, n, dimnames = list(vars, vars))
+  for (pr in pairs) {
+    if (all(pr %in% vars) && pr[1L] != pr[2L]) {
+      mat[pr[1L], pr[2L]] <- TRUE
+      mat[pr[2L], pr[1L]] <- TRUE
+    }
+  }
+  mat
 }

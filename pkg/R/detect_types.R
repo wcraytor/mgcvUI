@@ -27,3 +27,17 @@ detect_column_types <- function(df) {
     "character"
   }, character(1))
 }
+
+# Flag columns that are UNAMBIGUOUSLY categorical by type: character, factor,
+# and logical. Numeric columns are NOT auto-flagged — a numeric variable is
+# only a factor if the appraiser ticks the Factor box. Counting unique values
+# can't distinguish a discrete continuous predictor (e.g. bath_count 0-5) from a
+# numeric category code. Used to pre-check the Factor box in the variable table.
+#' @noRd
+detect_categoricals_ <- function(df) {
+  res <- vapply(df, function(col) {
+    is.character(col) || is.factor(col) || is.logical(col)
+  }, logical(1))
+  names(res) <- names(df)
+  res
+}

@@ -9,7 +9,8 @@ mod_model_server(
   data_r,
   var_config_r,
   earth_knots_r = reactive(NULL),
-  dark_mode_r = reactive(FALSE)
+  dark_mode_r = reactive(FALSE),
+  purpose_r = reactive("general")
 )
 }
 \arguments{

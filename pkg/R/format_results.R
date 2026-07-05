@@ -215,6 +215,69 @@ format_gam_equation_ <- function(model, response, response_transform = "none") {
   list(inline = inline, aligned = aligned, defs = defs)
 }
 
+#' Legend explaining the model-equation notation
+#'
+#' Returns a short, self-contained explanation of the notation used in the
+#' Model Equation produced by [format_gam_equation_()] — the smooth functions
+#' \eqn{f_i} and parametric coefficients \eqn{\beta} as value-contribution
+#' functions — together with a citation to the RCA protocol. Used both by the
+#' Shiny app's Equation tab and at the bottom of the Quarto report.
+#'
+#' @param format Either `"html"` (MathJax markup, for the Shiny app and the
+#'   HTML report) or `"markdown"` (Pandoc markdown with `$`-delimited math, for
+#'   the Quarto report rendering to HTML, PDF and Word).
+#'
+#' @return A length-one character string.
+#'
+#' @export
+#' @examples
+#' cat(g_function_legend("markdown"))
+g_function_legend <- function(format = c("html", "markdown")) {
+  format  <- match.arg(format)
+  doi_url <- "https://doi.org/10.5281/zenodo.14787917"
+
+  if (format == "markdown") {
+    ref <- paste0(
+      "Craytor, W. B. (2025). *Residual Constraint Approach (RCA): ",
+      "Framework & Protocol*, §10. Zenodo. ",
+      "[doi:10.5281/zenodo.14787917](", doi_url, ").")
+    paste0(
+      "Each term of the equation above is a **value-contribution function**. ",
+      "Smooth (non-linear) terms are written $f_i(\\cdot)$, where $i$ indexes ",
+      "the smooth and the variables in parentheses are its inputs; the smooth ",
+      "function definitions listed with the equation give each one's spline ",
+      "type and basis dimension $k$. Parametric and categorical predictors ",
+      "enter as linear coefficients $\\beta$. The fitted response is the ",
+      "intercept plus the sum of all smooth and parametric terms — shown on ",
+      "the model's link scale when a non-identity link or a response transform ",
+      "is used:\n\n",
+      "$$g(\\hat{y}) = \\beta_0 + \\sum_i f_i(\\cdot) + \\sum_p \\beta_p\\,x_p$$\n\n",
+      "The value-contribution framework follows ", ref, "\n")
+  } else {
+    ref <- paste0(
+      "Craytor, W. B. (2025). <em>Residual Constraint Approach (RCA): ",
+      "Framework &amp; Protocol</em>, §10. Zenodo. ",
+      "<a href=\"", doi_url, "\">doi:10.5281/zenodo.14787917</a>.")
+    paste0(
+      "<div class=\"mui-gfn-legend\" style=\"margin-top:14px;padding:10px ",
+      "14px;border-left:3px solid var(--bs-border-color,#ccc);",
+      "font-size:0.92em;\">",
+      "<p style=\"margin:0 0 6px;\">Each term above is a ",
+      "<strong>value-contribution function</strong>. Smooth (non-linear) ",
+      "terms are written \\(f_i(\\cdot)\\), where \\(i\\) indexes the smooth ",
+      "and the variables in parentheses are its inputs; the smooth function ",
+      "definitions listed with the equation give each one's spline type and ",
+      "basis dimension \\(k\\). Parametric and categorical predictors enter as ",
+      "linear coefficients \\(\\beta\\). The fitted response is the intercept ",
+      "plus the sum of all smooth and parametric terms — shown on the ",
+      "model's link scale when a non-identity link or a response transform is ",
+      "used:</p>",
+      "\\[g(\\hat{y}) = \\beta_0 + \\sum_i f_i(\\cdot) + \\sum_p \\beta_p\\,x_p\\]",
+      "<p style=\"margin:6px 0 0;font-style:italic;\">The value-contribution ",
+      "framework follows ", ref, "</p></div>")
+  }
+}
+
 #' Format the canonical fit timestamp for output filenames (internal)
 #'
 #' Every output produced from a single GAM fit (Excel exports, the report, the

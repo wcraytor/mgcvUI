@@ -1,7 +1,7 @@
 ###############################################################################
 # test-rca_and_output.R
 #
-# Tests for RCA (Reconciliation by Comparable Analysis) calculations,
+# Tests for RCA (Residual Constraint Approach) calculations,
 # CQA scoring, output data structure, back-transformation, sales grid
 # helpers, and related logic used in mgcvUI's export and RCA pipeline.
 #

@@ -57,7 +57,7 @@ When an earthUI result is imported, mgcvUI auto-switches to the
 | Setting | Standalone | Earth Pipeline | Why Different |
 |---------|-----------|----------------|---------------|
 | Basis | `tp` | `cr` | Earth provides knot positions; `cr` uses them directly |
-| k | auto (10) | 5 | Earth already found breakpoints; low k prevents refitting |
+| k | auto (10) | auto (10) | Earth knots are preserved and augmented with data quantiles up to k |
 | Gamma | 1.2 | 1.4 | Stronger parsimony -- mgcv refines, not discovers |
 | Select | TRUE | TRUE | Second-stage shrinkage guard |
 
@@ -99,17 +99,20 @@ mgcvUI()
 
 In the mgcvUI app:
 
-1. Upload your sales data via **Browse** in the Data section.
-2. Expand **Import from earthUI** and browse for the `.rds` file.
-   Files are read directly from disk -- no upload size limit.
-3. mgcvUI extracts the knot positions and pre-configures the GAM:
+1. Open (or create) the same regProj project you used in earthUI
+   (Section 1), then pick your sales data file from the project's
+   `in/` folder (Section 2).
+2. Expand **Import from earthUI** (Section 3) and browse for the `.rds`
+   file. Files are read directly from disk -- no upload size limit.
+3. mgcvUI extracts the knot positions and seeds the GAM configuration:
    - Predictors are auto-selected to match the earth model.
-   - Basis dimensions (`k`) are set based on the number of earth knots.
    - Cubic regression splines (`cr`) are used for variables with earth
-     knots, allowing knot positions to be passed to `gam()`.
+     knots, allowing knot positions to be passed to `gam()` (knots are
+     augmented with data quantiles when the basis dimension needs more).
    - The parameter preset auto-switches to **Earth Pipeline**.
-4. Review the **Predictor Settings** table -- earth's categoricals
-   are flagged as Factor, linear predictors are flagged as Linear.
+4. Review the variable table -- earth's categoricals are flagged as
+   Factor, linear predictors are flagged as Linear. All seeded
+   selections are a starting point and remain editable.
 5. Fit the model.
 6. Check the **Sign Check** tab to verify GAM smooth directions agree
    with earth hinge directions.

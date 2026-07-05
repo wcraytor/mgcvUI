@@ -50,14 +50,25 @@ mgcvUI()
 
 This opens mgcvUI in your web browser.
 
-### 2. Import your data
+### 2. Create or open a project
 
-Click **Browse** to select a CSV or Excel file containing your
-comparable sales. Files are read directly from disk (no upload size
-limits). mgcvUI remembers the last-used file and auto-loads it on
-next launch.
+In sidebar section 1, create or open a **project**. A project sets the
+purpose (General, For Appraisal, or Market Area Analysis) and the work
+location (country, state, county, city), and provides the input and
+output folders. Projects live under a shared `~/regProj` root and are
+shared with the sibling apps earthUI and glmnetUI. The purpose is fixed
+when the project is created -- open or create a different project to
+work in another mode.
 
-### 3. Choose your variables
+### 3. Import your data
+
+Drop your CSV or Excel file of comparable sales into the project's
+`<os>_in/` folder (via Finder/Explorer), then pick it from the file list
+in section 2 (click **Refresh** if it does not appear). Files are read
+directly from disk (no upload size limits). Each project remembers its
+last-used file and auto-loads it when the project is reopened.
+
+### 4. Choose your variables
 
 In the **Predictor Settings** table:
 
@@ -66,12 +77,12 @@ In the **Predictor Settings** table:
 - **Factor** -- check categorical variables (e.g., neighborhood, condition).
 - **Linear** -- check variables that should enter linearly (no smooth curve).
 - **Special** -- assign column roles like `living_area`, `lot_size`,
-  `area`, `weights`, `latitude`, `longitude`, etc.
+  `area`, `weight`, `sale_age`, `sale_type`, `latitude`, `longitude`, etc.
 
 mgcvUI automatically configures a smooth curve for each included numeric
 predictor. Categorical variables enter the model as linear terms.
 
-### 4. Choose your parameter preset
+### 5. Choose your parameter preset
 
 The **Parameter Preset** selector at the top of Mgcv Call Parameters
 offers two options:
@@ -79,18 +90,19 @@ offers two options:
 - **Standalone (discovery)** -- for GAMs without earth input. Uses `tp`
   basis, k=auto(10), gamma=1.2. mgcv discovers the nonlinearities.
 - **Earth Pipeline (refinement)** -- auto-selected when an earthUI
-  result is imported. Uses `cr` basis, k=5, gamma=1.4. mgcv refines
+  result is imported. Uses `cr` basis, k=auto(10), gamma=1.4, with earth
+  knots preserved and augmented with data quantiles. mgcv refines
   earth's breakpoints.
 
 See the [mgcvUI User Guide](mgcvUI-user-guide.html) for full parameter
 details.
 
-### 5. Fit the model
+### 6. Fit the model
 
 Click **Fit Model**. mgcvUI fits a GAM using `mgcv::gam()` with your
 chosen parameters and shows a notification with the fitting time.
 
-### 6. Review the results
+### 7. Review the results
 
 The results panel has tabs for:
 
@@ -103,10 +115,15 @@ The results panel has tabs for:
   assumptions.
 - **Basis Check** -- verifies that the model has enough flexibility.
 
-### 7. Generate a report
+### 8. Generate a report
 
-Use the download buttons to export estimated sale prices, residuals,
-and formatted reports (HTML, Word, or PDF) for your appraisal workfile.
+Use **Download Output** to export estimated sale prices and residuals
+as Excel. Reports use a two-step Quarto workflow: **Generate Quarto
+Report** writes an editable `.qmd` report bundle to the project's output
+folder, and **Convert Quarto Report** renders it to HTML, Word, or PDF
+(PDF requires LaTeX) for your appraisal workfile. In appraisal mode you
+can also compute RCA (Residual Constraint Approach) adjustments and a
+Sales Comparison Grid.
 
 ## Understanding the Smooth Plots
 

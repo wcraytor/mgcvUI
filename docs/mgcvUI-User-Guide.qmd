@@ -72,7 +72,7 @@ format:
 \hline
 \rowcolor{nordblue}\textbf{Version} & \textbf{Audience} & \textbf{Last Updated} \\
 \hline
-0.1.0 & All Users & 2026 \\
+0.3.0 & All Users & 2026 \\
 \hline
 \end{tabular}
 \end{center}
@@ -173,7 +173,7 @@ format:
 
 \item \textbf{\textcolor{norddark}{Result Tabs}}
   \begin{itemize}
-    \item Data Preview
+    \item Data
     \item Equation
     \item Summary
     \item Variable Importance
@@ -208,9 +208,10 @@ format:
     \item Sheet Protection \& Residual Cells
   \end{itemize}
 
-\item \textbf{\textcolor{norddark}{Downloading Reports}}
+\item \textbf{\textcolor{norddark}{Quarto Reports}}
   \begin{itemize}
-    \item Report Formats
+    \item Generate Quarto Report
+    \item Convert Quarto Report
     \item Report Contents
   \end{itemize}
 
@@ -343,7 +344,7 @@ The application provides a complete workflow: data import, variable configuratio
 Every project has a **purpose**, chosen when you create it (Section 1, *Project*). The active project's purpose determines which tools and interface elements appear; to work in a different mode, create or open a project with that purpose. The three modes are:
 
 - **General** --- GAM regression for any type of population or dataset. This is the default mode. It provides the full GAM workflow without any domain-specific additions.
-- **For Appraisal** --- GAM regression tailored for real estate appraisal. Adds features specific to single-property valuation, including subject property handling, special column designations, and Reconciliation by Comparable Adjustment (RCA).
+- **For Appraisal** --- GAM regression tailored for real estate appraisal. Adds features specific to single-property valuation, including subject property handling, special column designations, and Residual Constraint Approach (RCA).
 - **Market Area Analysis** --- GAM regression tailored for market area studies. Adds features for analyzing groups of properties in a defined market, with optional subject row handling.
 
 In all three modes, the core modeling engine is identical --- you are always fitting a GAM via \texttt{mgcv::gam()}. The purpose setting controls which additional tools and interface elements are available.
@@ -354,7 +355,7 @@ When either **For Appraisal** or **Market Area Analysis** is selected, mgcvUI ac
 
 - **Special column designations** --- Each predictor can be tagged with a special role such as `contract_date`, `dom`, `concessions`, `latitude`, `longitude`, `living_area`, `lot_size`, `actual_age`, `effective_age`, `area`, `site_dimensions`, or `display_only`. These designations control how the column is handled during fitting and output.
 - **Sale Age column** --- When a column is designated as `contract_date` and an Effective Date is provided, mgcvUI computes a `sale_age` column (days between sale date and effective date) and substitutes it as a predictor.
-- **RCA computations (appraisal only)** --- In appraisal mode, after fitting the model mgcvUI can compute Reconciliation by Comparable Adjustment (RCA) output, which produces per-comparable adjustments, net/gross adjustment summaries, and an adjusted sale price for the subject property.
+- **RCA computations (appraisal and market modes)** --- After fitting the model, mgcvUI can compute Residual Constraint Approach (RCA) output, which produces per-comparable adjustments, net/gross adjustment summaries, and an adjusted sale price for the subject property.
 
 \begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
 \small\textit{\textbf{Tip:} The General purpose mode works for any dataset --- financial, scientific, engineering, or real estate. The appraisal and market modes simply add convenience features for real estate professionals.}
@@ -365,7 +366,7 @@ When either **For Appraisal** or **Market Area Analysis** is selected, mgcvUI ac
 To use mgcvUI:
 
 1. **Install the package** in R: `install.packages("mgcvUI")` or install from source.
-2. **Launch the application**: run `mgcvUI::mgcvUI()` in R. The app opens in your web browser on port 7880. The app remembers your last-used purpose mode and restores it automatically.
+2. **Launch the application**: run `mgcvUI::mgcvUI()` in R. The app opens in your web browser on port 7880.
 3. **Create or open a project** in Section 1 of the sidebar. A project sets the purpose and work location (country, state, county, city) and its input/output folders. Projects are stored under a shared `regProj` root and are shared with the sibling apps earthUI and glmnetUI. Opening a project with a different purpose is how you switch modes.
 4. **Import your data** in Section 2 by selecting a CSV or Excel file from the active project's input folder. Add files to that folder, then click **Refresh** to list them.
 5. **Import from earthUI (optional)** --- Section 3 lets you import an earthUI result `.rds` file to seed the GAM with earth-discovered knots. Skip this step if you do not have an earthUI result.
@@ -456,7 +457,7 @@ mgcvUI identifies columns by their **special type designation**, not by their co
 
 - **Missing values (NA)**: Rows with NA values in any predictor or target column are automatically removed before fitting. mgcvUI subsets the data to only the columns used in the model, so NAs in unused columns do not cause row drops.
 - **Numeric columns**: Sale price, living area, lot size, and similar fields must be numeric.
-- **Factor columns**: Categorical variables like area ID, style, or condition should contain a manageable number of unique values. mgcvUI auto-detects factors but you can override.
+- **Factor columns**: Text, TRUE/FALSE, and R-factor columns are treated as categorical automatically — they can only enter the model as factors. A **numeric** column (e.g. a numeric area or style code) becomes a factor only when you tick its **Factor** checkbox; mgcvUI never infers categorical from a numeric's value range, so discrete numeric predictors like `bath_count` stay continuous (smoothed). The Special role is independent of the factor decision.
 
 \begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
 \small\textit{\textbf{Tip:} Review the NA column in the predictor table after import. Columns with many missing values may cause rows to be dropped. Columns with $\geq$50\% NAs are flagged red and automatically excluded.}
@@ -504,7 +505,7 @@ The sidebar is organized into numbered, collapsible sections that guide you from
 
 **6. Fit Mgcv GAM Model** --- The button that runs the model. Results appear in the tabs on the right.
 
-**7. Download Output** --- Exports predictions, residuals, CQA scores, and per-variable contributions as an Excel file to the project's output folder. Available in all purpose modes once the model is fit.
+**7. Download Estimated Sale Prices \& Residuals** (titled *Download Estimated Target Variable(s) \& Residuals* in General mode) --- Exports predictions, residuals, CQA scores, and per-variable contributions as an Excel file to the project's output folder. Available in all purpose modes once the model is fit.
 
 **8. Calculate RCA Adjustments \& Download** --- Computes per-variable RCA adjustments for each comparable and interpolates the subject residual via CQA. Appears only in Appraisal and Market modes, after fitting.
 
@@ -528,6 +529,8 @@ When an earthUI result is imported, mgcvUI:
 - Pre-populates interactions detected by earth (highlighted yellow in the interaction matrix, locked from manual changes).
 - Provides an **Export Knots CSV** button to download earth's knots as a CSV file.
 
+Variable selections and spline knots are **seeded, not locked** --- a note above the predictor table reminds you that every seeded Include/Linear/Factor selection remains editable. (Earth-detected interactions in the Allowed Interactions matrix are the exception: they stay checked and locked.)
+
 A **Clear** button removes the imported earth data and resets to standalone mode.
 
 ## Main Panel Tabs
@@ -540,7 +543,7 @@ After data import, the main panel provides the following tabs (model-dependent t
 \hline
 \rowcolor{nordtableheader}\color{white}\textbf{Tab} & \color{white}\textbf{Contents} \\
 \hline
-Data Preview & Interactive DataTable of imported data. \\
+Data & Interactive DataTable of imported data. In Appraisal and Market modes the tab is split into a Subject Property table (row 1) and a Comparable Sales table. \\
 \hline
 Equation & Full GAM formula rendered in MathJax, plus a table of smooth function definitions. \\
 \hline
@@ -571,7 +574,7 @@ Basis Check & \texttt{gam.check()} basis dimension adequacy tests. \\
 
 ## Settings Persistence
 
-mgcvUI automatically saves your configuration to an SQLite database, keyed by the input filename. When you reload the same file, all settings are restored: target selection, predictor checkboxes, data types, mgcv parameters, and interaction matrix. The last-used purpose mode is also persisted globally and restored when the app is relaunched.
+mgcvUI automatically saves your configuration to an SQLite database, keyed by the input filename. When you reload the same file, all settings are restored: target selection, predictor checkboxes, data types, mgcv parameters, and interaction matrix. The purpose mode itself is fixed by the active project, and each project remembers its last-used input file, which is reloaded automatically when the project is reopened.
 
 ## Dark Mode
 
@@ -624,7 +627,7 @@ In appraisal and market modes, a **Special** dropdown appears for each predictor
 
 ## RCA Adjustments Overview
 
-The **Calculate RCA Adjustments \& Download** button (visible only in appraisal mode after fitting) computes market-derived adjustments for each comparable relative to the subject. The full RCA workflow is described in Chapter 11.
+The **Calculate RCA Adjustments \& Download** button (visible in Appraisal and Market modes after fitting) computes market-derived adjustments for each comparable relative to the subject. The full RCA workflow is described in Chapter 11.
 
 \begin{tcolorbox}[colback=nordblue!5, colframe=nordblue!40, title=]
 \small\textit{\textbf{Tip:} The CQA score you assign to the subject controls how much of the residual distribution is attributed to the subject. A score of 5.00 places the subject at the median of the comparables.}
@@ -647,6 +650,7 @@ When you select **Market Area Analysis** as the Purpose, mgcvUI provides the sam
 ## Differences from Appraisal Mode
 
 - **Subject row handling is flexible** --- in market mode, row 1 is not automatically treated as a subject property.
+- **RCA adjustments remain available** --- the "Calculate RCA Adjustments \& Download" step appears in market mode as well as appraisal mode.
 - **No Sales Grid** --- the "Generate Sales Grid \& Download" step is not available.
 
 ## When to Use Market Mode
@@ -733,13 +737,18 @@ In appraisal and market modes, the **Special** dropdown provides the following o
 
 **Weighting:**
 
-- `weights` --- Observation weight column (only one allowed; rows with weight = 0 are excluded from fitting)
+- `weight` --- Observation weight column (only one allowed; rows with weight = 0 are excluded from fitting)
 
 **Date \& Time Types:**
 
 - `contract_date` --- Triggers automatic `sale_age` computation from the Effective Date
+- `sale_age` --- Identifies a pre-computed sale-age column; when a `contract_date` column is also designated, the column is recomputed from the Effective Date
 - `listing_date` --- Used as a fallback for computing Days on Market
 - `dom` --- Identifies the Days on Market column
+
+**Sale Types:**
+
+- `sale_type` --- Identifies the sale-type column (e.g., arm's-length vs. REO/short sale)
 
 **Monetary Types:**
 
@@ -957,9 +966,9 @@ After successful fitting, a white checkmark appears on the Fit button and a stat
 
 \bigskip
 
-## Data Preview
+## Data
 
-Shows the imported data as an interactive DataTable with horizontal scrolling and 15 rows per page.
+Shows the imported data as an interactive DataTable with horizontal scrolling and 15 rows per page. In Appraisal and Market modes the tab is split into two tables --- **Subject Property** (row 1) and **Comparable Sales** (all remaining rows); in General mode a single table is shown.
 
 Each cell is kept to a single line and truncated to the column width, so wide free-text fields (such as property remarks) do not stretch a row down the page. Single-click selects a row; **double-click any cell** to open a pop-up showing its full, untruncated contents.
 
@@ -1132,7 +1141,7 @@ After fitting, the **Download Output** button (sidebar section 7) exports an Exc
 \hline
 \texttt{calc\_residual} & Verification: actual $-$ sum-of-contributions (back-transformed) \\
 \hline
-\texttt{cqa} & Competitive Quality Adjustment score (0--10 scale) \\
+\texttt{cqa} & Condition-Quality-Appeal score (0--10 scale) \\
 \hline
 \texttt{residual\_sf} & Residual / living area (if \texttt{living\_area} designated) \\
 \hline
@@ -1165,16 +1174,16 @@ CQA ranks each row's residual against all others on a 0--10 scale:
 
 \bigskip
 
-The RCA (Reconciliation by Comparable Adjustment) workflow is available in **Appraisal** mode only, after fitting the model.
+The RCA (Residual Constraint Approach) workflow is available in **Appraisal** and **Market Area Analysis** modes, after fitting the model.
 
 ## Opening the RCA Dialog
 
 Click the **Calculate RCA Adjustments \& Download** button in sidebar section 8. A modal dialog appears with:
 
-- **Score type**: CQA or CQA per SF (if `living_area` designated). The per-SF option scales the subject's residual by living area.
-- **Subject CQA Score**: Numeric input, 0.00--9.99, default 5.00.
+- **Score type**: CQA or CQA per SF (if `living_area` designated). The per-SF option ranks residuals per square foot to reduce the impact of home size.
+- **Subject CQA Score**: Numeric input accepting values from 0.00 to 10.00. The field starts blank; when an earthUI model has been imported, the score type and value entered in earthUI are carried forward from the shared project settings.
 
-Click **Generate** to compute and download.
+The **Generate** button stays disabled until a valid score (0.00--10.00) is entered. Click **Generate** to compute and download.
 
 ## CQA Score Interpolation
 
@@ -1235,7 +1244,7 @@ The Sales Comparison Grid is available in **Appraisal** mode only, after computi
 Clicking the **Generate Sales Grid \& Download** button opens a modal dialog listing all comparable sales. Comps are split into two groups:
 
 - **Recommended comps** (pre-checked): Gross adjustment $<$ 25\% of sale price, sorted by sale age (most recent first). Maximum 30 comps.
-- **Other comps** (unchecked by default): Remaining comps, sorted by sale age.
+- **Other comps** (unchecked by default): Remaining comps, sorted by gross adjustment percentage (lowest first).
 
 Select your comps, then click **Generate Sales Grid** to create the workbook.
 
@@ -1260,46 +1269,55 @@ Each sheet is protected to prevent accidental edits, but the residual feature va
 <!-- CHAPTER 13 -->
 \begin{flushleft}
 {\color{nordblue}\small\textbf{CHAPTER 13}}\\[2pt]
-{\Huge\textbf{Downloading Reports}}
+{\Huge\textbf{Quarto Reports}}
 \end{flushleft}
 
 \noindent\textcolor{nordblue}{\rule{\textwidth}{2pt}}
 
 \bigskip
 
-## Report Formats
+Report generation is a **two-step Quarto workflow**: first generate an editable \texttt{.qmd} report bundle, then convert it to the final document format(s).
 
-Three formats are available:
+## Generate Quarto Report
 
-- **HTML** --- Self-contained HTML document via \texttt{rmarkdown}. Works on all platforms with no extra software. Recommended default.
-- **Word (.docx)** --- Formatted document built via the \texttt{officer} package. Suitable for editing and distribution. Works on all platforms.
-- **PDF** --- Generated via \texttt{rmarkdown} + LaTeX. Paper size follows the locale setting (Letter or A4). **Requires a LaTeX installation** (see System Requirements below). If no LaTeX is detected, the PDF option is automatically hidden from the format dropdown.
+The **Generate Quarto Report** button (sidebar section 10, available once the model is fit) writes a self-contained Quarto report bundle to the active project's output folder (\texttt{<os>\_out\_mgcv}). The bundle contains:
 
-Reports are saved to the output folder specified in Section 3.
+- The \texttt{.qmd} report source (based on the package's \texttt{gam\_report.qmd} template)
+- Pre-rendered plots (PNG and PDF) in a \texttt{plots/} subfolder
+- A compact \texttt{report\_data.rds} payload with the tables and metrics
+- A \texttt{reference.docx} used for Word styling
+
+Because the bundle is plain Quarto source, you can edit the text, reorder sections, or combine it with other Quarto documents before rendering.
+
+## Convert Quarto Report
+
+The **Convert Quarto Report** section (sidebar section 11) renders a \texttt{.qmd} file via the \texttt{quarto} package. It defaults to the most recently generated bundle, but the **Browse** button lets you pick any \texttt{.qmd} file. Output format checkboxes offer:
+
+- **HTML** --- Self-contained HTML document. Works on all platforms with no extra software. Recommended default.
+- **Word (.docx)** --- Editable Word document, styled by the bundle's \texttt{reference.docx}.
+- **PDF** --- Requires a LaTeX installation (see System Requirements below). If no LaTeX is detected, the PDF checkbox is hidden and a hint to run \texttt{tinytex::install\_tinytex()} is shown.
+
+Rendered reports are saved next to the \texttt{.qmd} source in the project's output folder.
 
 ## Report Contents
 
-Reports include:
+The generated report includes:
 
-- **Equation**: Model equation with $f_i$ notation for smooth terms and explicit coefficients for linear terms, smooth function definitions table (term, basis, k, knots), and family/method info. Long equations wrap across multiple lines in PDF.
-- **Model overview**: R$^2$, CV R$^2$, Deviance Explained, AIC, BIC, n, family, method, fitting time
-- **Summary tables**: Smooth terms (EDF, F, p-value) and parametric terms (Estimate, Std Error, t, p-value)
-- **Variable importance**: Bar chart ranked by F-statistic (smooths) or $|t|$ (parametric)
-- **Contribution plots** (all term types):
-  - Univariate smooth plots (static ggplot2 versions of the interactive plots)
-  - Factor-by-smooth multi-line plots
-  - Interaction heatmaps ($ti$ and $te$ terms)
-  - Parametric term plots (scatter for numeric, bar chart for factor)
-- **Correlation matrix** heatmap
-- **Diagnostics**: 4-panel residual diagnostics (with `gam.check` fallback if `gratia::appraise` fails) and actual vs predicted scatter
-- **ANOVA**: Separate parametric and smooth term tables
-- **Concurvity**: Overall (transposed for readability) and pairwise worst case
-- **Earth sign consistency** (when earth knots imported)
-- **Basis dimension check** and full mgcv output
+- **Dataset \& Model**: response, predictors, observation count, family, smoothing method, and smooth-term count
+- **Results Summary**: adjusted R$^2$, deviance explained, CV R$^2$ (when cross-validation was run), AIC, and BIC
+- **Model Equation**: the fitted equation with $f_i$ notation for smooth terms and a smooth-function definitions list, aligned one term per line so long equations never run off the page
+- **Smooth Terms** and **Parametric Terms** tables (EDF, F, p-value; Estimate, Std Error, t, p-value)
+- **Enabled Interactions** matrix (only when the model contains tensor or factor-by-smooth interaction terms), rendered in landscape
+- **Variable importance**: bar chart ranked by F-statistic (smooths) or $|t|$ (parametric)
+- **Smooth Effects**: pre-rendered contribution plots for every model term, split into page-sized panels
+- **Predictor Correlations** heatmap
+- **Diagnostics**: residual diagnostics panel and an Actual vs Predicted scatter
+- **mgcv Summary**: the raw \texttt{summary(model)} output
+- **Notation legend**: an explanation of the value-contribution ($f_i$) notation with a citation to the Residual Constraint Approach (RCA) protocol
 
-Each section is independently error-protected --- if one section fails, it shows an inline error message and the rest of the report generates normally.
+Result-tab material that is not part of the Quarto report (ANOVA, concurvity, sign check, basis check) remains available in the app's result tabs.
 
-A white checkmark appears on the Download Report button after successful generation.
+A white checkmark appears on the Generate Quarto Report button after the bundle is written successfully.
 
 \newpage
 
@@ -1315,7 +1333,15 @@ A white checkmark appears on the Download Report button after successful generat
 
 mgcvUI can export the fitted GAM's smooth functions as standalone code in multiple languages. Each smooth is evaluated on a 200-point grid and exported as a lookup table with linear interpolation, allowing the model to be used outside of R without any dependency on \texttt{mgcv}.
 
-The **Export Functions** section (available in the report module) offers checkboxes for R, Python, C++, and SQLite. Click **Download Functions (.zip)** to generate a zip archive.
+These exports are **programmatic** --- there is no Export Functions section in the app's interface. Use the exported package functions from the R console, for example:
+
+```r
+export_functions_zip(result, "gam_functions.zip",
+                     languages = c("R", "Python", "C++", "SQLite"))
+export_functions_sqlite(result, "gam_functions.sqlite")
+```
+
+The per-language generators (\texttt{generate\_r\_code()}, \texttt{generate\_python\_code()}, \texttt{generate\_cpp\_code()}) are also exported for direct use.
 
 ## R Functions
 
@@ -1438,7 +1464,7 @@ The demo dataset is shared with earthUI and glmnetUI. It is located in the \text
 demo_file <- system.file("extdata", "Appraisal_1.csv", package = "earthUI")
 ```
 
-The file contains 1,502 residential sales (plus 1 subject property in row 1) from a simulated MLS export. The data represents single-family home sales in a multi-area market with a range of property sizes, ages, and locations.
+The file contains 1,488 rows --- the subject property in row 1 plus 1,487 residential sales --- with 39 columns, from a simulated MLS export. The data represents single-family home sales in a multi-area market with a range of property sizes, ages, and locations.
 
 This is not real data, but is based on a realistic neighborhood in Northern California. All identification information has been altered or removed.
 
@@ -1449,6 +1475,8 @@ This is not real data, but is based on a realistic neighborhood in Northern Cali
 \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|c|>{\raggedright\arraybackslash}p{2.2cm}|X|}
 \hline
 \rowcolor{nordtableheader}\color{white}\textbf{Column} & \color{white}\textbf{Type} & \color{white}\textbf{Special Type} & \color{white}\textbf{Description} \\
+\hline
+\texttt{sale\_type} & character & \texttt{sale\_type} & Sale-type code (\texttt{s} = subject row, \texttt{c} = comparable sale); imported from the \texttt{sale-type} header \\
 \hline
 \texttt{weight} & numeric & weight & Observation weight (0 = exclude from fitting) \\
 \hline
@@ -1470,9 +1498,21 @@ This is not real data, but is based on a realistic neighborhood in Northern Cali
 \hline
 \texttt{contract\_date} & Date & \texttt{contract\_date} & Sale contract date (computes \texttt{sale\_age}) \\
 \hline
-\texttt{sale\_age} & numeric & --- & Days from contract date to effective date \\
+\texttt{sale\_age} & numeric & \texttt{sale\_age} & Days from contract date to effective date \\
+\hline
+\texttt{coe\_date} & Date & --- & Close-of-escrow date \\
+\hline
+\texttt{listing\_status} & character & --- & Listing status (e.g., Sold) \\
 \hline
 \texttt{sale\_price} & numeric & (target) & Sale price --- response variable \\
+\hline
+\texttt{rent} & numeric & --- & Estimated monthly rent \\
+\hline
+\texttt{list\_price} & numeric & --- & Final list price \\
+\hline
+\texttt{original\_list\_price} & numeric & --- & Original list price \\
+\hline
+\texttt{ppsf} & character & --- & Price per square foot (formatted text) \\
 \hline
 \texttt{living\_sqft} & numeric & \texttt{living\_area} & Gross living area in square feet \\
 \hline
@@ -1484,13 +1524,29 @@ This is not real data, but is based on a realistic neighborhood in Northern Cali
 \hline
 \texttt{area\_id} & integer & \texttt{area} & MLS area identifier \\
 \hline
+\texttt{area\_text} & character & --- & Area / neighborhood name \\
+\hline
 \texttt{age} & numeric & \texttt{actual\_age} & Property age in years \\
+\hline
+\texttt{year\_built} & integer & --- & Year built \\
 \hline
 \texttt{latitude} & numeric & \texttt{latitude} & Latitude (rounded to 3 dp for model) \\
 \hline
 \texttt{longitude} & numeric & \texttt{longitude} & Longitude (rounded to 3 dp for model) \\
 \hline
+\texttt{latitude6} & numeric & --- & Latitude at 6-decimal precision \\
+\hline
+\texttt{longitude6} & numeric & --- & Longitude at 6-decimal precision \\
+\hline
 \texttt{garage\_spaces} & integer & --- & Number of garage bays \\
+\hline
+\texttt{fp\_count} & integer & --- & Fireplace count (sparse) \\
+\hline
+\texttt{no\_of\_stories} & integer & --- & Number of stories (sparse) \\
+\hline
+\texttt{style} & character & --- & Architectural style description \\
+\hline
+\texttt{view} & character & --- & View description \\
 \hline
 \texttt{days\_on\_market} & integer & \texttt{dom} & Days on market \\
 \hline
@@ -1516,6 +1572,7 @@ This is not real data, but is based on a realistic neighborhood in Northern Cali
 11. Download output (Step 7), review the CQA ranking
 12. Compute RCA adjustments (Step 8) with a CQA score of ~5.00
 13. Generate a Sales Comparison Grid (Step 9) with recommended comps
+14. Generate the Quarto report bundle (Step 10) and convert it to HTML, Word, or PDF (Step 11)
 
 \newpage
 
@@ -1546,7 +1603,9 @@ The following packages are installed automatically as dependencies:
 \hline
 \rowcolor{nordtableheader}\textcolor{white}{\textbf{Package}} & \textcolor{white}{\textbf{Purpose}} \\
 \hline
-shiny, bslib & Web application framework and Bootstrap 5 theming \\
+shiny & Web application framework \\
+\hline
+valengrCore & Shared regProj project model, geo databases, and special-role logic (shared with earthUI and glmnetUI) \\
 \hline
 mgcv & GAM model fitting \\
 \hline
@@ -1556,17 +1615,17 @@ gratia & Smooth term extraction and diagnostics \\
 \hline
 DT & Interactive data tables \\
 \hline
-officer & Word (.docx) report generation \\
+quarto, rmarkdown & Quarto report rendering (HTML/Word/PDF) \\
 \hline
-rmarkdown & HTML and PDF report generation \\
+shinyFiles & Native file/folder browsers (regProj root, earthUI import, Quarto source) \\
 \hline
-readr, readxl & CSV and Excel file import \\
+readxl & Excel file import (CSV is read via base R) \\
 \hline
-openxlsx & Excel output (predictions, RCA, sales grid) \\
-\hline
-RSQLite, DBI & Settings persistence (SQLite database) \\
+RSQLite, DBI & Settings persistence and regProj databases (SQLite) \\
 \hline
 jsonlite & Variable state serialization \\
+\hline
+broom & Tidy model summaries \\
 \hline
 \end{tabularx}
 \end{center}
@@ -1583,6 +1642,16 @@ jsonlite & Variable state serialization \\
 \textbf{sysfonts + showtext} & Roboto Condensed font for ggplot2 plots. If unavailable or offline, the app falls back to the system sans-serif font automatically. \\
 \hline
 \textbf{earth} ($\geq$ 5.3.0) & Only needed for the earthUI import pipeline. Not required for standalone use. \\
+\hline
+\textbf{writexl} & Excel downloads (predictions and RCA output). Prompted for on first use if missing. \\
+\hline
+\textbf{openxlsx} & Sales Comparison Grid workbook generation. \\
+\hline
+\textbf{callr} & Background model fitting with the progress overlay; without it, fitting runs synchronously. \\
+\hline
+\textbf{officer} & Programmatic Word export via \texttt{export\_gam\_docx()}. \\
+\hline
+\textbf{bslib} & Bootstrap 5 theming. \\
 \hline
 \end{tabularx}
 \end{center}

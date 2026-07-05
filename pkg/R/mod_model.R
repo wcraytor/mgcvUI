@@ -491,7 +491,8 @@ mod_model_server <- function(id, data_r, var_config_r,
                     style = "margin-top: 16px; margin-bottom: 6px;"),
             tags$ul(style = "list-style: none; padding-left: 8px;", def_items)
           )
-        }
+        },
+        withMathJax(HTML(g_function_legend("html")))
       )
     })
 
